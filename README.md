@@ -1,4 +1,4 @@
-# DecoStyle MERN + TypeScript Rewrite (Skeleton)
+# DecoStyle MERN + TypeScript
 
 This is a **starter project structure** for migrating the PHP-based DecoStyle app
 to a modern **MERN + TypeScript** stack.
