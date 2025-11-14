@@ -100,7 +100,7 @@ export default function ClaimPage() {
             </div>
             <button
               type="submit"
-              className="mt-1 px-3 py-1.5 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+              className="mt-1 px-3 py-1.5 rounded-md bg-green-500 text-white hover:bg-green-600"
             >
               Submit
             </button>

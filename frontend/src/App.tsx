@@ -16,6 +16,7 @@ import ClaimPage from "./pages/claim/ClaimPage";
 import BuzzPage from "./pages/buzz/BuzzPage";
 import SystemInfoPage from "./pages/maintenance/SystemInfoPage";
 import MyInfoPage from "./pages/my-info/MyInfoPage";
+import LeavePage from "./pages/leave/LeavePage";
 
 export default function App() {
   return (
@@ -131,6 +132,16 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <MyInfoPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LeavePage />
             </Layout>
           </RequireAuth>
         }

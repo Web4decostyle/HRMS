@@ -55,10 +55,10 @@ export default function Sidebar() {
       transition={{ type: "spring", stiffness: 140, damping: 18 }}
     >
       {/* Logo / Brand bar */}
-      <div className="h-14 px-4 flex items-center border-b border-slate-200 bg-gradient-to-r from-orange-50 via-white to-white">
+      <div className="h-14 px-4 flex items-center border-b border-slate-200 bg-gradient-to-r from-green-50 via-white to-white">
         <div className="flex items-center gap-2">
           <motion.div
-            className="w-8 h-8 rounded-2xl bg-orange-500 flex items-center justify-center text-xs font-bold text-white shadow-md"
+            className="w-8 h-8 rounded-2xl bg-green-500 flex items-center justify-center text-xs font-bold text-white shadow-md"
             whileHover={{ rotate: 5, scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300, damping: 18 }}
           >
@@ -112,7 +112,7 @@ export default function Sidebar() {
                 const itemClasses = [
                   baseItemClasses,
                   active
-                    ? "bg-orange-100 text-orange-700"
+                    ? "bg-green-100 text-green-700"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                 ].join(" ");
 

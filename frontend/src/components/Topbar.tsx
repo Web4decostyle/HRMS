@@ -69,7 +69,7 @@ export default function Topbar() {
 
         {/* User dropdown (simplified) */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
             {fullName
               .split(" ")
               .map((p) => p[0])
@@ -84,7 +84,7 @@ export default function Topbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[11px] text-orange-600 hover:text-orange-700"
+              className="text-[11px] text-green-600 hover:text-green-700"
             >
               Logout
             </button>

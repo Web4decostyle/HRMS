@@ -59,7 +59,7 @@ export default function MyTimesheetsPage() {
         </div>
         <button
           disabled={creating}
-          className="px-3 py-1.5 rounded-md bg-orange-500 text-white text-sm disabled:opacity-50"
+          className="px-3 py-1.5 rounded-md bg-green-500 text-white text-sm disabled:opacity-50"
         >
           {creating ? "Creating..." : "Create Timesheet"}
         </button>

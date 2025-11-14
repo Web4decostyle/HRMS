@@ -1,86 +1,79 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-
-interface Employee {
-  _id: string;
-  employeeId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  jobTitle?: string;
-  department?: string;
-  status: "ACTIVE" | "INACTIVE";
-}
+// frontend/src/pages/employees/EmployeesPage.tsx
+import { useGetEmployeesQuery } from "../../features/employees/employeesApi";
 
 export default function EmployeesPage() {
-  const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await axios.get<Employee[]>(
-          "http://localhost:4000/api/employees"
-        );
-        setEmployees(res.data);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: employees, isLoading, isError } = useGetEmployeesQuery();
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-800">Employees</h1>
-      {loading ? (
-        <p className="text-sm text-slate-500">Loading...</p>
-      ) : (
-        <table className="min-w-full text-sm bg-white shadow rounded-lg overflow-hidden">
-          <thead className="bg-slate-50 border-b">
-            <tr>
-              <th className="px-4 py-2 text-left">Emp ID</th>
-              <th className="px-4 py-2 text-left">Name</th>
-              <th className="px-4 py-2 text-left">Email</th>
-              <th className="px-4 py-2 text-left">Department</th>
-              <th className="px-4 py-2 text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((e) => (
-              <tr key={e._id} className="border-t">
-                <td className="px-4 py-2">{e.employeeId}</td>
-                <td className="px-4 py-2">
-                  {e.firstName} {e.lastName}
-                </td>
-                <td className="px-4 py-2">{e.email}</td>
-                <td className="px-4 py-2">{e.department ?? "-"}</td>
-                <td className="px-4 py-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      e.status === "ACTIVE"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {e.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-            {employees.length === 0 && !loading && (
+
+      {isLoading && (
+        <p className="text-sm text-slate-500">Loading employees…</p>
+      )}
+
+      {isError && (
+        <p className="text-sm text-red-500">
+          Failed to load employees. Please try again.
+        </p>
+      )}
+
+      {!isLoading && !isError && (
+        <div className="bg-white shadow rounded-xl overflow-hidden border border-slate-200">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 border-b">
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-4 text-center text-slate-500 text-sm"
-                >
-                  No employees yet. Create them through the API for now.
-                </td>
+                <th className="px-4 py-2 text-left">Emp ID</th>
+                <th className="px-4 py-2 text-left">Name</th>
+                <th className="px-4 py-2 text-left">Email</th>
+                <th className="px-4 py-2 text-left">Job Title</th>
+                <th className="px-4 py-2 text-left">Department</th>
+                <th className="px-4 py-2 text-left">Status</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {employees?.map((emp) => (
+                <tr
+                  key={emp._id}
+                  className="border-b last:border-0 hover:bg-slate-50"
+                >
+                  <td className="px-4 py-2 font-mono text-xs">
+                    {emp.employeeId}
+                  </td>
+                  <td className="px-4 py-2">
+                    {emp.firstName} {emp.lastName}
+                  </td>
+                  <td className="px-4 py-2">{emp.email}</td>
+                  <td className="px-4 py-2">{emp.jobTitle || "—"}</td>
+                  <td className="px-4 py-2">{emp.department || "—"}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={[
+                        "inline-flex items-center px-2 py-0.5 rounded-full text-[11px]",
+                        emp.status === "ACTIVE"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-600",
+                      ].join(" ")}
+                    >
+                      {emp.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+
+              {!employees?.length && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-4 text-center text-slate-400 text-xs"
+                  >
+                    No employees found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -50,7 +50,7 @@ export default function RecruitmentPage() {
           />
           <button
             type="submit"
-            className="px-3 py-1 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+            className="px-3 py-1 rounded-md bg-green-500 text-white hover:bg-green-600"
           >
             Add
           </button>

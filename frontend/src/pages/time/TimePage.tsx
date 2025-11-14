@@ -26,7 +26,7 @@ export default function TimePage() {
           onClick={() => setTab("timesheets")}
           className={`px-3 py-1.5 rounded-full border ${
             tab === "timesheets"
-              ? "bg-orange-500 text-white border-orange-500"
+              ? "bg-green-500 text-white border-green-500"
               : "bg-white text-slate-600 border-slate-200"
           }`}
         >
@@ -36,7 +36,7 @@ export default function TimePage() {
           onClick={() => setTab("attendance")}
           className={`px-3 py-1.5 rounded-full border ${
             tab === "attendance"
-              ? "bg-orange-500 text-white border-orange-500"
+              ? "bg-green-500 text-white border-green-500"
               : "bg-white text-slate-600 border-slate-200"
           }`}
         >

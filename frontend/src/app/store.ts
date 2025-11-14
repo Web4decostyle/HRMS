@@ -11,6 +11,11 @@ import { adminApi } from "../features/admin/adminApi";
 import { claimApi } from "../features/claim/claimApi";
 import { maintenanceApi } from "../features/maintenance/maintenanceApi";
 import { helpApi } from "../features/help/helpApi";
+import { leaveApi } from "../features/leave/leaveApi";
+import { employeesApi } from "../features/employees/employeesApi";
+import { pimApi } from "../features/pim/pimApi";
+
+
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +30,10 @@ export const store = configureStore({
     [claimApi.reducerPath]: claimApi.reducer,
     [maintenanceApi.reducerPath]: maintenanceApi.reducer,
     [helpApi.reducerPath]: helpApi.reducer,
+    [leaveApi.reducerPath]: leaveApi.reducer,
+    [employeesApi.reducerPath]: employeesApi.reducer,
+    [pimApi.reducerPath]: pimApi.reducer,
+
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -38,7 +47,10 @@ export const store = configureStore({
       adminApi.middleware,
       claimApi.middleware,
       maintenanceApi.middleware,
-      helpApi.middleware
+      helpApi.middleware,
+      leaveApi.middleware,
+      employeesApi.middleware,
+      pimApi.middleware
     ),
 });
 

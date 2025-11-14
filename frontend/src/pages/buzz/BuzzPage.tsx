@@ -35,7 +35,7 @@ export default function BuzzPage() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+              className="px-3 py-1.5 rounded-md bg-green-500 text-white hover:bg-green-600"
             >
               Post
             </button>
@@ -74,7 +74,7 @@ export default function BuzzPage() {
                 <button
                   type="button"
                   onClick={() => likePost(p._id).unwrap()}
-                  className="text-[11px] text-orange-600 hover:text-orange-700"
+                  className="text-[11px] text-green-600 hover:text-green-700"
                 >
                   👍 {p.likes?.length ?? 0} like
                   {p.likes && p.likes.length === 1 ? "" : "s"}

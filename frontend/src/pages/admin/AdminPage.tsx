@@ -81,7 +81,7 @@ export default function AdminPage() {
             />
             <button
               type="submit"
-              className="px-3 py-1 rounded-md text-xs bg-orange-500 text-white hover:bg-orange-600"
+              className="px-3 py-1 rounded-md text-xs bg-green-500 text-white hover:bg-green-600"
             >
               Add
             </button>
@@ -117,7 +117,7 @@ export default function AdminPage() {
             />
             <button
               type="submit"
-              className="px-3 py-1 rounded-md text-xs bg-orange-500 text-white hover:bg-orange-600"
+              className="px-3 py-1 rounded-md text-xs bg-green-500 text-white hover:bg-green-600"
             >
               Add
             </button>
@@ -148,7 +148,7 @@ export default function AdminPage() {
             />
             <button
               type="submit"
-              className="px-3 py-1 rounded-md text-xs bg-orange-500 text-white hover:bg-orange-600"
+              className="px-3 py-1 rounded-md text-xs bg-green-500 text-white hover:bg-green-600"
             >
               Add
             </button>
@@ -186,7 +186,7 @@ export default function AdminPage() {
             />
             <button
               type="submit"
-              className="px-3 py-1 rounded-md text-xs bg-orange-500 text-white hover:bg-orange-600"
+              className="px-3 py-1 rounded-md text-xs bg-green-500 text-white hover:bg-green-600"
             >
               Add
             </button>
