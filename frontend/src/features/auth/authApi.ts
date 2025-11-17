@@ -28,6 +28,7 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   role: string;
+  isActive?: boolean;
 }
 
 export interface RegisterResponse {

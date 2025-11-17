@@ -6,7 +6,9 @@ import { ApiError } from "../utils/ApiError";
 
 export interface AuthUser {
   id: string;
+  username?: string;
   role: string;
+  email?: string;
 }
 
 export interface AuthRequest extends Request {

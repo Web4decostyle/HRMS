@@ -24,7 +24,6 @@ export default function LoginPage() {
     try {
       const res: LoginResponse = await login(payload).unwrap();
 
-      // Save token + user somewhere (here: localStorage)
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
 

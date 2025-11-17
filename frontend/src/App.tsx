@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
-import EmployeesPage from "./pages/employees/EmployeesPage";
+import EmployeesPage from "./pages/employees/PimPage";
 import Layout from "./layouts/Layout";
 import RequireAuth from "./components/RequireAuth";
 
@@ -17,6 +17,7 @@ import BuzzPage from "./pages/buzz/BuzzPage";
 import SystemInfoPage from "./pages/maintenance/SystemInfoPage";
 import MyInfoPage from "./pages/my-info/MyInfoPage";
 import LeavePage from "./pages/leave/LeavePage";
+import AddEmployeePage from "./pages/employees/AddEmployeePage";
 
 export default function App() {
   return (
@@ -149,11 +150,21 @@ export default function App() {
 
       {/* Protected: employees */}
       <Route
-        path="/employees"
+        path="/pim"
         element={
           <RequireAuth>
             <Layout>
               <EmployeesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/employees/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddEmployeePage />
             </Layout>
           </RequireAuth>
         }

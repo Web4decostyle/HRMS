@@ -21,7 +21,15 @@ function buildUserPayload(user: IUser) {
 
 // POST /api/auth/register
 export async function register(req: Request, res: Response) {
-  const { username, email, password, firstName, lastName, role } = req.body;
+  const {
+    username,
+    email,
+    password,
+    firstName,
+    lastName,
+    role,
+    isActive,
+  } = req.body;
 
   if (!username || !password || !firstName || !lastName) {
     throw ApiError.badRequest(
@@ -42,8 +50,13 @@ export async function register(req: Request, res: Response) {
     passwordHash,
     firstName,
     lastName,
+    // default remains same as before when role not sent
     role: (role as any) || "ADMIN",
-    isActive: true,
+    // if isActive is explicitly passed (true/false) use it, else default true
+    isActive:
+      typeof isActive === "boolean"
+        ? isActive
+        : true,
   });
 
   res.status(201).json({
