@@ -20,6 +20,7 @@ import claimRoutes from "./modules/claim/claim.routes";
 import maintenanceRoutes from "./modules/maintenance/maintenance.routes";
 import helpRoutes from "./modules/help/help.routes";
 import pimRoutes from "./modules/pim/pim.routes";
+import myInfoRoutes from "./modules/my-info/myInfo.routes";
 
 
 const app = express();
@@ -64,6 +65,8 @@ app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/pim", pimRoutes);
 
+
+app.use("/api/my-info", myInfoRoutes);
 
 
 app.use(errorHandler);

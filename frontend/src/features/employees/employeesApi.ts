@@ -37,6 +37,21 @@ export interface Employee {
   jobTitle?: string;
   department?: string; // used as Sub Unit
   status: EmployeeStatus;
+
+  // attachments may be populated on certain endpoints
+  attachments?: Attachment[];
+}
+
+/** Attachment type returned by backend */
+export interface Attachment {
+  _id: string;
+  filename: string;
+  path?: string;
+  description?: string;
+  size?: number;
+  mimeType?: string;
+  addedBy?: { _id?: string; name?: string } | string;
+  dateAdded?: string;
 }
 
 export interface EmployeeFilters {
@@ -51,7 +66,7 @@ export interface EmployeeFilters {
 export const employeesApi = createApi({
   reducerPath: "employeesApi",
   baseQuery: authorizedBaseQuery,
-  tagTypes: ["Employee"],
+  tagTypes: ["Employee", "Attachment"],
   endpoints: (builder) => ({
     getEmployees: builder.query<Employee[], EmployeeFilters | void>({
       query: (filters) => {
@@ -59,8 +74,7 @@ export const employeesApi = createApi({
 
         if (filters) {
           if (filters.name) params.set("name", filters.name);
-          if (filters.employeeId)
-            params.set("employeeId", filters.employeeId);
+          if (filters.employeeId) params.set("employeeId", filters.employeeId);
           if (filters.jobTitle) params.set("jobTitle", filters.jobTitle);
           if (filters.subUnit) params.set("subUnit", filters.subUnit);
           if (filters.status) params.set("status", filters.status);
@@ -93,9 +107,7 @@ export const employeesApi = createApi({
 
     getEmployeeById: builder.query<Employee, string>({
       query: (id) => `employees/${id}`,
-      providesTags: (_result, _err, id) => [
-        { type: "Employee" as const, id },
-      ],
+      providesTags: (_result, _err, id) => [{ type: "Employee" as const, id }],
     }),
 
     // 🔹 My Info – current user's employee record
@@ -120,6 +132,53 @@ export const employeesApi = createApi({
         { type: "Employee", id: "LIST" },
       ],
     }),
+
+    /* ------------------ Attachments endpoints ------------------ */
+
+    // GET attachments for a given employee
+    getEmployeeAttachments: builder.query<Attachment[], string>({
+      query: (employeeId) => `employees/${employeeId}/attachments`,
+      providesTags: (result, error, employeeId) =>
+        result
+          ? [
+              ...result.map((att) => ({
+                type: "Attachment" as const,
+                id: att._id,
+              })),
+              { type: "Employee" as const, id: employeeId },
+            ]
+          : [{ type: "Employee" as const, id: employeeId }],
+    }),
+
+    // POST upload attachment for employee
+    uploadEmployeeAttachment: builder.mutation<
+      { success: boolean; attachment: Attachment },
+      { employeeId: string; formData: FormData }
+    >({
+      query: ({ employeeId, formData }) => ({
+        url: `employees/${employeeId}/attachments`,
+        method: "POST",
+        // fetchBaseQuery / authorizedBaseQuery will send FormData correctly
+        body: formData,
+      }),
+      invalidatesTags: (_result, _err, { employeeId }) => [
+        { type: "Employee", id: employeeId },
+      ],
+    }),
+
+    // DELETE attachment
+    deleteEmployeeAttachment: builder.mutation<
+      { success: boolean },
+      { employeeId: string; id: string }
+    >({
+      query: ({ employeeId, id }) => ({
+        url: `employees/${employeeId}/attachments/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _err, { employeeId }) => [
+        { type: "Employee", id: employeeId },
+      ],
+    }),
   }),
 });
 
@@ -129,4 +188,8 @@ export const {
   useGetEmployeeByIdQuery,
   useGetMyEmployeeQuery,
   useUpdateEmployeeMutation,
+  // attachments hooks
+  useGetEmployeeAttachmentsQuery,
+  useUploadEmployeeAttachmentMutation,
+  useDeleteEmployeeAttachmentMutation,
 } = employeesApi;

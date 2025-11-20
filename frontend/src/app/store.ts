@@ -14,11 +14,11 @@ import { helpApi } from "../features/help/helpApi";
 import { leaveApi } from "../features/leave/leaveApi";
 import { employeesApi } from "../features/employees/employeesApi";
 import { pimApi } from "../features/pim/pimApi";
-
+import { myInfoApi } from "../features/myInfo/myInfoApi";
 
 
 export const store = configureStore({
-  reducer: {
+  reducer: { 
     [authApi.reducerPath]: authApi.reducer,
     [navigationApi.reducerPath]: navigationApi.reducer,
     [timeApi.reducerPath]: timeApi.reducer,
@@ -33,6 +33,7 @@ export const store = configureStore({
     [leaveApi.reducerPath]: leaveApi.reducer,
     [employeesApi.reducerPath]: employeesApi.reducer,
     [pimApi.reducerPath]: pimApi.reducer,
+    [myInfoApi.reducerPath]: myInfoApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -50,7 +51,8 @@ export const store = configureStore({
       helpApi.middleware,
       leaveApi.middleware,
       employeesApi.middleware,
-      pimApi.middleware
+      pimApi.middleware,
+      myInfoApi.middleware
     ),
 });
 
