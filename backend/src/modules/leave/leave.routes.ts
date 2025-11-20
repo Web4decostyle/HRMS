@@ -5,6 +5,7 @@ import {
   createLeaveType,
   createLeaveRequest,
   listAllLeave,
+  listMyLeave,
   updateLeaveStatus,
 } from "./leave.controller";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -22,9 +23,13 @@ router.post(
   asyncHandler(createLeaveType)
 );
 
-// Leave requests
+// Employee requests
 router.post("/", requireAuth, asyncHandler(createLeaveRequest));
 
+// My leave (logged-in employee)
+router.get("/my", requireAuth, asyncHandler(listMyLeave));
+
+// Leave list (HR / Admin / Supervisor)
 router.get(
   "/",
   requireAuth,
@@ -32,6 +37,7 @@ router.get(
   asyncHandler(listAllLeave)
 );
 
+// Approve / reject / cancel
 router.patch(
   "/:id/status",
   requireAuth,

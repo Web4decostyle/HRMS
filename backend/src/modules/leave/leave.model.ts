@@ -16,6 +16,7 @@ export interface ILeaveRequest extends Document {
   endDate: Date;
   reason?: string;
   status: LeaveStatus;
+  days: number;
 }
 
 const LeaveTypeSchema = new Schema<ILeaveType>(
@@ -39,6 +40,7 @@ const LeaveRequestSchema = new Schema<ILeaveRequest>(
       enum: ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
       default: "PENDING",
     },
+    days: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

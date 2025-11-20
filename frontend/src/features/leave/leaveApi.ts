@@ -23,6 +23,17 @@ export interface LeaveRequest {
   createdAt?: string;
 }
 
+// Filters for Leave List
+export interface LeaveFilters {
+  fromDate?: string;
+  toDate?: string;
+  status?: LeaveStatus | "";
+  typeId?: string;
+  employeeId?: string;
+  subUnit?: string;
+  includePastEmployees?: boolean;
+}
+
 export const leaveApi = createApi({
   reducerPath: "leaveApi",
   baseQuery: authorizedBaseQuery,
@@ -53,9 +64,20 @@ export const leaveApi = createApi({
       providesTags: ["LeaveRequest"],
     }),
 
-    // GET /api/leave  (admin / HR)
-    getAllLeaves: builder.query<LeaveRequest[], void>({
-      query: () => "leave",
+    // GET /api/leave  (Leave List – admin / HR)
+    getAllLeaves: builder.query<LeaveRequest[], LeaveFilters | void>({
+      query: (filters) => {
+        if (!filters) return "leave";
+
+        const params: any = {};
+        if (filters.fromDate) params.fromDate = filters.fromDate;
+        if (filters.toDate) params.toDate = filters.toDate;
+        if (filters.status) params.status = filters.status;
+        if (filters.typeId) params.typeId = filters.typeId;
+        if (filters.employeeId) params.employeeId = filters.employeeId;
+        // subUnit / includePastEmployees can be wired later if backend supports
+        return { url: "leave", params };
+      },
       providesTags: ["LeaveRequest"],
     }),
 

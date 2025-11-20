@@ -16,7 +16,7 @@ import ClaimPage from "./pages/claim/ClaimPage";
 import BuzzPage from "./pages/buzz/BuzzPage";
 import SystemInfoPage from "./pages/maintenance/SystemInfoPage";
 import MyInfoPage from "./pages/my-info/MyInfoPage";
-import LeavePage from "./pages/leave/LeavePage";
+import LeaveListPage from "./pages/leave/LeaveListPage";
 import AddEmployeePage from "./pages/employees/AddEmployeePage";
 
 export default function App() {
@@ -142,7 +142,7 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <LeavePage />
+              <LeaveListPage />
             </Layout>
           </RequireAuth>
         }
