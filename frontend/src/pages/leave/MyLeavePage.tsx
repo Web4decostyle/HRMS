@@ -1,26 +1,33 @@
-// frontend/src/pages/leave/LeaveListPage.tsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useGetLeaveTypesQuery,
-  useGetAllLeavesQuery,
-  LeaveFilters,
+  useGetMyLeavesQuery,
   LeaveStatus,
 } from "../../features/leave/leaveApi";
 
-/* ------------------------------------------------------------------
-   Small style helpers (kept same as your version)
------------------------------------------------------------------- */
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
 const inputCls =
   "w-full h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
 const selectCls = inputCls;
 
-/* ------------------------------------------------------------------
-   Top tabs config (OrangeHRM style)
------------------------------------------------------------------- */
 type MenuKey = "entitlements" | "reports" | "configure" | null;
+
+// Status filter type: backend statuses + UI-only Scheduled/Taken
+type MyStatusFilter =
+  | ""
+  | LeaveStatus
+  | "SCHEDULED"
+  | "TAKEN";
+
+const STATUS_CHIPS: { value: MyStatusFilter; label: string }[] = [
+  { value: "REJECTED", label: "Rejected" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "PENDING", label: "Pending Approval" },
+  { value: "SCHEDULED", label: "Scheduled" },
+  { value: "TAKEN", label: "Taken" },
+];
 
 const TABS = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
@@ -65,80 +72,118 @@ const TABS = [
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
 
-/* ------------------------------------------------------------------
-   Status filter helpers (match backend LeaveStatus)
------------------------------------------------------------------- */
-type LeaveStatusFilter = "" | LeaveStatus;
+const activeTabKey = "my-leave";
 
-const STATUS_CHIPS: { value: LeaveStatusFilter; label: string }[] = [
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
-  { value: "PENDING", label: "Pending Approval" },
-  { value: "APPROVED", label: "Approved" },
-];
-
-export default function LeaveListPage() {
+export default function MyLeavePage() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
 
-  // Filter form state
   const today = new Date();
+  const defaultFrom = today.toISOString().slice(0, 10);
   const nextYear = new Date(today);
   nextYear.setFullYear(today.getFullYear() + 1);
+  const defaultTo = nextYear.toISOString().slice(0, 10);
 
-  const [fromDate, setFromDate] = useState(today.toISOString().slice(0, 10));
-  const [toDate, setToDate] = useState(nextYear.toISOString().slice(0, 10));
-  const [status, setStatus] = useState<LeaveStatusFilter>("");
-
+  // form state
+  const [fromDate, setFromDate] = useState(defaultFrom);
+  const [toDate, setToDate] = useState(defaultTo);
+  const [status, setStatus] = useState<MyStatusFilter>("");
   const [leaveTypeId, setLeaveTypeId] = useState("");
-  const [employeeName, setEmployeeName] = useState("");
-  const [subUnit, setSubUnit] = useState("");
-  const [includePastEmployees, setIncludePastEmployees] = useState(false);
 
-  // "Applied" filters that actually go to the query
-  const [activeFilters, setActiveFilters] = useState<LeaveFilters | undefined>(
-    undefined
-  );
+  // applied filters (when Search is clicked)
+  const [appliedFilters, setAppliedFilters] = useState({
+    fromDate: defaultFrom,
+    toDate: defaultTo,
+    status: "" as MyStatusFilter,
+    leaveTypeId: "",
+  });
 
   const { data: leaveTypes = [] } = useGetLeaveTypesQuery();
   const {
     data: leaves = [],
     isLoading,
-  } = useGetAllLeavesQuery(activeFilters);
+  } = useGetMyLeavesQuery();
+
+  const filteredLeaves = useMemo(() => {
+    const startFilter = appliedFilters.fromDate
+      ? new Date(appliedFilters.fromDate)
+      : null;
+    const endFilter = appliedFilters.toDate
+      ? new Date(appliedFilters.toDate)
+      : null;
+    if (startFilter) startFilter.setHours(0, 0, 0, 0);
+    if (endFilter) endFilter.setHours(23, 59, 59, 999);
+
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    return leaves.filter((l) => {
+      const from = new Date(l.fromDate);
+      const to = new Date(l.toDate);
+      from.setHours(0, 0, 0, 0);
+      to.setHours(0, 0, 0, 0);
+
+      // date range
+      if (startFilter && from < startFilter) return false;
+      if (endFilter && to > endFilter) return false;
+
+      // leave type
+      if (appliedFilters.leaveTypeId) {
+        const t = l.type;
+        if (typeof t === "string") {
+          if (t !== appliedFilters.leaveTypeId) return false;
+        } else if (t && t._id !== appliedFilters.leaveTypeId) {
+          return false;
+        }
+      }
+
+      // status
+      switch (appliedFilters.status) {
+        case "":
+          return true;
+        case "PENDING":
+        case "APPROVED":
+        case "REJECTED":
+        case "CANCELLED":
+          return l.status === appliedFilters.status;
+        case "SCHEDULED":
+          return l.status === "APPROVED" && from >= todayMidnight;
+        case "TAKEN":
+          return l.status === "APPROVED" && to < todayMidnight;
+        default:
+          return true;
+      }
+    });
+  }, [leaves, appliedFilters]);
 
   function handleReset() {
-    setFromDate(today.toISOString().slice(0, 10));
-    setToDate(nextYear.toISOString().slice(0, 10));
+    setFromDate(defaultFrom);
+    setToDate(defaultTo);
     setStatus("");
     setLeaveTypeId("");
-    setEmployeeName("");
-    setSubUnit("");
-    setIncludePastEmployees(false);
-    setActiveFilters(undefined);
-  }
-
-  function handleSearch() {
-    setActiveFilters({
-      fromDate,
-      toDate,
-      status: status || undefined,
-      typeId: leaveTypeId || undefined,
-      // employee / subunit filters can be wired when backend has them:
-      // employeeId: ...
-      includePastEmployees,
+    setAppliedFilters({
+      fromDate: defaultFrom,
+      toDate: defaultTo,
+      status: "",
+      leaveTypeId: "",
     });
   }
 
-  const activeTabKey = "leave-list"; // this page
+  function handleSearch() {
+    setAppliedFilters({
+      fromDate,
+      toDate,
+      status,
+      leaveTypeId,
+    });
+  }
 
   return (
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-      {/* Top nav inside Leave module (OrangeHRM style) */}
+      {/* Top nav */}
       <div className="flex items-center gap-2 mb-4">
         {TABS.map((tab) => {
           const isActive = tab.key === activeTabKey;
-
-          // Proper type-safe narrowing
           const isMenuTab = "isMenu" in tab && tab.isMenu;
           const menuItems = isMenuTab ? tab.menu : undefined;
 
@@ -152,7 +197,6 @@ export default function LeaveListPage() {
                       prev === tab.key ? null : (tab.key as MenuKey)
                     );
                   } else if ("path" in tab) {
-                    // only route tabs have `path`
                     navigate(tab.path);
                   }
                 }}
@@ -169,7 +213,6 @@ export default function LeaveListPage() {
                 )}
               </button>
 
-              {/* Dropdown menu for Entitlements / Reports / Configure */}
               {isMenuTab && openMenu === tab.key && menuItems && (
                 <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white border border-[#e5e7f0] shadow-lg z-20 text-[12px]">
                   {menuItems.map((item) => (
@@ -196,14 +239,13 @@ export default function LeaveListPage() {
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-5">
         <div className="px-7 py-4 border-b border-[#edf0f7]">
           <h2 className="text-[13px] font-semibold text-slate-800">
-            Leave List
+            My Leave List
           </h2>
         </div>
 
         <div className="px-7 pt-5 pb-4 text-[12px]">
           {/* Row 1 */}
           <div className="grid grid-cols-4 gap-6 mb-4">
-            {/* From Date */}
             <div>
               <label className={labelCls}>From Date</label>
               <input
@@ -214,7 +256,6 @@ export default function LeaveListPage() {
               />
             </div>
 
-            {/* To Date */}
             <div>
               <label className={labelCls}>To Date</label>
               <input
@@ -225,24 +266,24 @@ export default function LeaveListPage() {
               />
             </div>
 
-            {/* Show Leave with Status */}
             <div>
               <label className={labelCls}>Show Leave with Status*</label>
               <select
                 className={selectCls}
                 value={status}
                 onChange={(e) =>
-                  setStatus(e.target.value as LeaveStatusFilter)
+                  setStatus(e.target.value as MyStatusFilter)
                 }
               >
                 <option value="">-- Select --</option>
                 <option value="REJECTED">Rejected</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="PENDING">Pending Approval</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="TAKEN">Taken</option>
                 <option value="APPROVED">Approved</option>
               </select>
 
-              {/* Status chips row like screenshot */}
               <div className="mt-2 flex flex-wrap gap-2">
                 {STATUS_CHIPS.map((chip) => {
                   const active = status === chip.value;
@@ -269,7 +310,6 @@ export default function LeaveListPage() {
               </div>
             </div>
 
-            {/* Leave Type */}
             <div>
               <label className={labelCls}>Leave Type</label>
               <select
@@ -287,64 +327,11 @@ export default function LeaveListPage() {
             </div>
           </div>
 
-          {/* Row 2 */}
-          <div className="grid grid-cols-4 gap-6 items-end">
-            {/* Employee Name */}
-            <div>
-              <label className={labelCls}>Employee Name</label>
-              <input
-                className={inputCls}
-                placeholder="Type for hints..."
-                value={employeeName}
-                onChange={(e) => setEmployeeName(e.target.value)}
-              />
-            </div>
+          <p className="text-[10px] text-slate-400 mt-2 mb-3">
+            * Required
+          </p>
 
-            {/* Sub Unit */}
-            <div>
-              <label className={labelCls}>Sub Unit</label>
-              <select
-                className={selectCls}
-                value={subUnit}
-                onChange={(e) => setSubUnit(e.target.value)}
-              >
-                <option value="">-- Select --</option>
-                {/* plug real departments here later */}
-              </select>
-            </div>
-
-            {/* spacer */}
-            <div />
-
-            {/* Include Past Employees toggle + buttons */}
-            <div className="flex items-center justify-end gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-600">
-                  Include Past Employees
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setIncludePastEmployees((v) => !v)
-                  }
-                  className={`w-10 h-5 rounded-full flex items-center px-1 ${
-                    includePastEmployees
-                      ? "bg-[#8bc34a]"
-                      : "bg-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                      includePastEmployees ? "translate-x-4" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Buttons row */}
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-2 flex justify-end gap-3">
             <button
               type="button"
               onClick={handleReset}
@@ -368,7 +355,7 @@ export default function LeaveListPage() {
         <div className="px-7 py-4 border-b border-[#edf0f7]">
           {isLoading ? (
             <p className="text-[11px] text-slate-500">Loading...</p>
-          ) : leaves.length === 0 ? (
+          ) : filteredLeaves.length === 0 ? (
             <p className="text-[11px] text-slate-500">No Records Found</p>
           ) : null}
         </div>
@@ -383,9 +370,6 @@ export default function LeaveListPage() {
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">
                     Date
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Employee Name
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">
                     Leave Type
@@ -408,17 +392,11 @@ export default function LeaveListPage() {
                 </tr>
               </thead>
               <tbody>
-                {leaves.map((l) => {
+                {filteredLeaves.map((l) => {
                   const typeName =
                     typeof l.type === "string"
                       ? l.type
                       : l.type?.name ?? "";
-                  const fullName =
-                    l.employee && typeof l.employee === "object"
-                      ? `${l.employee.firstName ?? ""} ${
-                          l.employee.lastName ?? ""
-                        }`.trim()
-                      : "";
                   const dateText = `${l.fromDate.slice(
                     0,
                     10
@@ -433,12 +411,9 @@ export default function LeaveListPage() {
                         <input type="checkbox" />
                       </td>
                       <td className="px-3 py-2">{dateText}</td>
-                      <td className="px-3 py-2">{fullName}</td>
                       <td className="px-3 py-2">{typeName}</td>
                       <td className="px-3 py-2">--</td>
-                      <td className="px-3 py-2">
-                        {l.days ?? ""}
-                      </td>
+                      <td className="px-3 py-2">{l.days ?? ""}</td>
                       <td className="px-3 py-2">
                         <span
                           className={[
@@ -467,10 +442,10 @@ export default function LeaveListPage() {
                   );
                 })}
 
-                {leaves.length === 0 && !isLoading && (
+                {filteredLeaves.length === 0 && !isLoading && (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={8}
                       className="px-3 py-6 text-center text-slate-400"
                     >
                       No Records Found

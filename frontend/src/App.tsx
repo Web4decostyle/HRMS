@@ -19,6 +19,17 @@ import MyInfoPage from "./pages/my-info/MyInfoPage";
 import LeaveListPage from "./pages/leave/LeaveListPage";
 import AddEmployeePage from "./pages/employees/AddEmployeePage";
 
+import AddLeaveEntitlementPage from "./pages/leave/AddLeaveEntitlementPage";
+import EmployeeEntitlementsPage from "./pages/leave/EmployeeEntitlementsPage";
+import MyEntitlementsPage from "./pages/leave/MyEntitlementsPage";
+import ApplyLeavePage from "./pages/leave/ApplyLeavePage";
+import MyLeavePage from "./pages/leave/MyLeavePage";
+import AssignLeavePage from "./pages/leave/AssignLeavePage";
+import LeavePeriodPage from "./pages/leave/LeavePeriodPage";
+import LeaveTypesPage from "./pages/leave/LeaveTypesPage";
+import WorkWeekPage from "./pages/leave/WorkWeekPage";
+import HolidaysPage from "./pages/leave/HolidaysPage";
+
 export default function App() {
   return (
     <Routes>
@@ -169,6 +180,24 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      <Route
+        path="/leave/entitlements/add"
+        element={<AddLeaveEntitlementPage />}
+      />
+      <Route
+        path="/leave/entitlements/employee"
+        element={<EmployeeEntitlementsPage />}
+      />
+      <Route path="/leave/entitlements/my" element={<MyEntitlementsPage />} />
+
+      <Route path="/leave/apply" element={<ApplyLeavePage />} />
+      <Route path="/leave/my-leave" element={<MyLeavePage />} />
+      <Route path="/leave/assign" element={<AssignLeavePage />} />
+      <Route path="/leave/config/period" element={<LeavePeriodPage />} />
+      <Route path="/leave/config/types" element={<LeaveTypesPage />} />
+      <Route path="/leave/config/work-week" element={<WorkWeekPage />} />
+      <Route path="/leave/config/holidays" element={<HolidaysPage />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
