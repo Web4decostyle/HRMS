@@ -377,7 +377,7 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
         </div>
       </form>
 
-      {/* ================= ATTACHMENTS (bottom, like OrangeHRM) ================= */}
+      {/* ================= ATTACHMENTS  ================= */}
       <div className="px-7 pb-6">
         <h3 className="text-[12px] font-semibold text-slate-800 mb-2">
           Attachments

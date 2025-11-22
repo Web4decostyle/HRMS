@@ -24,7 +24,6 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
       </div>
 
       <div className="px-7 pt-4 pb-6">
-        {/* “No Records Found” line exactly like OrangeHRM */}
         {isLoading ? (
           <p className="text-[11px] text-slate-400 mb-3">Loading...</p>
         ) : error ? (
@@ -77,7 +76,7 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
       </div>
 
       <div className="px-7 pb-6">
-        {/* OrangeHRM-style "No Records Found" */}
+        
         <p className="text-[11px] text-slate-400 mb-3">No Records Found</p>
 
         <div className="border-y border-[#e3e5f0]">

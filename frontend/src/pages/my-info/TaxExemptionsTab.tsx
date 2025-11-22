@@ -236,7 +236,7 @@ export default function TaxExemptionsTab({
       </div>
 
       <div className="px-7 pb-6">
-        {/* OrangeHRM-style “No Records Found” text */}
+        
         <p className="text-[11px] text-slate-400 mb-3">No Records Found</p>
 
         {/* Header-only attachments table */}

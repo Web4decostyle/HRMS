@@ -22,19 +22,29 @@ export async function listLeaveTypes(_req: Request, res: Response) {
 
 export async function createLeaveType(req: Request, res: Response) {
   const { name, code } = req.body;
-  if (!name || !code) {
-    throw ApiError.badRequest("name and code are required");
+
+  if (!name || !name.trim()) {
+    throw ApiError.badRequest("name is required");
   }
 
-  const existing = await LeaveType.findOne({ code }).exec();
+  // auto-generate code if not provided
+  const finalCode =
+    (code && String(code).trim()) ||
+    name.trim().toUpperCase().replace(/\s+/g, "_"); // e.g. "Sick Leave" -> "SICK_LEAVE"
+
+  // check uniqueness by code
+  const existing = await LeaveType.findOne({ code: finalCode }).exec();
   if (existing) {
     throw new ApiError(409, "Leave type with this code already exists");
   }
 
-  const type = await LeaveType.create({ name, code });
+  const type = await LeaveType.create({
+    name: name.trim(),
+    code: finalCode,
+  });
+
   res.status(201).json(type);
 }
-
 // LEAVE REQUESTS
 
 // Employee creating own leave (Apply Leave)

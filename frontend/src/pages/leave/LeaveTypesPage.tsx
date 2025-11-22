@@ -13,13 +13,29 @@ const inputCls =
 
 type MenuKey = "entitlements" | "reports" | "configure" | null;
 
-const TABS = [
+/* ------- Properly typed tabs so TS knows who has `path` ------- */
+type BaseTab = {
+  key: string;
+  label: string;
+};
+
+type NavTab = BaseTab & {
+  path: string;
+};
+
+type MenuTab = BaseTab & {
+  key: Exclude<MenuKey, null>;
+  isMenu: true;
+  menu: { label: string; path: string }[];
+};
+
+const TABS: readonly (NavTab | MenuTab)[] = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
   {
     key: "entitlements",
     label: "Entitlements",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Add Entitlements", path: "/leave/entitlements/add" },
       { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
@@ -29,7 +45,7 @@ const TABS = [
   {
     key: "reports",
     label: "Reports",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       {
         label: "Leave Entitlements and Usage Report",
@@ -44,7 +60,7 @@ const TABS = [
   {
     key: "configure",
     label: "Configure",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Leave Period", path: "/leave/config/period" },
       { label: "Leave Types", path: "/leave/config/types" },
@@ -100,7 +116,7 @@ export default function LeaveTypesPage() {
       {/* Top nav */}
       <div className="flex items-center gap-2 mb-4">
         {TABS.map((tab) => {
-          const isMenuTab = "isMenu" in tab && tab.isMenu;
+          const isMenuTab = "isMenu" in tab;
           const menuItems = isMenuTab ? tab.menu : undefined;
           const isActive =
             tab.key === activeTabKey && tab.label === "Configure";
@@ -115,7 +131,8 @@ export default function LeaveTypesPage() {
                       prev === tab.key ? null : (tab.key as MenuKey)
                     );
                   } else {
-                    navigate(tab.path);
+                    // here tab is `NavTab`, so `path` definitely exists
+                    navigate((tab as NavTab).path);
                   }
                 }}
                 className={[
@@ -241,10 +258,7 @@ export default function LeaveTypesPage() {
                   </tr>
                 ) : (
                   leaveTypes.map((t) => (
-                    <tr
-                      key={t._id}
-                      className="border-t border-[#f0f1f7]"
-                    >
+                    <tr key={t._id} className="border-t border-[#f0f1f7]">
                       <td className="px-3 py-2">
                         <input type="checkbox" />
                       </td>

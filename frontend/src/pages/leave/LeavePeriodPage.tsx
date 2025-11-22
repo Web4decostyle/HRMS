@@ -84,7 +84,7 @@ export default function LeavePeriodPage() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
 
-  // default to today's month & day, like OrangeHRM usually does
+  
   const today = new Date();
   const [startMonthIndex, setStartMonthIndex] = useState<number>(
     today.getMonth()

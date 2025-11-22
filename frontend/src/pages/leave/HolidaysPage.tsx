@@ -1,3 +1,4 @@
+// frontend/src/pages/leave/HolidaysPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,13 +15,30 @@ const selectCls = inputCls;
 
 type MenuKey = "entitlements" | "reports" | "configure" | null;
 
-const TABS = [
+/* ---------- Typed tab definitions so TS knows who has `path` ---------- */
+
+type BaseTab = {
+  key: string;
+  label: string;
+};
+
+type NavTab = BaseTab & {
+  path: string;
+};
+
+type MenuTab = BaseTab & {
+  key: Exclude<MenuKey, null>;
+  isMenu: true;
+  menu: { label: string; path: string }[];
+};
+
+const TABS: readonly (NavTab | MenuTab)[] = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
   {
     key: "entitlements",
     label: "Entitlements",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Add Entitlements", path: "/leave/entitlements/add" },
       { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
@@ -30,7 +48,7 @@ const TABS = [
   {
     key: "reports",
     label: "Reports",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       {
         label: "Leave Entitlements and Usage Report",
@@ -45,7 +63,7 @@ const TABS = [
   {
     key: "configure",
     label: "Configure",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Leave Period", path: "/leave/config/period" },
       { label: "Leave Types", path: "/leave/config/types" },
@@ -87,12 +105,11 @@ export default function HolidaysPage() {
   const [error, setError] = useState<string | null>(null);
 
   function handleReset() {
-    setFromDate(today.toISOString().slice(0, 10));
-    setToDate(nextYear.toISOString().slice(0, 10));
-    setFilters({
-      from: today.toISOString().slice(0, 10),
-      to: nextYear.toISOString().slice(0, 10),
-    });
+    const from = today.toISOString().slice(0, 10);
+    const to = nextYear.toISOString().slice(0, 10);
+    setFromDate(from);
+    setToDate(to);
+    setFilters({ from, to });
   }
 
   function handleSearch() {
@@ -143,7 +160,7 @@ export default function HolidaysPage() {
       {/* Top nav */}
       <div className="flex items-center gap-2 mb-4">
         {TABS.map((tab) => {
-          const isMenuTab = "isMenu" in tab && tab.isMenu;
+          const isMenuTab = "isMenu" in tab;
           const menuItems = isMenuTab ? tab.menu : undefined;
           const isActive =
             tab.key === activeTabKey && tab.label === "Configure";
@@ -158,7 +175,8 @@ export default function HolidaysPage() {
                       prev === tab.key ? null : (tab.key as MenuKey)
                     );
                   } else {
-                    navigate(tab.path);
+                    // here tab is NavTab, so path definitely exists
+                    navigate((tab as NavTab).path);
                   }
                 }}
                 className={[
@@ -376,17 +394,12 @@ export default function HolidaysPage() {
                   </tr>
                 ) : (
                   holidays.map((h) => (
-                    <tr
-                      key={h._id}
-                      className="border-t border-[#f0f1f7]"
-                    >
+                    <tr key={h._id} className="border-t border-[#f0f1f7]">
                       <td className="px-3 py-2">
                         <input type="checkbox" />
                       </td>
                       <td className="px-3 py-2">{h.name}</td>
-                      <td className="px-3 py-2">
-                        {h.date.slice(0, 10)}
-                      </td>
+                      <td className="px-3 py-2">{h.date.slice(0, 10)}</td>
                       <td className="px-3 py-2">
                         {h.isHalfDay ? "Half Day" : "Full Day"}
                       </td>

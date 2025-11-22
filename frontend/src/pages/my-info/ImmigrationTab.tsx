@@ -63,7 +63,7 @@ export default function ImmigrationTab({
             Assigned Immigration Records
           </h2>
 
-          {/* grey pill button just like OrangeHRM */}
+          
           <button
             type="button"
             className="px-6 h-8 rounded-full bg-[#f3f4f7] text-[11px] font-semibold text-slate-600 border border-[#dde0eb] hover:bg-[#e7e9f3]"

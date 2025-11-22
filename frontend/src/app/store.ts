@@ -15,6 +15,7 @@ import { leaveApi } from "../features/leave/leaveApi";
 import { employeesApi } from "../features/employees/employeesApi";
 import { pimApi } from "../features/pim/pimApi";
 import { myInfoApi } from "../features/myInfo/myInfoApi";
+import { configApi } from "../features/admin/configApi";
 
 
 export const store = configureStore({
@@ -34,6 +35,7 @@ export const store = configureStore({
     [employeesApi.reducerPath]: employeesApi.reducer,
     [pimApi.reducerPath]: pimApi.reducer,
     [myInfoApi.reducerPath]: myInfoApi.reducer,
+    [configApi.reducerPath]: configApi.reducer, 
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -52,6 +54,7 @@ export const store = configureStore({
       leaveApi.middleware,
       employeesApi.middleware,
       pimApi.middleware,
+      configApi.middleware, 
       myInfoApi.middleware
     ),
 });

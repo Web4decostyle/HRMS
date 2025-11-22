@@ -21,6 +21,8 @@ import maintenanceRoutes from "./modules/maintenance/maintenance.routes";
 import helpRoutes from "./modules/help/help.routes";
 import pimRoutes from "./modules/pim/pim.routes";
 import myInfoRoutes from "./modules/my-info/myInfo.routes";
+import leaveEntitlementRoutes from "./modules/leave/leaveEntitlement/leaveEntitlement.routes";
+import emailConfigRoutes from "./modules/admin/config/emailConfig.routes";
 
 
 const app = express();
@@ -36,11 +38,9 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
-app.use("/api/leave", leaveRoutes);
 app.use("/api/navigation", navigationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
-app.use("/api/leave", leaveRoutes);
 app.use("/api/navigation", navigationRoutes);
 
 app.use("/api/time/timesheets", timesheetRoutes);
@@ -51,6 +51,7 @@ app.use("/api/buzz", buzzRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/leave", leaveRoutes);
+app.use("/api/leave-entitlements", leaveEntitlementRoutes);
 app.use("/api/navigation", navigationRoutes);
 app.use("/api/time/timesheets", timesheetRoutes);
 app.use("/api/time/attendance", attendanceRoutes);
@@ -67,7 +68,7 @@ app.use("/api/pim", pimRoutes);
 
 
 app.use("/api/my-info", myInfoRoutes);
-
+app.use("/config/email", emailConfigRoutes);
 
 app.use(errorHandler);
 

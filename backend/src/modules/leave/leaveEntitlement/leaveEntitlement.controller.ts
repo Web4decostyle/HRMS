@@ -53,11 +53,6 @@ export const createLeaveEntitlement = async (
   }
 };
 
-/**
- * GET /api/leave-entitlements
- * query: employeeId?, leaveTypeId?, periodStart?, periodEnd?
- * used for "Leave Entitlements" and "Employee Entitlements" list
- */
 export const getLeaveEntitlements = async (
   req: Request,
   res: Response

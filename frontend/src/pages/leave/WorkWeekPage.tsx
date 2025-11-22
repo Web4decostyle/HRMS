@@ -57,6 +57,17 @@ const TABS = [
 
 const activeTabKey = "configure";
 
+// default config, used for initial state & fallback
+const DEFAULT_CONFIG: WorkWeekConfig = {
+  monday: "FULL",
+  tuesday: "FULL",
+  wednesday: "FULL",
+  thursday: "FULL",
+  friday: "FULL",
+  saturday: "NONE",
+  sunday: "NONE",
+};
+
 const DAYS: { key: keyof WorkWeekConfig; label: string }[] = [
   { key: "monday", label: "Monday" },
   { key: "tuesday", label: "Tuesday" },
@@ -81,39 +92,24 @@ export default function WorkWeekPage() {
   const [saveConfig, { isLoading: isSaving }] =
     useSaveWorkWeekConfigMutation();
 
-  const [localConfig, setLocalConfig] = useState<WorkWeekConfig | null>(
-    null
-  );
+  // ✅ no more `null` here – default config instead
+  const [localConfig, setLocalConfig] =
+    useState<WorkWeekConfig>(DEFAULT_CONFIG);
+
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) {
       setLocalConfig(data);
     } else {
-      // default Mon–Fri full, Sat/Sun non-working
-      setLocalConfig({
-        monday: "FULL",
-        tuesday: "FULL",
-        wednesday: "FULL",
-        thursday: "FULL",
-        friday: "FULL",
-        saturday: "NONE",
-        sunday: "NONE",
-      });
+      setLocalConfig(DEFAULT_CONFIG);
     }
   }, [data]);
-
-  if (!localConfig) {
-    return (
-      <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-        <p className="text-[12px] text-slate-500">Loading...</p>
-      </div>
-    );
-  }
 
   async function handleSave() {
     setMessage(null);
     try {
+      // ✅ localConfig is always a WorkWeekConfig (no union / null)
       await saveConfig(localConfig).unwrap();
       setMessage("Work week saved successfully.");
     } catch (e) {
@@ -140,7 +136,8 @@ export default function WorkWeekPage() {
                     setOpenMenu((prev) =>
                       prev === tab.key ? null : (tab.key as MenuKey)
                     );
-                  } else {
+                  } else if ("path" in tab) {
+                    // ✅ guard so TS knows `path` exists
                     navigate(tab.path);
                   }
                 }}
@@ -198,11 +195,10 @@ export default function WorkWeekPage() {
                   className="w-40 h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]"
                   value={localConfig[d.key] as WorkDayKind}
                   onChange={(e) =>
-                    setLocalConfig((prev) =>
-                      prev
-                        ? { ...prev, [d.key]: e.target.value as WorkDayKind }
-                        : prev
-                    )
+                    setLocalConfig((prev) => ({
+                      ...prev,
+                      [d.key]: e.target.value as WorkDayKind,
+                    }))
                   }
                 >
                   {OPTIONS.map((opt) => (

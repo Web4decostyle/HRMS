@@ -18,7 +18,7 @@ const inputCls =
 const selectCls = inputCls;
 
 /* ------------------------------------------------------------------
-   Top tabs config (OrangeHRM style)
+   Top tabs config 
 ------------------------------------------------------------------ */
 type MenuKey = "entitlements" | "reports" | "configure" | null;
 
@@ -133,7 +133,7 @@ export default function LeaveListPage() {
 
   return (
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-      {/* Top nav inside Leave module (OrangeHRM style) */}
+      
       <div className="flex items-center gap-2 mb-4">
         {TABS.map((tab) => {
           const isActive = tab.key === activeTabKey;

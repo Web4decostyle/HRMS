@@ -1,24 +1,26 @@
-// frontend/src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
+
+// Auth
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import DashboardPage from "./pages/dashboard/DashboardPage";
-import EmployeesPage from "./pages/employees/PimPage";
-import Layout from "./layouts/Layout";
 import RequireAuth from "./components/RequireAuth";
 
-import AdminPage from "./pages/admin/AdminPage";
-import TimePage from "./pages/time/TimePage";
-import RecruitmentPage from "./pages/recruitment/RecruitmentPage";
-import PerformancePage from "./pages/performance/PerformancePage";
-import DirectoryPage from "./pages/directory/DirectoryPage";
-import ClaimPage from "./pages/claim/ClaimPage";
-import BuzzPage from "./pages/buzz/BuzzPage";
-import SystemInfoPage from "./pages/maintenance/SystemInfoPage";
-import MyInfoPage from "./pages/my-info/MyInfoPage";
-import LeaveListPage from "./pages/leave/LeaveListPage";
+// Layouts
+import Layout from "./layouts/Layout";
+import AdminLayout from "./pages/admin/AdminLayout";
+
+// Dashboard
+import DashboardPage from "./pages/dashboard/DashboardPage";
+
+// PIM
+import EmployeesPage from "./pages/employees/PimPage";
 import AddEmployeePage from "./pages/employees/AddEmployeePage";
 
+// My Info
+import MyInfoPage from "./pages/my-info/MyInfoPage";
+
+// Leave
+import LeaveListPage from "./pages/leave/LeaveListPage";
 import AddLeaveEntitlementPage from "./pages/leave/AddLeaveEntitlementPage";
 import EmployeeEntitlementsPage from "./pages/leave/EmployeeEntitlementsPage";
 import MyEntitlementsPage from "./pages/leave/MyEntitlementsPage";
@@ -30,14 +32,49 @@ import LeaveTypesPage from "./pages/leave/LeaveTypesPage";
 import WorkWeekPage from "./pages/leave/WorkWeekPage";
 import HolidaysPage from "./pages/leave/HolidaysPage";
 
+// Time, Org, Recruitment, Performance, Directory, Claim, Buzz, Maintenance
+import TimePage from "./pages/time/TimePage";
+import RecruitmentPage from "./pages/recruitment/RecruitmentPage";
+import PerformancePage from "./pages/performance/PerformancePage";
+import DirectoryPage from "./pages/directory/DirectoryPage";
+import ClaimPage from "./pages/claim/ClaimPage";
+import BuzzPage from "./pages/buzz/BuzzPage";
+import SystemInfoPage from "./pages/maintenance/SystemInfoPage";
+
+// Admin Pages (Job)
+import JobTitlesPage from "./pages/admin/job/JobTitlesPage";
+import PayGradesPage from "./pages/admin/job/PayGradesPage";
+import EmploymentStatusPage from "./pages/admin/job/EmploymentStatusPage";
+import JobCategoriesPage from "./pages/admin/job/JobCategoriesPage";
+import WorkShiftsPage from "./pages/admin/job/WorkShiftsPage";
+
+// Admin Pages (Organization)
+import GeneralInfoPage from "./pages/admin/organization/GeneralInfoPage";
+import LocationsPage from "./pages/admin/organization/LocationsPage";
+import OrgStructurePage from "./pages/admin/organization/OrgStructurePage";
+
+// Admin Pages (Qualifications)
+import SkillsPage from "./pages/admin/qualifications/SkillsPage";
+// import EducationPage from "./pages/admin/qualifications/EducationPage";
+// import LanguagesPage from "./pages/admin/qualifications/LanguagesPage";
+// import LicensesPage from "./pages/admin/qualifications/LicensesPage";
+
+// Admin Pages (Nationalities)
+import NationalitiesPage from "./pages/admin/nationalities/NationalitiesPage";
+
+// Admin Pages (User Management)
+import SystemUsersPage from "./pages/admin/user-management/SystemUsersPage";
+
+import EmailConfigPage from "./pages/admin/config/EmailConfigPage";
+
 export default function App() {
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Protected: dashboard */}
+      {/* Dashboard */}
       <Route
         path="/"
         element={
@@ -49,17 +86,19 @@ export default function App() {
         }
       />
 
+      {/* My Info */}
       <Route
-        path="/admin"
+        path="/my-info"
         element={
           <RequireAuth>
             <Layout>
-              <AdminPage />
+              <MyInfoPage />
             </Layout>
           </RequireAuth>
         }
       />
 
+      {/* Time */}
       <Route
         path="/time"
         element={
@@ -71,6 +110,7 @@ export default function App() {
         }
       />
 
+      {/* Recruitment */}
       <Route
         path="/recruitment"
         element={
@@ -82,6 +122,7 @@ export default function App() {
         }
       />
 
+      {/* Performance */}
       <Route
         path="/performance"
         element={
@@ -93,6 +134,7 @@ export default function App() {
         }
       />
 
+      {/* Directory */}
       <Route
         path="/directory"
         element={
@@ -104,6 +146,7 @@ export default function App() {
         }
       />
 
+      {/* Claim */}
       <Route
         path="/claim"
         element={
@@ -115,6 +158,7 @@ export default function App() {
         }
       />
 
+      {/* Buzz */}
       <Route
         path="/buzz"
         element={
@@ -126,6 +170,7 @@ export default function App() {
         }
       />
 
+      {/* Maintenance */}
       <Route
         path="/maintenance"
         element={
@@ -137,29 +182,7 @@ export default function App() {
         }
       />
 
-      {/* ✅ fixed route */}
-      <Route
-        path="/my-info"
-        element={
-          <RequireAuth>
-            <Layout>
-              <MyInfoPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/leave"
-        element={
-          <RequireAuth>
-            <Layout>
-              <LeaveListPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
-
-      {/* Protected: employees */}
+      {/* PIM */}
       <Route
         path="/pim"
         element={
@@ -181,6 +204,17 @@ export default function App() {
         }
       />
 
+      {/* Leave */}
+      <Route
+        path="/leave"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LeaveListPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
       <Route
         path="/leave/entitlements/add"
         element={<AddLeaveEntitlementPage />}
@@ -190,7 +224,6 @@ export default function App() {
         element={<EmployeeEntitlementsPage />}
       />
       <Route path="/leave/entitlements/my" element={<MyEntitlementsPage />} />
-
       <Route path="/leave/apply" element={<ApplyLeavePage />} />
       <Route path="/leave/my-leave" element={<MyLeavePage />} />
       <Route path="/leave/assign" element={<AssignLeavePage />} />
@@ -198,6 +231,47 @@ export default function App() {
       <Route path="/leave/config/types" element={<LeaveTypesPage />} />
       <Route path="/leave/config/work-week" element={<WorkWeekPage />} />
       <Route path="/leave/config/holidays" element={<HolidaysPage />} />
+
+      {/* ================= ADMIN (MAIN) ================= */}
+      <Route
+        path="/admin/*"
+        element={
+          <RequireAuth>
+            <AdminLayout />
+          </RequireAuth>
+        }
+      >
+        {/* Default */}
+        <Route index element={<SystemUsersPage />} />
+        <Route path="user-management" element={<SystemUsersPage />} />
+
+        {/* Job */}
+        <Route path="job/job-titles" element={<JobTitlesPage />} />
+        <Route path="job/pay-grades" element={<PayGradesPage />} />
+        <Route
+          path="job/employment-status"
+          element={<EmploymentStatusPage />}
+        />
+        <Route path="job/job-categories" element={<JobCategoriesPage />} />
+        <Route path="job/work-shifts" element={<WorkShiftsPage />} />
+
+        {/* Organization */}
+        <Route path="org/general-info" element={<GeneralInfoPage />} />
+        <Route path="org/locations" element={<LocationsPage />} />
+        <Route path="org/structure" element={<OrgStructurePage />} />
+
+        {/* Qualifications */}
+        <Route path="qualifications/skills" element={<SkillsPage />} />
+        {/* <Route path="qualifications/education" element={<EducationPage />} />
+        <Route path="qualifications/languages" element={<LanguagesPage />} />
+        <Route path="qualifications/licenses" element={<LicensesPage />} /> */}
+
+        {/* Nationalities */}
+        <Route path="nationalities" element={<NationalitiesPage />} />
+
+        {/* Configurations */}
+        <Route path="configuration/email-config" element={<EmailConfigPage />} />
+      </Route>
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -14,7 +14,7 @@ const LeaveEntitlementSchema = new Schema<ILeaveEntitlement>(
   {
     employee: {
       type: Schema.Types.ObjectId,
-      ref: "Employee", // your employees collection/model
+      ref: "Employee", 
       required: true,
     },
     leaveType: {
