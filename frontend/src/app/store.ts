@@ -16,6 +16,8 @@ import { employeesApi } from "../features/employees/employeesApi";
 import { pimApi } from "../features/pim/pimApi";
 import { myInfoApi } from "../features/myInfo/myInfoApi";
 import { configApi } from "../features/admin/configApi";
+import { qualificationApiSlice } from "../features/qualifications/qualificationApiSlice";
+import { pimConfigApi } from "../features/pim/pimConfigApi";
 
 
 export const store = configureStore({
@@ -36,6 +38,8 @@ export const store = configureStore({
     [pimApi.reducerPath]: pimApi.reducer,
     [myInfoApi.reducerPath]: myInfoApi.reducer,
     [configApi.reducerPath]: configApi.reducer, 
+    [qualificationApiSlice.reducerPath]: qualificationApiSlice.reducer,
+    [pimConfigApi.reducerPath]: pimConfigApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -55,7 +59,9 @@ export const store = configureStore({
       employeesApi.middleware,
       pimApi.middleware,
       configApi.middleware, 
-      myInfoApi.middleware
+      myInfoApi.middleware,
+      qualificationApiSlice.middleware,
+      pimConfigApi.middleware
     ),
 });
 

@@ -42,8 +42,10 @@ export default function AddEmployeePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // UI only for now
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // NEW: config dropdown open/close (same as EmployeesPage)
+  const [configOpen, setConfigOpen] = useState(false);
 
   // For auto-generating next employeeId like 0002
   const { data: employees = [] } = useGetEmployeesQuery(undefined);
@@ -72,7 +74,6 @@ export default function AddEmployeePage() {
   ) {
     const { name, value } = e.target;
 
-    // If the target is an input AND it’s a checkbox, use .checked
     if (e.target instanceof HTMLInputElement && e.target.type === "checkbox") {
       const checked = e.target.checked;
       setForm((prev) => ({
@@ -161,14 +162,11 @@ export default function AddEmployeePage() {
         employeeId: form.employeeId.trim(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        // We treat middleName as visual-only for now; you can add it to the model later if you like
         email: userEmail || form.email.trim() || "no-email@example.com",
         status,
-        // jobTitle, department will be editable later from other screens
       }).unwrap();
 
       setSuccess("Employee created successfully.");
-      // Reset form and go back to list after a short delay
       setTimeout(() => {
         navigate("/employees");
       }, 800);
@@ -182,26 +180,113 @@ export default function AddEmployeePage() {
     }
   }
 
+  const tabBase =
+    "px-5 py-2 text-xs md:text-sm rounded-full transition-colors whitespace-nowrap";
+
   return (
     <div className="space-y-5">
       {/* PIM Tabs */}
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">PIM</h1>
 
-        <div className="inline-flex rounded-full bg-white shadow-sm overflow-hidden border border-slate-200">
-          <button className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50">
-            Configuration
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Configuration + dropdown (same as EmployeesPage) */}
+          <div
+            className="relative"
+            onMouseLeave={() => setConfigOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setConfigOpen((o) => !o)}
+              className={`${tabBase} ${
+                configOpen
+                  ? "bg-orange-100 text-orange-600 border border-orange-200"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span>Configuration</span>
+              <span className="ml-1 text-[10px] align-middle">▾</span>
+            </button>
+
+            {configOpen && (
+              <div className="absolute left-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 text-xs text-slate-600 z-20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/optional-fields");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Optional Fields
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/custom-fields");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Custom Fields
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/data-import");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Data Import
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/reporting-methods");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Reporting Methods
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/termination-reasons");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded-b-xl"
+                >
+                  Termination Reasons
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Employee List */}
           <button
-            className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50"
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
             onClick={() => navigate("/employees")}
           >
             Employee List
           </button>
-          <button className="px-5 py-2 text-xs md:text-sm bg-green-500 text-white font-semibold">
+
+          {/* Add Employee (active) */}
+          <button
+            type="button"
+            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+          >
             Add Employee
           </button>
-          <button className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50">
+
+          {/* Reports */}
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/pim/reports")}
+          >
             Reports
           </button>
         </div>
@@ -269,7 +354,7 @@ export default function AddEmployeePage() {
               />
             </div>
 
-            {/* Right: main form (spans 2 columns) */}
+            {/* Right: main form */}
             <div className="lg:col-span-2 space-y-5">
               {/* Employee full name */}
               <div className="space-y-2">

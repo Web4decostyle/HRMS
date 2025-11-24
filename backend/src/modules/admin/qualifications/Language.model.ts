@@ -1,14 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose from "mongoose";
 
-export interface ILanguage extends Document {
-  name: string;
-}
-
-const LanguageSchema = new Schema<ILanguage>(
+const languageSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
+    name: { type: String, required: true, trim: true },
+    fluency: { type: String, enum: ["Writing", "Speaking", "Reading"], default: "Writing" },
+    competency: { type: String, enum: ["Poor", "Good", "Excellent"], default: "Good" },
   },
   { timestamps: true }
 );
 
-export default mongoose.model<ILanguage>("Language", LanguageSchema);
+export const Language =
+  mongoose.models.Language || mongoose.model("Language", languageSchema);

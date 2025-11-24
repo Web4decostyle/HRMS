@@ -52,7 +52,7 @@ export default function WorkShiftsPage() {
           <div className="flex flex-col gap-1">
             <label className="font-medium text-slate-700">Shift Name *</label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. General Shift"
@@ -64,7 +64,7 @@ export default function WorkShiftsPage() {
               type="number"
               min={1}
               max={24}
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={hoursPerDay}
               onChange={(e) => setHoursPerDay(e.target.value)}
             />
@@ -77,7 +77,7 @@ export default function WorkShiftsPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="text-left px-4 py-2 w-10">
-                    <input type="checkbox" className="accent-orange-500" />
+                    <input type="checkbox" className="accent-green-500" />
                   </th>
                   <th className="text-left px-4 py-2 font-semibold">
                     Work Shift
@@ -110,7 +110,7 @@ export default function WorkShiftsPage() {
                       className="odd:bg-white even:bg-slate-50/50"
                     >
                       <td className="px-4 py-2">
-                        <input type="checkbox" className="accent-orange-500" />
+                        <input type="checkbox" className="accent-green-500" />
                       </td>
                       <td className="px-4 py-2 text-slate-800">{s.name}</td>
                       <td className="px-4 py-2 text-slate-800">

@@ -1,14 +1,12 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose from "mongoose";
 
-export interface ILicense extends Document {
-  name: string;
-}
-
-const LicenseSchema = new Schema<ILicense>(
+const licenseSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
+    name: { type: String, required: true, trim: true },
+    description: { type: String, default: "" },
   },
   { timestamps: true }
 );
 
-export default mongoose.model<ILicense>("License", LicenseSchema);
+export const License =
+  mongoose.models.License || mongoose.model("License", licenseSchema);

@@ -47,6 +47,9 @@ export default function EmployeesPage() {
     isError,
   } = useGetEmployeesQuery(filters);
 
+  // NEW: config dropdown open/close
+  const [configOpen, setConfigOpen] = useState(false);
+
   function handleFieldChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
@@ -72,9 +75,6 @@ export default function EmployeesPage() {
     if (searchForm.status) nextFilters.status = searchForm.status;
     if (searchForm.include) nextFilters.include = searchForm.include;
 
-    // supervisor is not wired yet because the model has no supervisor field;
-    // once you add it, extend the backend filter and send it here.
-
     setFilters(nextFilters);
   }
 
@@ -83,24 +83,114 @@ export default function EmployeesPage() {
     setFilters({ include: "current" });
   }
 
+  const tabBase =
+    "px-5 py-2 text-xs md:text-sm rounded-full transition-colors whitespace-nowrap";
+
   return (
     <div className="space-y-5">
       {/* Page title + top tabs (PIM) */}
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">PIM</h1>
 
-        <div className="inline-flex rounded-full bg-white shadow-sm overflow-hidden border border-slate-200">
-          <button className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50">
-            Configuration
-          </button>
-          <button className="px-5 py-2 text-xs md:text-sm bg-green-500 text-white font-semibold">
-            
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Configuration + dropdown */}
+          <div
+            className="relative"
+            onMouseLeave={() => setConfigOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setConfigOpen((o) => !o)}
+              className={`${tabBase} ${
+                configOpen
+                  ? "bg-orange-100 text-orange-600 border border-orange-200"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span>Configuration</span>
+              <span className="ml-1 text-[10px] align-middle">▾</span>
+            </button>
+
+            {configOpen && (
+              <div className="absolute left-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 text-xs text-slate-600 z-20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/optional-fields");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Optional Fields
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/custom-fields");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Custom Fields
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/data-import");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Data Import
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/reporting-methods");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                >
+                  Reporting Methods
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfigOpen(false);
+                    navigate("/pim/config/termination-reasons");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded-b-xl"
+                >
+                  Termination Reasons
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Employee List (active tab) */}
+          <button
+            type="button"
+            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            onClick={() => navigate("/employees")}
+          >
             Employee List
           </button>
-          <button className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50">
+
+          {/* Add Employee */}
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/employees/add")}
+          >
             Add Employee
           </button>
-          <button className="px-5 py-2 text-xs md:text-sm text-slate-500 hover:bg-slate-50">
+
+          {/* Reports */}
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/pim/reports")}
+          >
             Reports
           </button>
         </div>

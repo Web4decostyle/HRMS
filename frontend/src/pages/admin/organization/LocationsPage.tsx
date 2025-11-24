@@ -102,7 +102,7 @@ export default function LocationsPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-4 py-2 w-10 text-left">
-                    <input type="checkbox" className="accent-orange-500" />
+                    <input type="checkbox" className="accent-green-500" />
                   </th>
                   <th className="px-4 py-2 text-left font-semibold">Name</th>
                   <th className="px-4 py-2 text-left font-semibold">City</th>
@@ -133,7 +133,7 @@ export default function LocationsPage() {
                       className="odd:bg-white even:bg-slate-50/50"
                     >
                       <td className="px-4 py-2">
-                        <input type="checkbox" className="accent-orange-500" />
+                        <input type="checkbox" className="accent-green-500" />
                       </td>
                       <td className="px-4 py-2 text-slate-800">
                         {loc.name}

@@ -55,9 +55,9 @@ import OrgStructurePage from "./pages/admin/organization/OrgStructurePage";
 
 // Admin Pages (Qualifications)
 import SkillsPage from "./pages/admin/qualifications/SkillsPage";
-// import EducationPage from "./pages/admin/qualifications/EducationPage";
-// import LanguagesPage from "./pages/admin/qualifications/LanguagesPage";
-// import LicensesPage from "./pages/admin/qualifications/LicensesPage";
+import EducationPage from "./pages/admin/qualifications/EducationPage";
+import LanguagesPage from "./pages/admin/qualifications/LanguagesPage";
+import LicensesPage from "./pages/admin/qualifications/LicensesPage";
 
 // Admin Pages (Nationalities)
 import NationalitiesPage from "./pages/admin/nationalities/NationalitiesPage";
@@ -66,6 +66,7 @@ import NationalitiesPage from "./pages/admin/nationalities/NationalitiesPage";
 import SystemUsersPage from "./pages/admin/user-management/SystemUsersPage";
 
 import EmailConfigPage from "./pages/admin/config/EmailConfigPage";
+import AddSkillPage from "./pages/admin/qualifications/AddSkillPage";
 
 export default function App() {
   return (
@@ -262,15 +263,23 @@ export default function App() {
 
         {/* Qualifications */}
         <Route path="qualifications/skills" element={<SkillsPage />} />
-        {/* <Route path="qualifications/education" element={<EducationPage />} />
+
+        <Route
+          path="qualifications/skills/add"
+          element={<AddSkillPage />}
+        />
+        <Route path="qualifications/education" element={<EducationPage />} />
         <Route path="qualifications/languages" element={<LanguagesPage />} />
-        <Route path="qualifications/licenses" element={<LicensesPage />} /> */}
+        <Route path="qualifications/licenses" element={<LicensesPage />} />
 
         {/* Nationalities */}
         <Route path="nationalities" element={<NationalitiesPage />} />
 
         {/* Configurations */}
-        <Route path="configuration/email-config" element={<EmailConfigPage />} />
+        <Route
+          path="configuration/email-config"
+          element={<EmailConfigPage />}
+        />
       </Route>
 
       {/* Fallback */}

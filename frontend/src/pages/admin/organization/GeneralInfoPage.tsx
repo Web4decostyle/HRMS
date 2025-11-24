@@ -85,7 +85,7 @@ export default function GeneralInfoPage() {
                 name="companyName"
                 value={form.companyName}
                 onChange={handleChange}
-                className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               />
             </div>
 

@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { ChevronDown, LogOut } from "lucide-react";
 
 const mainTabs = [
   { name: "User Management", path: "/admin/user-management" },
@@ -25,8 +27,9 @@ const mainTabs = [
     dropdown: [
       { name: "Skills", path: "/admin/qualifications/skills" },
       { name: "Education", path: "/admin/qualifications/education" },
-      { name: "Languages", path: "/admin/qualifications/languages" },
       { name: "Licenses", path: "/admin/qualifications/licenses" },
+      { name: "Languages", path: "/admin/qualifications/languages" },
+      { name: "Memberships", path: "/admin/qualifications/memberships" },
     ],
   },
   { name: "Nationalities", path: "/admin/nationalities" },
@@ -35,7 +38,7 @@ const mainTabs = [
     name: "Configuration",
     dropdown: [
       {
-        name: "Email Configuration ",
+        name: "Email Configuration",
         path: "/admin/configuration/email-config",
       },
     ],
@@ -45,56 +48,139 @@ const mainTabs = [
 export default function AdminTopNav() {
   const { pathname } = useLocation();
 
+  const [userMenu, setUserMenu] = useState(false);
+  const [displayName, setDisplayName] = useState<string>("User");
+  const [openTab, setOpenTab] = useState<string | null>(null); // which dropdown is open
+
+  // Read name (adjust keys to your auth)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("userInfo");
+      const info = raw ? JSON.parse(raw) : null;
+      const nameFromInfo: string | undefined =
+        info?.name || info?.fullName || info?.username;
+      const fallback =
+        localStorage.getItem("username") || localStorage.getItem("email");
+      setDisplayName(nameFromInfo || fallback || "User");
+    } catch {
+      setDisplayName("User");
+    }
+  }, []);
+
   const isActive = (path: string) => pathname.startsWith(path);
 
-  return (
-    <div className="w-full bg-white border-b border-gray-200 flex items-center px-4 py-2 gap-2 text-sm select-none">
-      {mainTabs.map((tab) => {
-        if (!tab.dropdown) {
-          return (
-            <Link
-              key={tab.name}
-              to={tab.path}
-              className={`px-4 py-2 rounded-sm border 
-                ${
-                  isActive(tab.path)
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-gray-100 hover:bg-orange-100 hover:text-orange-500 border-gray-300"
-                }`}
-            >
-              {tab.name}
-            </Link>
-          );
-        }
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("username");
+    window.location.href = "/login";
+  };
 
-        // dropdown tab
-        return (
-          <div key={tab.name} className="relative group">
+  const toggleDropdown = (tabName: string) => {
+    setOpenTab((prev) => (prev === tabName ? null : tabName));
+  };
+
+  return (
+    <div className="w-full bg-white">
+      {/* Top green gradient bar */}
+      <div className="w-full bg-gradient-to-r from-green-500 to-red-500 text-white px-6 py-3 flex items-center justify-between">
+        <h1 className="text-sm font-semibold">Admin </h1>
+
+        <div className="flex items-center gap-3">
+          
+          {/* User menu */}
+          <div className="relative">
             <button
-              className={`px-4 py-2 rounded-sm border 
-                ${
-                  tab.dropdown.some((item) => isActive(item.path))
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-gray-100 hover:bg-orange-100 hover:text-orange-500 border-gray-300"
-                }`}
+              onClick={() => setUserMenu((v) => !v)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/30 rounded-full text-sm hover:bg-white/40 transition"
             >
-              {tab.name}
+              <div className="h-7 w-7 rounded-full bg-white/70 border border-white/50" />
+              <span className="text-white font-medium">{displayName}</span>
+              <ChevronDown className="w-4 h-4 text-white" />
             </button>
 
-            <div className="absolute hidden group-hover:block bg-white shadow-md border rounded-sm z-20 w-48">
-              {tab.dropdown.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="block px-4 py-2 hover:bg-orange-100 hover:text-orange-500 text-sm"
+            {userMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-white shadow-xl rounded-xl border border-slate-100 z-50">
+                <button
+                  className="flex w-full items-center gap-2 px-4 py-2 text-red-500 hover:bg-slate-100"
+                  onClick={handleLogout}
                 >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
+                  <LogOut className="w-4 h-4 text-red-500" />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
-        );
-      })}
+        </div>
+      </div>
+
+      {/* Tabs bar */}
+      <div className="relative bg-white border-b">
+        <div className="px-4 py-3 flex items-center gap-2 flex-wrap">
+          {mainTabs.map((tab) => {
+            const active =
+              (tab as any).path && isActive((tab as any).path)
+                ? true
+                : tab.dropdown?.some((d) => isActive(d.path));
+
+            // simple tab
+            if (!tab.dropdown) {
+              return (
+                <Link
+                  key={tab.name}
+                  to={tab.path}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                    active
+                      ? "bg-green-100 text-green-600 border border-green-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-green-50"
+                  }`}
+                >
+                  {tab.name}
+                </Link>
+              );
+            }
+
+            // dropdown tab – CLICK TO OPEN/CLOSE
+            return (
+              <div key={tab.name} className="relative">
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown(tab.name)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 ${
+                    active || openTab === tab.name
+                      ? "bg-green-100 text-green-600 border border-green-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-green-50"
+                  }`}
+                >
+                  {tab.name}
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {openTab === tab.name && (
+                  <div
+                    className="
+                      absolute left-1/2 -translate-x-1/2 top-full mt-2
+                      bg-white rounded-2xl shadow-lg border border-slate-100
+                      z-50 w-56 py-2
+                    "
+                  >
+                    {tab.dropdown.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className="block px-5 py-2 text-xs text-slate-500 hover:bg-green-50 hover:text-green-500"
+                        onClick={() => setOpenTab(null)}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
