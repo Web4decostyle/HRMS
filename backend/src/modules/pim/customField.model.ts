@@ -1,12 +1,31 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const CustomFieldSchema = new mongoose.Schema(
+export type CustomFieldType = "text" | "dropdown";
+
+export interface ICustomField extends Document {
+  fieldName: string;
+  screen: string;
+  type: CustomFieldType;
+  dropdownOptions?: string[];
+  required: boolean;
+  active: boolean;
+}
+
+const CustomFieldSchema = new Schema<ICustomField>(
   {
-    name: { type: String, required: true },
-    screen: { type: String, required: true },
-    type: { type: String, enum: ["Text", "Number", "Dropdown"], required: true },
+    fieldName: { type: String, required: true },
+    screen: { type: String, required: true }, // personal, contact, emergency, dependents, immigration
+    type: { type: String, enum: ["text", "dropdown"], required: true },
+
+    dropdownOptions: [{ type: String }],
+
+    required: { type: Boolean, default: false },
+    active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("CustomField", CustomFieldSchema);
+export const CustomField = mongoose.model<ICustomField>(
+  "CustomField",
+  CustomFieldSchema
+);

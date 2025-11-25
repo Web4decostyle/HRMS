@@ -1,11 +1,29 @@
-import express from "express";
-import { getPimScreens } from "../../utils/pimScreens";
+import { Router } from "express";
+import {
+  getOptionalFields,
+  updateOptionalFields,
+  getCustomFields,
+  createCustomField,
+  deleteCustomField,
+} from "./pimConfig.controller";
 
-const router = express.Router();
+import { requireAuth } from "../../middleware/authMiddleware";
+import { requireRole } from "../../middleware/roleMiddleware";
 
-router.get("/screens", (req, res) => {
-  const screens = getPimScreens();
-  return res.json(screens);
-});
+const router = Router();
+
+/* ===================== OPTIONAL FIELDS ===================== */
+
+router.get("/optional-fields", requireAuth, requireRole("ADMIN"), getOptionalFields);
+
+router.put("/optional-fields", requireAuth, requireRole("ADMIN"), updateOptionalFields);
+
+/* ===================== CUSTOM FIELDS ===================== */
+
+router.get("/custom-fields", requireAuth, requireRole("ADMIN"), getCustomFields);
+
+router.post("/custom-fields", requireAuth, requireRole("ADMIN"), createCustomField);
+
+router.delete("/custom-fields/:id", requireAuth, requireRole("ADMIN"), deleteCustomField);
 
 export default router;

@@ -68,6 +68,10 @@ import SystemUsersPage from "./pages/admin/user-management/SystemUsersPage";
 import EmailConfigPage from "./pages/admin/config/EmailConfigPage";
 import AddSkillPage from "./pages/admin/qualifications/AddSkillPage";
 
+import OptionalFieldsPage from "./pages/pim/config/OptionalFieldsPage";
+import CustomFieldsListPage from "./pages/pim/config/CustomFieldsListPage";
+import AddCustomFieldPage from "./pages/pim/config/AddCustomFieldPage";
+
 export default function App() {
   return (
     <Routes>
@@ -264,10 +268,7 @@ export default function App() {
         {/* Qualifications */}
         <Route path="qualifications/skills" element={<SkillsPage />} />
 
-        <Route
-          path="qualifications/skills/add"
-          element={<AddSkillPage />}
-        />
+        <Route path="qualifications/skills/add" element={<AddSkillPage />} />
         <Route path="qualifications/education" element={<EducationPage />} />
         <Route path="qualifications/languages" element={<LanguagesPage />} />
         <Route path="qualifications/licenses" element={<LicensesPage />} />
@@ -279,6 +280,22 @@ export default function App() {
         <Route
           path="configuration/email-config"
           element={<EmailConfigPage />}
+        />
+
+        {/* PIM Configuration */}
+        <Route
+          path="pim/config/optional-fields"
+          element={<OptionalFieldsPage />}
+        />
+
+        <Route
+          path="pim/config/custom-fields"
+          element={<CustomFieldsListPage />}
+        />
+
+        <Route
+          path="pim/config/custom-fields/add"
+          element={<AddCustomFieldPage />}
         />
       </Route>
 

@@ -117,7 +117,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/pim/config/optional-fields");
+                    navigate("/admin/pim/config/optional-fields");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -127,7 +127,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/pim/config/custom-fields");
+                    navigate("pim/config/custom-fields");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -137,7 +137,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/pim/config/data-import");
+                    navigate("/admin/pim/config/data-import");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -147,7 +147,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/pim/config/reporting-methods");
+                    navigate("pim/config/reporting-methods");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -157,7 +157,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/pim/config/termination-reasons");
+                    navigate("pim/config/termination-reasons");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded-b-xl"
                 >

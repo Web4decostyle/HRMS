@@ -1,16 +1,29 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const PimOptionalFieldsSchema = new mongoose.Schema(
+export interface IPimOptionalFields extends Document {
+  showNickname: boolean;
+  showSmoker: boolean;
+  showMilitaryService: boolean;
+
+  showSSN: boolean;
+  showSIN: boolean;
+  showUSTaxExemptions: boolean;
+}
+
+const PimOptionalFieldsSchema = new Schema<IPimOptionalFields>(
   {
-    showNickName: { type: Boolean, default: false },
-    showSmoker: { type: Boolean, default: false },
-    showMilitaryService: { type: Boolean, default: false },
+    showNickname: { type: Boolean, default: true },
+    showSmoker: { type: Boolean, default: true },
+    showMilitaryService: { type: Boolean, default: true },
 
     showSSN: { type: Boolean, default: false },
     showSIN: { type: Boolean, default: false },
-    showUsTax: { type: Boolean, default: false },
+    showUSTaxExemptions: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("PimOptionalFields", PimOptionalFieldsSchema);
+export const PimOptionalFields = mongoose.model<IPimOptionalFields>(
+  "PimOptionalFields",
+  PimOptionalFieldsSchema
+);

@@ -49,44 +49,43 @@ export const pimConfigApi = createApi({
     }),
 
     // PUT /pim/settings
-    updateOptionalFields: builder.mutation<PimOptionalFields, PimOptionalFields>(
-      {
-        query: (body) => ({
-          url: "/pim/settings",
-          method: "PUT",
-          body,
-        }),
-        invalidatesTags: ["PimSettings"],
-      }
-    ),
+    updateOptionalFields: builder.mutation<
+      PimOptionalFields,
+      PimOptionalFields
+    >({
+      query: (body) => ({
+        url: "/pim/settings",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["PimSettings"],
+    }),
 
     // GET /pim/custom-fields
-    getCustomFields: builder.query<PimCustomField[], void>({
-      query: () => "/pim/custom-fields",
+    getCustomFields: builder.query<
+      { success: boolean; data: any[] },
+      void
+    >({
+      query: () => "/pim-config/custom-fields",
       providesTags: ["PimCustomFields"],
     }),
 
-    // POST /pim/custom-fields
-    createCustomField: builder.mutation<PimCustomField, Partial<PimCustomField>>(
-      {
-        query: (body) => ({
-          url: "/pim/custom-fields",
-          method: "POST",
-          body,
-        }),
-        invalidatesTags: ["PimCustomFields"],
-      }
-    ),
-
-    // DELETE /pim/custom-fields/:id
-    deleteCustomField: builder.mutation<{ success: boolean }, string>({
-      query: (id) => ({
-        url: `/pim/custom-fields/${id}`,
-        method: "DELETE",
+    createCustomField: builder.mutation<any, any>({
+      query: (data) => ({
+        url: "/pim-config/custom-fields",
+        method: "POST",
+        body: data,
       }),
       invalidatesTags: ["PimCustomFields"],
     }),
 
+    deleteCustomField: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `/pim-config/custom-fields/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["PimCustomFields"],
+    }),
     // POST /pim/import  (CSV upload)
     uploadImport: builder.mutation<{ success: boolean }, FormData>({
       query: (formData) => ({
