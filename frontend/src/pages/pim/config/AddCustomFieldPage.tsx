@@ -1,11 +1,10 @@
+// frontend/src/pages/pim/config/AddCustomFieldPage.tsx
 import React, { useState } from "react";
-import {
-  useCreateCustomFieldMutation,
-} from "../../../features/pim/pimConfigApi";
-
-import AdminTopNav from "../../../components/admin/AdminTopNav";
-import AdminSidebar from "../../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
+import { useCreateCustomFieldMutation } from "../../../features/pim/pimConfigApi";
+
+const tabBase =
+  "px-5 py-2 text-xs md:text-sm rounded-full transition-colors whitespace-nowrap";
 
 export default function AddCustomFieldPage() {
   const navigate = useNavigate();
@@ -20,8 +19,8 @@ export default function AddCustomFieldPage() {
   const [tempOption, setTempOption] = useState("");
 
   const handleAddOption = () => {
-    if (tempOption.trim() === "") return;
-    setDropdownOptions((prev) => [...prev, tempOption]);
+    if (!tempOption.trim()) return;
+    setDropdownOptions((prev) => [...prev, tempOption.trim()]);
     setTempOption("");
   };
 
@@ -53,140 +52,172 @@ export default function AddCustomFieldPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar />
+    <div className="px-8 py-6 space-y-6">
+      {/* Header + tabs same as list page */}
+      <div className="flex flex-col gap-3">
+        <h1 className="text-2xl font-semibold text-slate-800">
+          PIM / Configuration
+        </h1>
 
-      <div className="flex-1">
-        <AdminTopNav />
-
-        {/* HEADER */}
-        <div className="px-6 py-4 bg-white shadow-sm border-b">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Configuration &gt; Add Custom Field
-          </h2>
-        </div>
-
-        {/* PAGE BODY */}
-        <div className="p-6 flex justify-center">
-          <div className="bg-white shadow rounded-md p-6 w-full max-w-2xl">
-
-            {/* Field Name */}
-            <div className="mb-4">
-              <label className="block mb-1 text-gray-700">Field Name *</label>
-              <input
-                type="text"
-                value={fieldName}
-                onChange={(e) => setFieldName(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-                placeholder="Enter field name"
-              />
-            </div>
-
-            {/* Screen Dropdown */}
-            <div className="mb-4">
-              <label className="block mb-1 text-gray-700">Screen *</label>
-              <select
-                value={screen}
-                onChange={(e) => setScreen(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-              >
-                <option value="">Select Screen</option>
-                <option value="personal">Personal Details</option>
-                <option value="contact">Contact Details</option>
-                <option value="emergency">Emergency Contacts</option>
-                <option value="dependents">Dependents</option>
-                <option value="immigration">Immigration</option>
-              </select>
-            </div>
-
-            {/* Type Dropdown */}
-            <div className="mb-4">
-              <label className="block mb-1 text-gray-700">Type *</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                className="w-full border px-3 py-2 rounded"
-              >
-                <option value="text">Text Field</option>
-                <option value="dropdown">Dropdown</option>
-              </select>
-            </div>
-
-            {/* If dropdown → show options */}
-            {type === "dropdown" && (
-              <div className="mb-4">
-                <label className="block mb-2 text-gray-700">
-                  Dropdown Options *
-                </label>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tempOption}
-                    onChange={(e) => setTempOption(e.target.value)}
-                    className="flex-1 border px-3 py-2 rounded"
-                    placeholder="Add option"
-                  />
-                  <button
-                    onClick={handleAddOption}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                  >
-                    Add
-                  </button>
-                </div>
-
-                {/* Options List */}
-                <div className="mt-3 space-y-2">
-                  {dropdownOptions.map((opt, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded"
-                    >
-                      <span>{opt}</span>
-
-                      <button
-                        onClick={() => handleDeleteOption(i)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Required Toggle */}
-            <label className="flex items-center gap-2 mt-4">
-              <input
-                type="checkbox"
-                checked={required}
-                onChange={() => setRequired(!required)}
-              />
-              <span className="text-gray-700">Required</span>
-            </label>
-
-            {/* Buttons */}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => navigate("/pim/config/custom-fields")}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleSave}
-                disabled={isLoading}
-                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded shadow"
-              >
-                {isLoading ? "Saving..." : "Save"}
-              </button>
-            </div>
-
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+          >
+            Configuration
+          </button>
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/employees")}
+          >
+            Employee List
+          </button>
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/employees/add")}
+          >
+            Add Employee
+          </button>
+          <button
+            type="button"
+            className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+            onClick={() => navigate("/pim/reports")}
+          >
+            Reports
+          </button>
         </div>
       </div>
+
+      {/* Card */}
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-2xl">
+        <h2 className="text-sm md:text-base font-semibold text-slate-800 mb-4">
+          Add Custom Field
+        </h2>
+
+        {/* Field Name */}
+        <div className="mb-4">
+          <label className="block mb-1 text-gray-700 text-sm">
+            Field Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={fieldName}
+            onChange={(e) => setFieldName(e.target.value)}
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+            placeholder="Enter field name"
+          />
+        </div>
+
+        {/* Screen */}
+        <div className="mb-4">
+          <label className="block mb-1 text-gray-700 text-sm">
+            Screen <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={screen}
+            onChange={(e) => setScreen(e.target.value)}
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="">Select Screen</option>
+            <option value="personal">Personal Details</option>
+            <option value="contact">Contact Details</option>
+            <option value="emergency">Emergency Contacts</option>
+            <option value="dependents">Dependents</option>
+            <option value="immigration">Immigration</option>
+          </select>
+        </div>
+
+        {/* Type */}
+        <div className="mb-4">
+          <label className="block mb-1 text-gray-700 text-sm">
+            Type <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as any)}
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="text">Text Field</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
+        </div>
+
+        {/* Dropdown options */}
+        {type === "dropdown" && (
+          <div className="mb-4">
+            <label className="block mb-2 text-gray-700 text-sm">
+              Dropdown Options <span className="text-red-500">*</span>
+            </label>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tempOption}
+                onChange={(e) => setTempOption(e.target.value)}
+                className="flex-1 border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="Add option"
+              />
+              <button
+                type="button"
+                onClick={handleAddOption}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+              >
+                Add
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {dropdownOptions.map((opt, i) => (
+                <div
+                  key={i}
+                  className="flex justify-between items-center bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm"
+                >
+                  <span>{opt}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOption(i)}
+                    className="text-red-600 hover:text-red-800 text-xs"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Required */}
+        <label className="flex items-center gap-2 mt-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={required}
+            onChange={() => setRequired(!required)}
+          />
+          <span>Required</span>
+        </label>
+
+        {/* Buttons */}
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/pim/config/custom-fields")}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full text-sm"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isLoading}
+            className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-sm shadow disabled:opacity-60"
+          >
+            {isLoading ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

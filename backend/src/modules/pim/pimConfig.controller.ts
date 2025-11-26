@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { PimOptionalFields } from "./pimOptionalFields.model";
 import { CustomField } from "./customField.model";
+import { ReportingMethod } from "./reportingMethod.model";
+
 
 /* ============================================================
    OPTIONAL FIELDS
@@ -76,4 +78,91 @@ export const deleteCustomField = async (req: Request, res: Response) => {
   }
 
   res.json({ success: true, message: "Field removed" });
+};
+
+/* ============================================================
+   REPORTING METHODS
+============================================================ */
+
+export const getReportingMethods = async (req: Request, res: Response) => {
+  const data = await ReportingMethod.find().sort({ name: 1 }).lean();
+  res.json({ success: true, data });
+};
+
+export const createReportingMethod = async (req: Request, res: Response) => {
+  const { name } = req.body;
+
+  if (!name || !name.trim()) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Name is required" });
+  }
+
+  const trimmed = name.trim();
+
+  const existing = await ReportingMethod.findOne({
+    name: { $regex: `^${trimmed}$`, $options: "i" },
+  });
+
+  if (existing) {
+    return res
+      .status(409)
+      .json({ success: false, message: "Reporting method already exists" });
+  }
+
+  const newMethod = await ReportingMethod.create({ name: trimmed });
+
+  res.status(201).json({ success: true, data: newMethod });
+};
+
+export const updateReportingMethod = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name } = req.body;
+
+  if (!name || !name.trim()) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Name is required" });
+  }
+
+  const trimmed = name.trim();
+
+  const existing = await ReportingMethod.findOne({
+    _id: { $ne: id },
+    name: { $regex: `^${trimmed}$`, $options: "i" },
+  });
+
+  if (existing) {
+    return res
+      .status(409)
+      .json({ success: false, message: "Reporting method already exists" });
+  }
+
+  const updated = await ReportingMethod.findByIdAndUpdate(
+    id,
+    { name: trimmed },
+    { new: true }
+  );
+
+  if (!updated) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Reporting method not found" });
+  }
+
+  res.json({ success: true, data: updated });
+};
+
+export const deleteReportingMethod = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const deleted = await ReportingMethod.findByIdAndDelete(id);
+
+  if (!deleted) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Reporting method not found" });
+  }
+
+  res.json({ success: true, message: "Reporting method removed" });
 };

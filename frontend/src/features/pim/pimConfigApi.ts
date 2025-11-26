@@ -1,76 +1,142 @@
+// frontend/src/features/pim/pimConfigApi.ts
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { authorizedBaseQuery } from "../../app/apiBase";
 
-/** ---- Types (adjust if you want stricter typing) ---- */
+/** ---- Types ---- */
 export interface PimOptionalFields {
-  showNickName?: boolean;
-  showSmoker?: boolean;
-  showMilitaryService?: boolean;
-  showSsn?: boolean;
-  showSin?: boolean;
-  showTaxMenu?: boolean;
+  showNickname: boolean;
+  showSmoker: boolean;
+  showMilitaryService: boolean;
+  showSSN: boolean;
+  showSIN: boolean;
+  showUSTaxExemptions: boolean;
 }
 
+
 export type PimScreen =
-  | "PERSONAL_DETAILS"
-  | "CONTACT_DETAILS"
-  | "EMERGENCY_CONTACTS"
-  | "DEPENDENTS"
-  | "IMMIGRATION"
-  | "JOB"
-  | "SALARY"
-  | "REPORT_TO"
-  | "QUALIFICATIONS"
-  | "MEMBERSHIP"
+  | "personal"
+  | "contact"
+  | "emergency"
+  | "dependents"
+  | "immigration"
+  | "job"
+  | "salary"
+  | "report_to"
+  | "qualifications"
+  | "membership"
   | string;
+
+export type CustomFieldType = "text" | "dropdown";
 
 export interface PimCustomField {
   _id: string;
-  name: string;
+  fieldName: string;
   screen: PimScreen;
-  fieldType: string; // you can narrow this later
+  type: CustomFieldType;
+  dropdownOptions?: string[];
+  required: boolean;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+
+
+export interface ReportingMethod {
+  _id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** ---- API ---- */
 export const pimConfigApi = createApi({
   reducerPath: "pimConfigApi",
   baseQuery: authorizedBaseQuery,
-  tagTypes: ["PimSettings", "PimCustomFields"],
+  tagTypes: ["PimSettings", "PimCustomFields", "ReportingMethods"],
   endpoints: (builder) => ({
-    // GET /pim/screens
+    // (Optional) if you want enum screens from backend later
     getPimScreens: builder.query<PimScreen[], void>({
       query: () => "/pim/screens",
     }),
 
-    // GET /pim/settings
-    getOptionalFields: builder.query<PimOptionalFields, void>({
-      query: () => "/pim/settings",
+    /* ================== OPTIONAL FIELDS ================== */
+    // GET /api/pim-config/optional-fields
+    getOptionalFields: builder.query<
+      { success: boolean; data: PimOptionalFields },
+      void
+    >({
+      query: () => "/pim-config/optional-fields",
       providesTags: ["PimSettings"],
     }),
 
-    // PUT /pim/settings
+    // PUT /api/pim-config/optional-fields
     updateOptionalFields: builder.mutation<
-      PimOptionalFields,
+      { success: boolean; data: PimOptionalFields },
       PimOptionalFields
     >({
       query: (body) => ({
-        url: "/pim/settings",
+        url: "/pim-config/optional-fields",
         method: "PUT",
         body,
       }),
       invalidatesTags: ["PimSettings"],
     }),
 
-    // GET /pim/custom-fields
+        // REPORTING METHODS
+    getReportingMethods: builder.query<
+      { success: boolean; data: ReportingMethod[] },
+      void
+    >({
+      query: () => "/pim-config/reporting-methods",
+      providesTags: ["ReportingMethods"],
+    }),
+
+    createReportingMethod: builder.mutation<
+      { success: boolean; data: ReportingMethod },
+      { name: string }
+    >({
+      query: (body) => ({
+        url: "/pim-config/reporting-methods",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["ReportingMethods"],
+    }),
+
+    deleteReportingMethod: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/pim-config/reporting-methods/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ReportingMethods"],
+    }),
+
+
+    /* ================== CUSTOM FIELDS ================== */
+    // GET /api/pim-config/custom-fields
     getCustomFields: builder.query<
-      { success: boolean; data: any[] },
+      { success: boolean; data: PimCustomField[] },
       void
     >({
       query: () => "/pim-config/custom-fields",
       providesTags: ["PimCustomFields"],
     }),
 
-    createCustomField: builder.mutation<any, any>({
+    // POST /api/pim-config/custom-fields
+    createCustomField: builder.mutation<
+      { success: boolean; data: PimCustomField },
+      {
+        fieldName: string;
+        screen: PimScreen;
+        type: CustomFieldType;
+        dropdownOptions?: string[];
+        required?: boolean;
+      }
+    >({
       query: (data) => ({
         url: "/pim-config/custom-fields",
         method: "POST",
@@ -79,15 +145,21 @@ export const pimConfigApi = createApi({
       invalidatesTags: ["PimCustomFields"],
     }),
 
-    deleteCustomField: builder.mutation<any, string>({
+    // DELETE /api/pim-config/custom-fields/:id
+    deleteCustomField: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/pim-config/custom-fields/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["PimCustomFields"],
     }),
+
+    /* ================== IMPORT (if used) ================== */
     // POST /pim/import  (CSV upload)
-    uploadImport: builder.mutation<{ success: boolean }, FormData>({
+    uploadImport: builder.mutation<
+      { success: boolean; message?: string },
+      FormData
+    >({
       query: (formData) => ({
         url: "/pim/import",
         method: "POST",
@@ -105,4 +177,8 @@ export const {
   useCreateCustomFieldMutation,
   useDeleteCustomFieldMutation,
   useUploadImportMutation,
+  useGetReportingMethodsQuery,
+  useCreateReportingMethodMutation,
+  useDeleteReportingMethodMutation,
 } = pimConfigApi;
+

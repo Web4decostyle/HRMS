@@ -71,6 +71,10 @@ import AddSkillPage from "./pages/admin/qualifications/AddSkillPage";
 import OptionalFieldsPage from "./pages/pim/config/OptionalFieldsPage";
 import CustomFieldsListPage from "./pages/pim/config/CustomFieldsListPage";
 import AddCustomFieldPage from "./pages/pim/config/AddCustomFieldPage";
+import DataImportPage from "./pages/pim/config/DataImportPage";
+
+import ReportingMethodsPage from "./pages/pim/config/ReportingMethodsPage";
+import AddReportingMethodPage from "./pages/pim/config/AddReportingMethodPage";
 
 export default function App() {
   return (
@@ -198,6 +202,29 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      <Route
+        path="/pim/config/reporting-methods"
+        element={
+          <RequireAuth>
+            <Layout>
+              <ReportingMethodsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pim/config/reporting-methods/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddReportingMethodPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
       <Route
         path="/employees/add"
         element={
@@ -236,6 +263,52 @@ export default function App() {
       <Route path="/leave/config/types" element={<LeaveTypesPage />} />
       <Route path="/leave/config/work-week" element={<WorkWeekPage />} />
       <Route path="/leave/config/holidays" element={<HolidaysPage />} />
+
+      {/* PIM Configuration */}
+
+      <Route
+        path="/pim/config/optional-fields"
+        element={
+          <RequireAuth>
+            <Layout>
+              <OptionalFieldsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pim/config/custom-fields"
+        element={
+          <RequireAuth>
+            <Layout>
+              <CustomFieldsListPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pim/config/custom-fields/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddCustomFieldPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pim/config/data-import"
+        element={
+          <RequireAuth>
+            <Layout>
+              <DataImportPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ================= ADMIN (MAIN) ================= */}
       <Route
@@ -280,22 +353,6 @@ export default function App() {
         <Route
           path="configuration/email-config"
           element={<EmailConfigPage />}
-        />
-
-        {/* PIM Configuration */}
-        <Route
-          path="pim/config/optional-fields"
-          element={<OptionalFieldsPage />}
-        />
-
-        <Route
-          path="pim/config/custom-fields"
-          element={<CustomFieldsListPage />}
-        />
-
-        <Route
-          path="pim/config/custom-fields/add"
-          element={<AddCustomFieldPage />}
         />
       </Route>
 

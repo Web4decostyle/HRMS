@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AttachmentsBlock from "./AttachmentsBlock";
 import { labelCls, inputCls } from "./myInfoStyles";
+import {
+  useGetOptionalFieldsQuery,
+  useGetCustomFieldsQuery,
+  PimCustomField,
+} from "../../features/pim/pimConfigApi";
 
 interface PersonalProps {
   employee: any;
@@ -8,12 +13,57 @@ interface PersonalProps {
   isSaving: boolean;
 }
 
+interface FormState {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  nickname: string;
+  employeeId: string;
+  otherId: string;
+  driversLicense: string;
+  licenseExpiry: string;
+  ssnNumber: string;
+  sinNumber: string;
+  nationality: string;
+  maritalStatus: string;
+  dateOfBirth: string;
+  gender: string;
+  smoker: boolean;
+  militaryService: string;
+
+  // store custom field values by id: { [fieldId]: value }
+  customValues: Record<string, string>;
+}
+
 export default function PersonalDetailsTab({
   employee,
   onSave,
   isSaving,
 }: PersonalProps) {
-  const [form, setForm] = useState({
+  // ------------- Load config -------------
+  const { data: optResp } = useGetOptionalFieldsQuery();
+  const { data: customResp } = useGetCustomFieldsQuery();
+
+  const optional = optResp?.data ?? {
+    showNickname: true,
+    showSmoker: true,
+    showMilitaryService: true,
+    showSSN: false,
+    showSIN: false,
+    showUSTaxExemptions: false,
+  };
+
+  // All custom fields for "personal" screen and active
+  const personalCustomFields: PimCustomField[] = useMemo(
+    () =>
+      (customResp?.data || []).filter(
+        (f) => f.screen === "personal" && f.active
+      ),
+    [customResp]
+  );
+
+  // ------------- Initial form state -------------
+  const [form, setForm] = useState<FormState>({
     firstName: employee.firstName || "",
     middleName: employee.middleName || "",
     lastName: employee.lastName || "",
@@ -30,6 +80,7 @@ export default function PersonalDetailsTab({
     gender: employee.gender || "",
     smoker: employee.smoker || false,
     militaryService: employee.militaryService || "",
+    customValues: employee.customValues || {}, // if you store them
   });
 
   function handleChange(
@@ -44,8 +95,22 @@ export default function PersonalDetailsTab({
     setForm((prev) => ({ ...prev, [name]: checked }));
   }
 
+  function handleCustomChange(
+    fieldId: string,
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      customValues: {
+        ...prev.customValues,
+        [fieldId]: value,
+      },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     await onSave({
       ...form,
       dateOfBirth: form.dateOfBirth
@@ -54,6 +119,10 @@ export default function PersonalDetailsTab({
       licenseExpiry: form.licenseExpiry
         ? new Date(form.licenseExpiry).toISOString()
         : undefined,
+
+      // IMPORTANT:
+      // Make sure your backend + Employee model know what to do with this:
+      customValues: form.customValues,
     });
   }
 
@@ -105,18 +174,20 @@ export default function PersonalDetailsTab({
               </div>
             </div>
 
-            {/* Nickname */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Nickname</label>
-                <input
-                  name="nickname"
-                  value={form.nickname}
-                  onChange={handleChange}
-                  className={inputCls}
-                />
+            {/* Nickname (optional field) */}
+            {optional.showNickname && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Nickname</label>
+                  <input
+                    name="nickname"
+                    value={form.nickname}
+                    onChange={handleChange}
+                    className={inputCls}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* IDs */}
             <div className="grid grid-cols-2 gap-4">
@@ -163,27 +234,33 @@ export default function PersonalDetailsTab({
               </div>
             </div>
 
-            {/* SSN / SIN */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>SSN Number</label>
-                <input
-                  name="ssnNumber"
-                  value={form.ssnNumber}
-                  onChange={handleChange}
-                  className={inputCls}
-                />
+            {/* SSN / SIN (controlled by optional fields) */}
+            {(optional.showSSN || optional.showSIN) && (
+              <div className="grid grid-cols-2 gap-4">
+                {optional.showSSN && (
+                  <div>
+                    <label className={labelCls}>SSN Number</label>
+                    <input
+                      name="ssnNumber"
+                      value={form.ssnNumber}
+                      onChange={handleChange}
+                      className={inputCls}
+                    />
+                  </div>
+                )}
+                {optional.showSIN && (
+                  <div>
+                    <label className={labelCls}>SIN Number</label>
+                    <input
+                      name="sinNumber"
+                      value={form.sinNumber}
+                      onChange={handleChange}
+                      className={inputCls}
+                    />
+                  </div>
+                )}
               </div>
-              <div>
-                <label className={labelCls}>SIN Number</label>
-                <input
-                  name="sinNumber"
-                  value={form.sinNumber}
-                  onChange={handleChange}
-                  className={inputCls}
-                />
-              </div>
-            </div>
+            )}
 
             {/* Nationality / Marital */}
             <div className="grid grid-cols-2 gap-4">
@@ -215,7 +292,7 @@ export default function PersonalDetailsTab({
               </div>
             </div>
 
-            {/* DOB / Gender / Smoker */}
+            {/* DOB / Gender / Smoker (optional) */}
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <label className={labelCls}>Date of Birth</label>
@@ -252,34 +329,79 @@ export default function PersonalDetailsTab({
                   </label>
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>Smoker</label>
-                <div className="flex items-center h-9">
-                  <label className="flex items-center gap-1 text-[12px] text-slate-700">
-                    <input
-                      type="checkbox"
-                      name="smoker"
-                      checked={form.smoker}
-                      onChange={handleCheckbox}
-                    />
-                    <span>Yes</span>
-                  </label>
+              {optional.showSmoker && (
+                <div>
+                  <label className={labelCls}>Smoker</label>
+                  <div className="flex items-center h-9">
+                    <label className="flex items-center gap-1 text-[12px] text-slate-700">
+                      <input
+                        type="checkbox"
+                        name="smoker"
+                        checked={form.smoker}
+                        onChange={handleCheckbox}
+                      />
+                      <span>Yes</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Military */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Military Service</label>
-                <input
-                  name="militaryService"
-                  value={form.militaryService}
-                  onChange={handleChange}
-                  className={inputCls}
-                />
+            {/* Military (optional) */}
+            {optional.showMilitaryService && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Military Service</label>
+                  <input
+                    name="militaryService"
+                    value={form.militaryService}
+                    onChange={handleChange}
+                    className={inputCls}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* -------- Dynamic Custom Fields (personal) -------- */}
+            {personalCustomFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-4">
+                {personalCustomFields.map((field) => (
+                  <div key={field._id}>
+                    <label className={labelCls}>
+                      {field.fieldName}
+                      {field.required && <span className="text-red-500">*</span>}
+                    </label>
+
+                    {field.type === "dropdown" && field.dropdownOptions && (
+                      <select
+                        value={form.customValues[field._id] || ""}
+                        onChange={(e) =>
+                          handleCustomChange(field._id, e.target.value)
+                        }
+                        className={inputCls}
+                      >
+                        <option value="">-- Select --</option>
+                        {field.dropdownOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {field.type === "text" && (
+                      <input
+                        value={form.customValues[field._id] || ""}
+                        onChange={(e) =>
+                          handleCustomChange(field._id, e.target.value)
+                        }
+                        className={inputCls}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

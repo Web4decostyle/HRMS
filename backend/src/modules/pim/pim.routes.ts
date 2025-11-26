@@ -17,15 +17,16 @@ import {
   createWorkExperience,
   deleteWorkExperience,
 } from "./pim.controller";
+import multer from "multer";
+import { importEmployeesCsv, downloadPimSampleCsv } from "./pimImport.controller";
+
 
 const router = Router();
 
-/*
-  For now:
-  - All endpoints require login.
-  - Create/Delete are restricted to ADMIN/HR.
-  You can relax this later if you want employees to edit their own info.
-*/
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1 * 1024 * 1024 }, 
+});
 
 // Emergency contacts
 router.get(
@@ -102,5 +103,25 @@ router.delete(
   requireRole("ADMIN", "HR"),
   asyncHandler(deleteWorkExperience)
 );
+
+// ================= PIM Data Import =================
+
+// sample CSV
+router.get(
+  "/import/sample",
+  requireAuth,
+  requireRole("ADMIN", "HR"),
+  asyncHandler(downloadPimSampleCsv)
+);
+
+// CSV upload
+router.post(
+  "/import",
+  requireAuth,
+  requireRole("ADMIN", "HR"),
+  upload.single("file"),
+  asyncHandler(importEmployeesCsv)
+);
+
 
 export default router;

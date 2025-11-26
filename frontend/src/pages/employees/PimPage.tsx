@@ -30,12 +30,10 @@ const defaultSearchForm: SearchFormState = {
 };
 
 export default function EmployeesPage() {
-  // filters passed to RTK Query
   const [filters, setFilters] = useState<EmployeeFilters | void>({
     include: "current",
   });
 
-  // controlled form state
   const [searchForm, setSearchForm] = useState<SearchFormState>(
     defaultSearchForm
   );
@@ -47,7 +45,7 @@ export default function EmployeesPage() {
     isError,
   } = useGetEmployeesQuery(filters);
 
-  // NEW: config dropdown open/close
+  // config dropdown open/close
   const [configOpen, setConfigOpen] = useState(false);
 
   function handleFieldChange(
@@ -94,13 +92,10 @@ export default function EmployeesPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Configuration + dropdown */}
-          <div
-            className="relative"
-            onMouseLeave={() => setConfigOpen(false)}
-          >
+          <div className="relative">
             <button
               type="button"
-              onClick={() => setConfigOpen((o) => !o)}
+              onClick={() => setConfigOpen((open) => !open)}
               className={`${tabBase} ${
                 configOpen
                   ? "bg-orange-100 text-orange-600 border border-orange-200"
@@ -117,7 +112,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/admin/pim/config/optional-fields");
+                    navigate("/pim/config/optional-fields");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -127,7 +122,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("pim/config/custom-fields");
+                    navigate("/pim/config/custom-fields");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -137,7 +132,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("/admin/pim/config/data-import");
+                    navigate("/pim/config/data-import");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -147,7 +142,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("pim/config/reporting-methods");
+                    navigate("/pim/config/reporting-methods");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50"
                 >
@@ -157,7 +152,7 @@ export default function EmployeesPage() {
                   type="button"
                   onClick={() => {
                     setConfigOpen(false);
-                    navigate("pim/config/termination-reasons");
+                    navigate("/pim/config/termination-reasons");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded-b-xl"
                 >
