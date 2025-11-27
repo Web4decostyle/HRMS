@@ -1,8 +1,8 @@
 // backend/src/modules/pim/pimImport.controller.ts
 import { Request, Response } from "express";
 import { parse } from "csv-parse/sync";
-import PimImportHistory from "./pimImportHistory.model";
-import { Employee } from "../employees/employee.model";
+import PimImportHistory from "../models/pimImportHistory.model";
+import { Employee } from "../../../employees/employee.model";
 
 // Simple extension: just say "file" is any
 type MulterRequest = Request & {

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { PimOptionalFields } from "./pimOptionalFields.model";
-import { CustomField } from "./customField.model";
-import { ReportingMethod } from "./reportingMethod.model";
+import { PimOptionalFields } from "../models/pimOptionalFields.model";
+import { CustomField } from "../models/customField.model";
+import { ReportingMethod } from "../models/reportingMethod.model";
 
 
 /* ============================================================

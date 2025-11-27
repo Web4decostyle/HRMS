@@ -18,7 +18,7 @@ import {
   deleteWorkExperience,
 } from "./pim.controller";
 import multer from "multer";
-import { importEmployeesCsv, downloadPimSampleCsv } from "./pimImport.controller";
+import { importEmployeesCsv, downloadPimSampleCsv } from "./pimConfig/controllers/pimImport.controller";
 
 
 const router = Router();

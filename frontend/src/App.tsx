@@ -75,6 +75,7 @@ import DataImportPage from "./pages/pim/config/DataImportPage";
 
 import ReportingMethodsPage from "./pages/pim/config/ReportingMethodsPage";
 import AddReportingMethodPage from "./pages/pim/config/AddReportingMethodPage";
+import TerminationReasonsPage from "./pages/pim/config/TerminationReasonsPage";
 
 export default function App() {
   return (
@@ -210,6 +211,15 @@ export default function App() {
             <Layout>
               <ReportingMethodsPage />
             </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="pim/config/termination-reasons"
+        element={
+          <RequireAuth allowedRoles={["ADMIN", "HR"]}>
+            <TerminationReasonsPage />
           </RequireAuth>
         }
       />

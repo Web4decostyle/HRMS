@@ -10,10 +10,10 @@ import {
   createReportingMethod,
   updateReportingMethod,
   deleteReportingMethod,
-} from "./pimConfig.controller";
+} from "../controllers/pimConfig.controller";
 
-import { requireAuth } from "../../middleware/authMiddleware";
-import { requireRole } from "../../middleware/roleMiddleware";
+import { requireAuth } from "../../../../middleware/authMiddleware";
+import { requireRole } from "../../../../middleware/roleMiddleware";
 
 const router = Router();
 

@@ -12,7 +12,6 @@ export interface PimOptionalFields {
   showUSTaxExemptions: boolean;
 }
 
-
 export type PimScreen =
   | "personal"
   | "contact"
@@ -40,8 +39,6 @@ export interface PimCustomField {
   updatedAt?: string;
 }
 
-
-
 export interface ReportingMethod {
   _id: string;
   name: string;
@@ -49,11 +46,28 @@ export interface ReportingMethod {
   updatedAt?: string;
 }
 
+export interface TerminationReason {
+  _id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface TerminationReasonListResponse {
+  items: TerminationReason[];
+  total: number;
+}
+
 /** ---- API ---- */
 export const pimConfigApi = createApi({
   reducerPath: "pimConfigApi",
   baseQuery: authorizedBaseQuery,
-  tagTypes: ["PimSettings", "PimCustomFields", "ReportingMethods"],
+  tagTypes: [
+    "PimSettings",
+    "PimCustomFields",
+    "ReportingMethods",
+    "TerminationReason",
+  ],
   endpoints: (builder) => ({
     // (Optional) if you want enum screens from backend later
     getPimScreens: builder.query<PimScreen[], void>({
@@ -83,7 +97,7 @@ export const pimConfigApi = createApi({
       invalidatesTags: ["PimSettings"],
     }),
 
-        // REPORTING METHODS
+    /* ================== REPORTING METHODS ================== */
     getReportingMethods: builder.query<
       { success: boolean; data: ReportingMethod[] },
       void
@@ -114,7 +128,6 @@ export const pimConfigApi = createApi({
       }),
       invalidatesTags: ["ReportingMethods"],
     }),
-
 
     /* ================== CUSTOM FIELDS ================== */
     // GET /api/pim-config/custom-fields
@@ -154,6 +167,63 @@ export const pimConfigApi = createApi({
       invalidatesTags: ["PimCustomFields"],
     }),
 
+    /* ================== TERMINATION REASONS ================== */
+    // GET /api/pim-config/termination-reasons
+    getTerminationReasons: builder.query<TerminationReasonListResponse, void>({
+      query: () => "/pim-config/termination-reasons",
+      providesTags: (result) =>
+        result?.items
+          ? [
+              ...result.items.map((r) => ({
+                type: "TerminationReason" as const,
+                id: r._id,
+              })),
+              { type: "TerminationReason" as const, id: "LIST" },
+            ]
+          : [{ type: "TerminationReason" as const, id: "LIST" }],
+    }),
+
+    // POST /api/pim-config/termination-reasons
+    createTerminationReason: builder.mutation<
+      any,
+      { name: string }
+    >({
+      query: (body) => ({
+        url: "/pim-config/termination-reasons",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [{ type: "TerminationReason", id: "LIST" }],
+    }),
+
+    // PUT /api/pim-config/termination-reasons/:id
+    updateTerminationReason: builder.mutation<
+      any,
+      { id: string; name: string }
+    >({
+      query: ({ id, name }) => ({
+        url: `/pim-config/termination-reasons/${id}`,
+        method: "PUT",
+        body: { name },
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: "TerminationReason", id: arg.id },
+        { type: "TerminationReason", id: "LIST" },
+      ],
+    }),
+
+    // DELETE /api/pim-config/termination-reasons/:id
+    deleteTerminationReason: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `/pim-config/termination-reasons/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "TerminationReason", id },
+        { type: "TerminationReason", id: "LIST" },
+      ],
+    }),
+
     /* ================== IMPORT (if used) ================== */
     // POST /pim/import  (CSV upload)
     uploadImport: builder.mutation<
@@ -180,5 +250,10 @@ export const {
   useGetReportingMethodsQuery,
   useCreateReportingMethodMutation,
   useDeleteReportingMethodMutation,
-} = pimConfigApi;
 
+  // NEW:
+  useGetTerminationReasonsQuery,
+  useCreateTerminationReasonMutation,
+  useUpdateTerminationReasonMutation,
+  useDeleteTerminationReasonMutation,
+} = pimConfigApi;

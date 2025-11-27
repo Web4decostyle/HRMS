@@ -24,7 +24,7 @@ import myInfoRoutes from "./modules/my-info/myInfo.routes";
 import leaveEntitlementRoutes from "./modules/leave/leaveEntitlement/leaveEntitlement.routes";
 import emailConfigRoutes from "./modules/admin/config/emailConfig.routes";
 import qualificationRoutes from "./modules/admin/qualifications/Qualification.Routes";
-import pimConfigRoutes from "./modules/pim/pimConfig.routes";
+import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
 
 
 const app = express();
