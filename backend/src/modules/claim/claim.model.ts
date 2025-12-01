@@ -3,21 +3,13 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED";
 
+/* -------------------------- Claim Types -------------------------- */
+
 export interface IClaimType extends Document {
   name: string;
   code: string;
   description?: string;
   isActive: boolean;
-}
-
-export interface IClaimRequest extends Document {
-  employee: mongoose.Types.ObjectId;
-  type: mongoose.Types.ObjectId;
-  amount: number;
-  currency: string;
-  claimDate: Date;
-  description?: string;
-  status: ClaimStatus;
 }
 
 const ClaimTypeSchema = new Schema<IClaimType>(
@@ -35,6 +27,22 @@ export const ClaimType = mongoose.model<IClaimType>(
   ClaimTypeSchema
 );
 
+/* ------------------------- Claim Requests ------------------------ */
+
+export interface IClaimRequest extends Document {
+  employee: mongoose.Types.ObjectId;
+  type: mongoose.Types.ObjectId;
+  amount: number;
+  currency: string;
+  claimDate: Date;
+  description?: string;
+  status: ClaimStatus;
+  referenceId: string;
+}
+
+const generateReferenceId = () =>
+  "CLM-" + Date.now().toString(36).toUpperCase();
+
 const ClaimRequestSchema = new Schema<IClaimRequest>(
   {
     employee: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
@@ -47,6 +55,12 @@ const ClaimRequestSchema = new Schema<IClaimRequest>(
       type: String,
       enum: ["PENDING", "APPROVED", "REJECTED"],
       default: "PENDING",
+    },
+    referenceId: {
+      type: String,
+      required: true,
+      unique: true,
+      default: generateReferenceId,
     },
   },
   { timestamps: true }

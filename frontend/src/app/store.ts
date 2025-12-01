@@ -8,7 +8,7 @@ import { performanceApi } from "../features/performance/performanceApi";
 import { directoryApi } from "../features/directory/directoryApi";
 import { buzzApi } from "../features/buzz/buzzApi";
 import { adminApi } from "../features/admin/adminApi";
-import { claimApi } from "../features/claim/claimApi";
+import { claimConfigApi  } from "../features/claim/claimApi";
 import { maintenanceApi } from "../features/maintenance/maintenanceApi";
 import { helpApi } from "../features/help/helpApi";
 import { leaveApi } from "../features/leave/leaveApi";
@@ -30,7 +30,7 @@ export const store = configureStore({
     [directoryApi.reducerPath]: directoryApi.reducer,
     [buzzApi.reducerPath]: buzzApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
-    [claimApi.reducerPath]: claimApi.reducer,
+    [claimConfigApi.reducerPath]: claimConfigApi.reducer,
     [maintenanceApi.reducerPath]: maintenanceApi.reducer,
     [helpApi.reducerPath]: helpApi.reducer,
     [leaveApi.reducerPath]: leaveApi.reducer,
@@ -52,7 +52,7 @@ export const store = configureStore({
       directoryApi.middleware,
       buzzApi.middleware,
       adminApi.middleware,
-      claimApi.middleware,
+      claimConfigApi .middleware,
       maintenanceApi.middleware,
       helpApi.middleware,
       leaveApi.middleware,

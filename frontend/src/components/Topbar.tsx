@@ -2,7 +2,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMeQuery } from "../features/auth/authApi";
 
-export default function Topbar() {
+interface TopbarProps {
+  /** optional page key, e.g. "pim-config-termination-reasons" */
+  active?: string;
+}
+
+export default function Topbar({ active }: TopbarProps) {
   const { data } = useMeQuery();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,13 +22,14 @@ export default function Topbar() {
     navigate("/login");
   }
 
-  // Simple page title based on route (you can improve later)
+  // You can also use `active` here later if you want to tweak the title
   function getPageTitle() {
     if (location.pathname.startsWith("/employees")) return "Employees";
     if (location.pathname.startsWith("/leave")) return "Leave";
     if (location.pathname.startsWith("/time")) return "Time";
     if (location.pathname.startsWith("/recruitment")) return "Recruitment";
     if (location.pathname.startsWith("/my-info")) return "My Info";
+    if (location.pathname.startsWith("/admin/pim")) return "PIM"; // optional tweak
     if (location.pathname.startsWith("/admin")) return "Admin";
     return "Dashboard";
   }
@@ -52,22 +58,14 @@ export default function Topbar() {
         </div>
 
         {/* Icons */}
-        <button
-          type="button"
-          className="text-lg"
-          title="Help"
-        >
+        <button type="button" className="text-lg" title="Help">
           ❓
         </button>
-        <button
-          type="button"
-          className="text-lg"
-          title="Notifications"
-        >
+        <button type="button" className="text-lg" title="Notifications">
           🔔
         </button>
 
-        {/* User dropdown (simplified) */}
+        {/* User */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
             {fullName

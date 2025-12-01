@@ -25,6 +25,7 @@ import leaveEntitlementRoutes from "./modules/leave/leaveEntitlement/leaveEntitl
 import emailConfigRoutes from "./modules/admin/config/emailConfig.routes";
 import qualificationRoutes from "./modules/admin/qualifications/Qualification.Routes";
 import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
+import claimConfigRoutes from "./modules/claim/claimConfig.routes";
 
 
 const app = express();
@@ -73,7 +74,8 @@ app.use("/api/my-info", myInfoRoutes);
 app.use("/config/email", emailConfigRoutes);
 
 app.use("/api/qualifications", qualificationRoutes);
-app.use("/pim-config", pimConfigRoutes);
+app.use("/api/pim-config", pimConfigRoutes);
+app.use("/api/claim-config", claimConfigRoutes);
 
 app.use(errorHandler);
 
