@@ -29,7 +29,7 @@ export default function AddSkillPage() {
 
   return (
     <div className="p-6">
-      {/* heading like OrangeHRM: just "Admin" */}
+      
       <h2 className="text-sm font-semibold text-gray-600 mb-3">Admin</h2>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-8 py-6 max-w-5xl mx-auto">
@@ -46,7 +46,7 @@ export default function AddSkillPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-400 focus:border-orange-400"
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
             />
           </div>
 
@@ -60,7 +60,7 @@ export default function AddSkillPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Type description here"
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-400 focus:border-orange-400"
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
             />
           </div>
 

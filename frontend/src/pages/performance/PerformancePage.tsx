@@ -1,58 +1,322 @@
 // frontend/src/pages/performance/PerformancePage.tsx
+import { FormEvent, useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useGetReviewsQuery } from "../../features/performance/performanceApi";
 
+type PerformanceFilters = {
+  employeeName: string;
+  jobTitle: string;
+  subUnit: string;
+  include: "CURRENT" | "PAST" | "ALL";
+  status: string;
+  fromDate: string;
+  toDate: string;
+};
+
+/** Local top tabs bar for Performance module (Configure / Manage Reviews / etc.) */
+const PerformanceTabs = () => {
+  // adjust base route if needed
+  const base = "/performance";
+
+  const linkBase =
+    "px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap";
+  const getClassName = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? `${linkBase} bg-white text-green-600 shadow-sm`
+      : `${linkBase} text-green-50/90 hover:bg-white/10`;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <NavLink to={`${base}/config`} className={getClassName}>
+        Configure
+      </NavLink>
+      <NavLink to={base} end className={getClassName}>
+        Manage Reviews
+      </NavLink>
+      <NavLink to={`${base}/my-trackers`} className={getClassName}>
+        My Trackers
+      </NavLink>
+      <NavLink to={`${base}/employee-trackers`} className={getClassName}>
+        Employee Trackers
+      </NavLink>
+    </div>
+  );
+};
+
+const defaultFilters: PerformanceFilters = {
+  employeeName: "",
+  jobTitle: "",
+  subUnit: "",
+  include: "CURRENT",
+  status: "",
+  fromDate: "2025-01-01",
+  toDate: "2025-12-31",
+};
+
 export default function PerformancePage() {
+  const [filters, setFilters] = useState<PerformanceFilters>(defaultFilters);
+
+  // keep API usage same as before – you can later wire filters into the hook
   const { data: reviews } = useGetReviewsQuery();
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    // TODO: in future, pass filters to useGetReviewsQuery via arg / refetch
+    // console.log("Search with filters:", filters);
+  };
+
+  const handleReset = () => {
+    setFilters(defaultFilters);
+  };
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-800">
-        Performance · Reviews
-      </h1>
+      {/* Page title */}
+      <div className="flex flex-col gap-3">
+        <h1 className="text-2xl font-semibold text-slate-800">
+          Performance / Manage Reviews
+        </h1>
 
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-        <table className="w-full text-xs text-left">
-          <thead className="text-[11px] text-slate-500 border-b">
-            <tr>
-              <th className="py-1">Employee</th>
-              <th className="py-1">Reviewer</th>
-              <th className="py-1">Period</th>
-              <th className="py-1">Rating</th>
-              <th className="py-1">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reviews?.map((r) => (
-              <tr key={r._id} className="border-b last:border-0">
-                <td className="py-1">
-                  {typeof r.employee === "object"
-                    ? `${r.employee.firstName} ${r.employee.lastName}`
-                    : r.employee}
-                </td>
-                <td className="py-1">
-                  {typeof r.reviewer === "object"
-                    ? `${r.reviewer.firstName} ${r.reviewer.lastName}`
-                    : r.reviewer}
-                </td>
-                <td className="py-1">
-                  {r.periodStart.slice(0, 10)} – {r.periodEnd.slice(0, 10)}
-                </td>
-                <td className="py-1">{r.rating}/5</td>
-                <td className="py-1 text-[11px]">{r.status}</td>
-              </tr>
-            ))}
-            {!reviews?.length && (
+        {/* green top bar + tabs (like greenHRM header) */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl px-4 py-2 shadow-sm flex items-center justify-between">
+          <div className="text-xs text-green-50/90">
+            Performance <span className="opacity-75">/</span>{" "}
+            <span className="font-medium">Manage Reviews</span>
+          </div>
+          <PerformanceTabs />
+        </div>
+      </div>
+
+      {/* Filter card */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">
+            Employee Reviews
+          </h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Row 1 */}
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* Employee Name */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                Employee Name
+              </label>
+              <input
+                type="text"
+                value={filters.employeeName}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, employeeName: e.target.value }))
+                }
+                placeholder="Type for hints..."
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] placeholder:text-slate-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Job Title */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                Job Title
+              </label>
+              <select
+                value={filters.jobTitle}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, jobTitle: e.target.value }))
+                }
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+              >
+                <option value="">-- Select --</option>
+                {/* hook real job titles later */}
+              </select>
+            </div>
+
+            {/* Sub Unit */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                Sub Unit
+              </label>
+              <select
+                value={filters.subUnit}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, subUnit: e.target.value }))
+                }
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+              >
+                <option value="">-- Select --</option>
+              </select>
+            </div>
+
+            {/* Include */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                Include
+              </label>
+              <select
+                value={filters.include}
+                onChange={(e) =>
+                  setFilters((f) => ({
+                    ...f,
+                    include: e.target.value as PerformanceFilters["include"],
+                  }))
+                }
+                className="w-full rounded-full border border-slate-200 px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="CURRENT">Current Employees Only</option>
+                <option value="ALL">Current and Past Employees</option>
+                <option value="PAST">Past Employees Only</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2 */}
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* Review Status */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                Review Status
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, status: e.target.value }))
+                }
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+              >
+                <option value="">-- Select --</option>
+                <option value="NOT_STARTED">Not Started</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="OVERDUE">Overdue</option>
+              </select>
+            </div>
+
+            {/* From Date */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={filters.fromDate}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, fromDate: e.target.value }))
+                }
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            {/* To Date */}
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-slate-500">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={filters.toDate}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, toDate: e.target.value }))
+                }
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-6 py-1.5 rounded-full border border-lime-400 text-[11px] font-semibold text-lime-500 hover:bg-lime-50"
+            >
+              Reset
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-1.5 rounded-full bg-lime-500 text-white text-[11px] font-semibold hover:bg-lime-600"
+            >
+              Search
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* Table card */}
+      <section className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="px-5 pt-4 pb-2 text-xs text-slate-500">
+          {reviews && reviews.length > 0 ? null : "No Records Found"}
+        </div>
+
+        <div className="border-t border-slate-100">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-slate-50 text-[11px] text-slate-500 border-b">
               <tr>
-                <td
-                  colSpan={5}
-                  className="py-3 text-center text-slate-400 text-xs"
-                >
-                  No reviews yet.
-                </td>
+                <th className="py-2 px-4 font-medium">Employee</th>
+                <th className="py-2 px-4 font-medium">Job Title</th>
+                <th className="py-2 px-4 font-medium">Sub Unit</th>
+                <th className="py-2 px-4 font-medium">Review Period</th>
+                <th className="py-2 px-4 font-medium">Due Date</th>
+                <th className="py-2 px-4 font-medium">Review Status</th>
+                <th className="py-2 px-4 font-medium text-right">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {reviews && reviews.length > 0 ? (
+                reviews.map((r) => {
+                  const emp =
+                    typeof r.employee === "object" && r.employee
+                      ? r.employee
+                      : null;
+
+                  const employeeName = emp
+                    ? `${emp.firstName} ${emp.lastName}`
+                    : typeof r.employee === "string"
+                    ? r.employee
+                    : "-";
+
+                  const jobTitle = emp?.jobTitle ?? "-";
+                  const subUnit = emp?.department ?? "-";
+
+                  const period = `${r.periodStart.slice(
+                    0,
+                    10
+                  )} – ${r.periodEnd.slice(0, 10)}`;
+
+                  const dueDate =
+                    (r as any).dueDate?.slice(0, 10) ?? r.periodEnd.slice(0, 10);
+
+                  return (
+                    <tr
+                      key={r._id}
+                      className="border-b last:border-0 hover:bg-slate-50/60"
+                    >
+                      <td className="py-2 px-4">{employeeName}</td>
+                      <td className="py-2 px-4">{jobTitle}</td>
+                      <td className="py-2 px-4">{subUnit}</td>
+                      <td className="py-2 px-4">{period}</td>
+                      <td className="py-2 px-4">{dueDate}</td>
+                      <td className="py-2 px-4">{r.status}</td>
+                      <td className="py-2 px-4 text-right">
+                        <button className="text-[11px] font-medium text-green-600 hover:underline">
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-4 px-4 text-center text-slate-400 text-xs"
+                  >
+                    No reviews found for the selected criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

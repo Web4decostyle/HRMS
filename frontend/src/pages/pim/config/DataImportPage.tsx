@@ -62,7 +62,7 @@ export default function DataImportPage() {
           {/* Configuration tab (active) */}
           <button
             type="button"
-            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -130,7 +130,7 @@ export default function DataImportPage() {
                 Sample CSV file :{" "}
                 <a
                   href={sampleUrl}
-                  className="text-orange-500 hover:underline"
+                  className="text-green-500 hover:underline"
                 >
                   Download
                 </a>

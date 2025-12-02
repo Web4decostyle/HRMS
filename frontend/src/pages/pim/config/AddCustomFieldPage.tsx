@@ -62,7 +62,7 @@ export default function AddCustomFieldPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -212,7 +212,7 @@ export default function AddCustomFieldPage() {
             type="button"
             onClick={handleSave}
             disabled={isLoading}
-            className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-sm shadow disabled:opacity-60"
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm shadow disabled:opacity-60"
           >
             {isLoading ? "Saving..." : "Save"}
           </button>

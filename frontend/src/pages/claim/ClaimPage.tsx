@@ -1,5 +1,7 @@
 // frontend/src/pages/claim/ClaimPage.tsx
 import { FormEvent, useMemo, useState } from "react";
+
+/* ----------------- CONFIG: events & expense types ----------------- */
 import {
   ClaimEvent,
   ExpenseType,
@@ -11,8 +13,9 @@ import {
   useCreateExpenseTypeMutation,
   useUpdateExpenseTypeMutation,
   useDeleteExpenseTypeMutation,
-} from "../../features/claim/claimApi";
+} from "../../features/claim/claimConfigApi";
 
+/* ---------------------- CLAIMS: requests etc ---------------------- */
 import {
   Claim,
   EmployeeClaim,
@@ -24,10 +27,11 @@ import {
   useAssignClaimMutation,
 } from "../../features/claim/claimApi";
 
+/* -------------------- Employees (for assign tab) ------------------ */
 import {
   useGetEmployeesSimpleQuery,
   SimpleEmployee,
-} from "../../features/employees/employeesApi"; // small helper hook that returns {_id, fullName}
+} from "../../features/employees/employeesApi"; // must return [{ _id, fullName }]
 
 // -----------------------------------------------------------------------------
 // Tabs and layout
@@ -53,25 +57,6 @@ export default function ClaimPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f5fb]">
-      {/* Top orange gradient bar */}
-      <div className="h-16 bg-gradient-to-r from-orange-500 via-orange-400 to-red-500 flex items-center justify-between px-8 shadow-sm">
-        <h1 className="text-white font-semibold text-lg">
-          {activeTab === "config" ? "Claim / Configuration" : "Claim"}
-        </h1>
-
-        <div className="flex items-center gap-4">
-          <button className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/40 shadow-sm hover:bg-white/25">
-            ⬆ Upgrade
-          </button>
-
-          <div className="flex items-center gap-2 bg-white/10 rounded-full px-2.5 py-1 border border-white/40">
-            <div className="w-8 h-8 rounded-full bg-white/80" />
-            <span className="text-xs font-medium text-white">
-              Utkarsh Sharma
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Tabs bar with Configuration dropdown */}
       <div className="bg-white px-8 py-3 shadow-sm flex items-center gap-4 relative">
@@ -89,7 +74,7 @@ export default function ClaimPage() {
                   }}
                   className={`px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
                     isActive
-                      ? "bg-orange-500 text-white shadow"
+                      ? "bg-green-500 text-white shadow"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
@@ -143,7 +128,7 @@ export default function ClaimPage() {
               }}
               className={`px-5 py-2 rounded-full text-sm font-medium ${
                 isActive
-                  ? "bg-orange-500 text-white shadow"
+                  ? "bg-green-500 text-white shadow"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -155,15 +140,12 @@ export default function ClaimPage() {
 
       {/* Page content per tab */}
       <div className="px-8 py-8 flex-1 space-y-8">
-        {activeTab === "config" && (
-          <>
-            {configView === "events" ? (
-              <ClaimEventsConfigSection />
-            ) : (
-              <ExpenseTypesConfigSection />
-            )}
-          </>
-        )}
+        {activeTab === "config" &&
+          (configView === "events" ? (
+            <ClaimEventsConfigSection />
+          ) : (
+            <ExpenseTypesConfigSection />
+          ))}
 
         {activeTab === "submit" && <SubmitClaimSection />}
 
@@ -182,9 +164,9 @@ export default function ClaimPage() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// CONFIG: EVENTS
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* CONFIG: EVENTS                                                             */
+/* ========================================================================== */
 
 function ClaimEventsConfigSection() {
   const { data, isLoading, isError, refetch } = useGetClaimEventsQuery();
@@ -286,7 +268,7 @@ function ClaimEventsConfigSection() {
               placeholder="Type for hints..."
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
 
@@ -297,7 +279,7 @@ function ClaimEventsConfigSection() {
               onChange={(e) =>
                 setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")
               }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="ACTIVE">Active</option>
@@ -421,7 +403,7 @@ function ClaimEventsConfigSection() {
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 />
               </div>
               <div>
@@ -431,7 +413,7 @@ function ClaimEventsConfigSection() {
                   onChange={(e) =>
                     setStatus(e.target.value as "ACTIVE" | "INACTIVE")
                   }
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
@@ -452,7 +434,7 @@ function ClaimEventsConfigSection() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-full text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
                   {editing
@@ -472,9 +454,9 @@ function ClaimEventsConfigSection() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// CONFIG: EXPENSE TYPES
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* CONFIG: EXPENSE TYPES                                                      */
+/* ========================================================================== */
 
 function ExpenseTypesConfigSection() {
   const { data, isLoading, isError, refetch } = useGetExpenseTypesQuery();
@@ -523,7 +505,9 @@ function ExpenseTypesConfigSection() {
     } catch (err: any) {
       setErrorMsg(
         err?.data?.message ||
-          (editing ? "Failed to update expense type" : "Failed to create expense type")
+          (editing
+            ? "Failed to update expense type"
+            : "Failed to create expense type")
       );
     }
   }
@@ -635,7 +619,7 @@ function ExpenseTypesConfigSection() {
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 />
               </div>
               {errorMsg && (
@@ -653,7 +637,7 @@ function ExpenseTypesConfigSection() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-full text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
                   {editing
@@ -673,9 +657,9 @@ function ExpenseTypesConfigSection() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// SUBMIT CLAIM (self)
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* SUBMIT CLAIM (self)                                                        */
+/* ========================================================================== */
 
 function SubmitClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
@@ -703,7 +687,7 @@ function SubmitClaimSection() {
 
     try {
       await submitClaim({
-        eventId,
+        typeId: eventId, // map UI "event" to backend claim type
         currency,
         remarks,
       }).unwrap();
@@ -732,7 +716,7 @@ function SubmitClaimSection() {
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -751,7 +735,7 @@ function SubmitClaimSection() {
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {CURRENCIES.map((c) => (
@@ -770,7 +754,7 @@ function SubmitClaimSection() {
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={4}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
           />
         </div>
 
@@ -810,9 +794,9 @@ function SubmitClaimSection() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// MY CLAIMS
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* MY CLAIMS                                                                  */
+/* ========================================================================== */
 
 function MyClaimsSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
@@ -820,7 +804,7 @@ function MyClaimsSection() {
 
   const [filters, setFilters] = useState<MyClaimsFilter>({
     referenceId: "",
-    eventId: "",
+    typeId: "",
     status: "",
     fromDate: "",
     toDate: "",
@@ -836,7 +820,7 @@ function MyClaimsSection() {
   function resetFilters() {
     setFilters({
       referenceId: "",
-      eventId: "",
+      typeId: "",
       status: "",
       fromDate: "",
       toDate: "",
@@ -858,16 +842,16 @@ function MyClaimsSection() {
               placeholder="Type for hints..."
               value={filters.referenceId}
               onChange={(e) => handleChange("referenceId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
 
           <div className="space-y-1">
             <label className="text-xs text-slate-500">Event Name</label>
             <select
-              value={filters.eventId}
-              onChange={(e) => handleChange("eventId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              value={filters.typeId}
+              onChange={(e) => handleChange("typeId", e.target.value)}
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -883,7 +867,7 @@ function MyClaimsSection() {
             <select
               value={filters.status}
               onChange={(e) => handleChange("status", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="PENDING">Pending</option>
@@ -902,7 +886,7 @@ function MyClaimsSection() {
               type="date"
               value={filters.fromDate}
               onChange={(e) => handleChange("fromDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -911,7 +895,7 @@ function MyClaimsSection() {
               type="date"
               value={filters.toDate}
               onChange={(e) => handleChange("toDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div />
@@ -957,9 +941,6 @@ function MyClaimsSection() {
             </button>
           </div>
         )}
-        {!isLoading && !items.length && !isError && (
-          <div className="text-xs text-slate-500 mb-3">No Records Found</div>
-        )}
 
         <div className="overflow-hidden border border-slate-200 rounded-xl">
           <table className="w-full text-xs text-left">
@@ -980,17 +961,21 @@ function MyClaimsSection() {
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
                   <td className="py-2 px-4">
-                    {typeof c.event === "string"
-                      ? c.event
-                      : (c.event as any)?.name}
+                    {typeof c.type === "string"
+                      ? c.type
+                      : (c.type as any)?.name}
                   </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">
-                    {c.submittedDate?.slice(0, 10) ?? ""}
+                    {c.claimDate?.slice(0, 10) ?? ""}
                   </td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">{c.amount?.toFixed(2) ?? "-"}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.amount === "number"
+                      ? c.amount.toFixed(2)
+                      : "-"}
+                  </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
@@ -1012,9 +997,9 @@ function MyClaimsSection() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// EMPLOYEE CLAIMS (HR view)
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* EMPLOYEE CLAIMS (HR view)                                                  */
+/* ========================================================================== */
 
 function EmployeeClaimsSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
@@ -1023,7 +1008,7 @@ function EmployeeClaimsSection() {
   const [filters, setFilters] = useState<EmployeeClaimsFilter>({
     employeeName: "",
     referenceId: "",
-    eventId: "",
+    typeId: "",
     status: "",
     fromDate: "",
     toDate: "",
@@ -1045,7 +1030,7 @@ function EmployeeClaimsSection() {
     setFilters({
       employeeName: "",
       referenceId: "",
-      eventId: "",
+      typeId: "",
       status: "",
       fromDate: "",
       toDate: "",
@@ -1068,7 +1053,7 @@ function EmployeeClaimsSection() {
               placeholder="Type for hints..."
               value={filters.employeeName}
               onChange={(e) => handleChange("employeeName", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -1077,15 +1062,15 @@ function EmployeeClaimsSection() {
               placeholder="Type for hints..."
               value={filters.referenceId}
               onChange={(e) => handleChange("referenceId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
             <label className="text-xs text-slate-500">Event Name</label>
             <select
-              value={filters.eventId}
-              onChange={(e) => handleChange("eventId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              value={filters.typeId}
+              onChange={(e) => handleChange("typeId", e.target.value)}
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -1100,7 +1085,7 @@ function EmployeeClaimsSection() {
             <select
               value={filters.status}
               onChange={(e) => handleChange("status", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="PENDING">Pending</option>
@@ -1115,7 +1100,7 @@ function EmployeeClaimsSection() {
               onChange={(e) =>
                 handleChange("include", e.target.value as "CURRENT" | "ALL")
               }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="CURRENT">Current Employees Only</option>
               <option value="ALL">All Employees</option>
@@ -1130,7 +1115,7 @@ function EmployeeClaimsSection() {
               type="date"
               value={filters.fromDate}
               onChange={(e) => handleChange("fromDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -1139,7 +1124,7 @@ function EmployeeClaimsSection() {
               type="date"
               value={filters.toDate}
               onChange={(e) => handleChange("toDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div />
@@ -1211,17 +1196,21 @@ function EmployeeClaimsSection() {
                       : (c.employee as any)?.fullName}
                   </td>
                   <td className="py-2 px-4">
-                    {typeof c.event === "string"
-                      ? c.event
-                      : (c.event as any)?.name}
+                    {typeof c.type === "string"
+                      ? c.type
+                      : (c.type as any)?.name}
                   </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">
-                    {c.submittedDate?.slice(0, 10) ?? ""}
+                    {c.claimDate?.slice(0, 10) ?? ""}
                   </td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">{c.amount?.toFixed(2) ?? "-"}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.amount === "number"
+                      ? c.amount.toFixed(2)
+                      : "-"}
+                  </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
@@ -1243,9 +1232,9 @@ function EmployeeClaimsSection() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// ASSIGN CLAIM (HR creates claim for employee)
-// -----------------------------------------------------------------------------
+/* ========================================================================== */
+/* ASSIGN CLAIM (HR creates claim for employee)                               */
+/* ========================================================================== */
 
 function AssignClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
@@ -1278,7 +1267,7 @@ function AssignClaimSection() {
     try {
       await assignClaim({
         employeeId,
-        eventId,
+        typeId: eventId,
         currency,
         remarks,
       }).unwrap();
@@ -1308,7 +1297,7 @@ function AssignClaimSection() {
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">Type for hints...</option>
               {employees.map((emp) => (
@@ -1327,7 +1316,7 @@ function AssignClaimSection() {
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -1346,7 +1335,7 @@ function AssignClaimSection() {
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {CURRENCIES.map((c) => (
@@ -1365,7 +1354,7 @@ function AssignClaimSection() {
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={4}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-300"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
           />
         </div>
 

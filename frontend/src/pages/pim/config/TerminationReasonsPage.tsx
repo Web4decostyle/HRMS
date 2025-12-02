@@ -13,7 +13,7 @@ import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import Sidebar from "../../../components/Sidebar";
 import Topbar from "../../../components/Topbar";
 
-/** Small local tabs bar for PIM (top bar like OrangeHRM) */
+
 const PimConfigTopTabs: React.FC = () => {
   const base = "/admin/pim";
 
@@ -21,11 +21,11 @@ const PimConfigTopTabs: React.FC = () => {
     "px-4 py-2 text-xs font-medium rounded-full transition-colors";
   const getClassName = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${linkClasses} bg-white text-orange-600 shadow-sm`
+      ? `${linkClasses} bg-white text-green-600 shadow-sm`
       : `${linkClasses} text-white/80 hover:bg-white/10`;
 
   return (
-    <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 pt-4 pb-3">
+    <div className="bg-gradient-to-r from-green-500 to-red-500 px-6 pt-4 pb-3">
       <div className="flex items-center gap-2">
         <NavLink to={`${base}/config/optional-fields`} className={getClassName}>
           Configuration
@@ -125,7 +125,7 @@ const TerminationReasonsPage: React.FC = () => {
         {/* Top bar at the very top, full width */}
         <Topbar active="pim-config-termination-reasons" />
 
-        {/* Orange PIM tab bar under topbar */}
+        {/* green PIM tab bar under topbar */}
         <PimConfigTopTabs />
 
         {/* Page content */}
@@ -232,7 +232,7 @@ const TerminationReasonsPage: React.FC = () => {
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Resigned - Self Proposed"
@@ -251,7 +251,7 @@ const TerminationReasonsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-60"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-green-500 hover:bg-green-600 text-white disabled:opacity-60"
                 disabled={isCreating || isUpdating}
               >
                 {editing

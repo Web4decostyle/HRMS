@@ -42,6 +42,13 @@ export interface Employee {
   attachments?: Attachment[];
 }
 
+/** Tiny shape for dropdowns, etc. */
+export interface SimpleEmployee {
+  _id: string;
+  fullName: string;
+  status?: EmployeeStatus;
+}
+
 /** Attachment type returned by backend */
 export interface Attachment {
   _id: string;
@@ -68,6 +75,7 @@ export const employeesApi = createApi({
   baseQuery: authorizedBaseQuery,
   tagTypes: ["Employee", "Attachment"],
   endpoints: (builder) => ({
+    // Full list with filters (Employee List, etc.)
     getEmployees: builder.query<Employee[], EmployeeFilters | void>({
       query: (filters) => {
         const params = new URLSearchParams();
@@ -87,6 +95,31 @@ export const employeesApi = createApi({
           method: "GET",
         };
       },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((e) => ({ type: "Employee" as const, id: e._id })),
+              { type: "Employee" as const, id: "LIST" },
+            ]
+          : [{ type: "Employee" as const, id: "LIST" }],
+    }),
+
+    // *** NEW: lightweight list for dropdowns (Claim assign, etc.) ***
+    getEmployeesSimple: builder.query<SimpleEmployee[], void>({
+      query: () => ({
+        url: "employees",
+        method: "GET",
+        // you can tweak params if you want only current employees:
+        // params: { include: "current" }
+      }),
+      // map full Employee -> SimpleEmployee
+      transformResponse: (employees: Employee[]): SimpleEmployee[] =>
+        employees.map((e) => ({
+          _id: e._id,
+          fullName: `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() ||
+            e.employeeId,
+          status: e.status,
+        })),
       providesTags: (result) =>
         result
           ? [
@@ -138,7 +171,7 @@ export const employeesApi = createApi({
     // GET attachments for a given employee
     getEmployeeAttachments: builder.query<Attachment[], string>({
       query: (employeeId) => `employees/${employeeId}/attachments`,
-      providesTags: (result, error, employeeId) =>
+      providesTags: (result, _error, employeeId) =>
         result
           ? [
               ...result.map((att) => ({
@@ -158,7 +191,6 @@ export const employeesApi = createApi({
       query: ({ employeeId, formData }) => ({
         url: `employees/${employeeId}/attachments`,
         method: "POST",
-        // fetchBaseQuery / authorizedBaseQuery will send FormData correctly
         body: formData,
       }),
       invalidatesTags: (_result, _err, { employeeId }) => [
@@ -184,6 +216,7 @@ export const employeesApi = createApi({
 
 export const {
   useGetEmployeesQuery,
+  useGetEmployeesSimpleQuery, // ✅ NEW HOOK
   useCreateEmployeeMutation,
   useGetEmployeeByIdQuery,
   useGetMyEmployeeQuery,

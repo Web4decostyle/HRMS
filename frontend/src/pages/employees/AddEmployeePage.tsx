@@ -200,7 +200,7 @@ export default function AddEmployeePage() {
               onClick={() => setConfigOpen((o) => !o)}
               className={`${tabBase} ${
                 configOpen
-                  ? "bg-orange-100 text-orange-600 border border-orange-200"
+                  ? "bg-green-100 text-green-600 border border-green-200"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
@@ -216,7 +216,7 @@ export default function AddEmployeePage() {
                     setConfigOpen(false);
                     navigate("/pim/config/optional-fields");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Optional Fields
                 </button>
@@ -226,7 +226,7 @@ export default function AddEmployeePage() {
                     setConfigOpen(false);
                     navigate("/pim/config/custom-fields");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Custom Fields
                 </button>
@@ -236,7 +236,7 @@ export default function AddEmployeePage() {
                     setConfigOpen(false);
                     navigate("/pim/config/data-import");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Data Import
                 </button>
@@ -246,7 +246,7 @@ export default function AddEmployeePage() {
                     setConfigOpen(false);
                     navigate("/pim/config/reporting-methods");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Reporting Methods
                 </button>
@@ -256,7 +256,7 @@ export default function AddEmployeePage() {
                     setConfigOpen(false);
                     navigate("/pim/config/termination-reasons");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded-b-xl"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50 rounded-b-xl"
                 >
                   Termination Reasons
                 </button>
@@ -276,7 +276,7 @@ export default function AddEmployeePage() {
           {/* Add Employee (active) */}
           <button
             type="button"
-            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Add Employee
           </button>

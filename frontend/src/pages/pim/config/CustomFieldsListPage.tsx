@@ -54,7 +54,7 @@ export default function CustomFieldsListPage() {
           {/* Configuration (active tab) */}
           <button
             type="button"
-            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>

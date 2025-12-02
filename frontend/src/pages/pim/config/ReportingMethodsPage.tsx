@@ -35,7 +35,7 @@ export default function ReportingMethodsPage() {
           {/* Configuration (active) */}
           <button
             type="button"
-            className={`${tabBase} bg-orange-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -136,7 +136,7 @@ export default function ReportingMethodsPage() {
                     <td className="px-2 py-3 text-sm">{m.name}</td>
                     <td className="px-6 py-3 text-center">
                       <div className="inline-flex items-center gap-2">
-                        {/* Edit not wired yet – just visual like OrangeHRM */}
+                        
                         <button
                           type="button"
                           className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100"

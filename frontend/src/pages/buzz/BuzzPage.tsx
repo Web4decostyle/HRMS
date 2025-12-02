@@ -112,13 +112,13 @@ export default function BuzzPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="What's on your mind?"
-                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-orange-400 focus:border-orange-400"
+                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isPosting}
-                  className="ml-2 px-5 py-2 rounded-full bg-orange-500 text-white text-xs font-semibold shadow-sm hover:bg-orange-600 disabled:opacity-60"
+                  className="ml-2 px-5 py-2 rounded-full bg-green-500 text-white text-xs font-semibold shadow-sm hover:bg-green-600 disabled:opacity-60"
                 >
                   {isPosting ? "Posting..." : "Post"}
                 </button>
@@ -271,7 +271,7 @@ export default function BuzzPage() {
         </div>
       </div>
 
-      {/* Footer like OrangeHRM */}
+      
       <div className="h-10 flex items-center justify-center text-[11px] text-slate-400">
         DecoStyle HRMS · {new Date().getFullYear()} · All rights reserved.
       </div>
