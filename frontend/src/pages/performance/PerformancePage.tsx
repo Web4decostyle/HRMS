@@ -15,7 +15,6 @@ type PerformanceFilters = {
 
 /** Local top tabs bar for Performance module (Configure / Manage Reviews / etc.) */
 const PerformanceTabs = () => {
-  // adjust base route if needed
   const base = "/performance";
 
   const linkBase =
@@ -25,14 +24,66 @@ const PerformanceTabs = () => {
       ? `${linkBase} bg-white text-green-600 shadow-sm`
       : `${linkBase} text-green-50/90 hover:bg-white/10`;
 
+  const dropdownLinkBase =
+    "block px-3 py-1.5 text-[11px] whitespace-nowrap border-b last:border-b-0";
+  const getDropdownClassName = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? `${dropdownLinkBase} bg-green-50 text-green-700 font-semibold`
+      : `${dropdownLinkBase} text-slate-600 hover:bg-slate-50`;
+
   return (
     <div className="flex flex-wrap gap-2">
-      <NavLink to={`${base}/config`} className={getClassName}>
-        Configure
-      </NavLink>
-      <NavLink to={base} end className={getClassName}>
-        Manage Reviews
-      </NavLink>
+      {/* CONFIGURE + DROPDOWN (KPIs, Trackers) */}
+      <div className="relative group">
+        <NavLink to={`${base}/configure/kpis`} className={getClassName}>
+          Configure ▾
+        </NavLink>
+
+        <div className="absolute right-0 mt-1 hidden min-w-[180px] rounded-lg bg-white shadow-lg border border-slate-200 group-hover:block z-20">
+          <NavLink
+            to={`${base}/configure/kpis`}
+            className={getDropdownClassName}
+          >
+            KPIs
+          </NavLink>
+          <NavLink
+            to={`${base}/configure/trackers`}
+            className={getDropdownClassName}
+          >
+            Trackers
+          </NavLink>
+        </div>
+      </div>
+
+      {/* MANAGE REVIEWS + DROPDOWN (all review pages) */}
+      <div className="relative group">
+        <NavLink to={`${base}/manage/reviews`} className={getClassName}>
+          Manage Reviews ▾
+        </NavLink>
+
+        <div className="absolute right-0 mt-1 hidden min-w-[200px] rounded-lg bg-white shadow-lg border border-slate-200 group-hover:block z-20">
+          <NavLink
+            to={`${base}/manage/reviews`}
+            className={getDropdownClassName}
+          >
+            Review List
+          </NavLink>
+          <NavLink to={`${base}/manage/add`} className={getDropdownClassName}>
+            Add Review
+          </NavLink>
+          <NavLink to={`${base}/my-reviews`} className={getDropdownClassName}>
+            My Reviews
+          </NavLink>
+          <NavLink
+            to={`${base}/employee-reviews`}
+            className={getDropdownClassName}
+          >
+            Employee Reviews
+          </NavLink>
+        </div>
+      </div>
+
+      {/* TRACKERS (direct links) */}
       <NavLink to={`${base}/my-trackers`} className={getClassName}>
         My Trackers
       </NavLink>
@@ -56,17 +107,23 @@ const defaultFilters: PerformanceFilters = {
 export default function PerformancePage() {
   const [filters, setFilters] = useState<PerformanceFilters>(defaultFilters);
 
-  // keep API usage same as before – you can later wire filters into the hook
-  const { data: reviews } = useGetReviewsQuery();
+  // this state is what we actually send to the API
+  const [queryFilters, setQueryFilters] = useState<PerformanceFilters>(
+    defaultFilters
+  );
+
+  // RTK Query now gets an arg (the active filters)
+  const { data: reviews } = useGetReviewsQuery(queryFilters);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // TODO: in future, pass filters to useGetReviewsQuery via arg / refetch
-    // console.log("Search with filters:", filters);
+    // when user hits Search, we update the active filters → refetch
+    setQueryFilters(filters);
   };
 
   const handleReset = () => {
     setFilters(defaultFilters);
+    setQueryFilters(defaultFilters);
   };
 
   return (
@@ -277,13 +334,16 @@ export default function PerformancePage() {
                   const jobTitle = emp?.jobTitle ?? "-";
                   const subUnit = emp?.department ?? "-";
 
-                  const period = `${r.periodStart.slice(
-                    0,
-                    10
-                  )} – ${r.periodEnd.slice(0, 10)}`;
+                  // use periodFrom / periodTo instead of periodStart / periodEnd
+                  const periodFrom = r.periodFrom
+                    ? r.periodFrom.slice(0, 10)
+                    : "-";
+                  const periodTo = r.periodTo ? r.periodTo.slice(0, 10) : "-";
+                  const period = `${periodFrom} – ${periodTo}`;
 
+                  // prefer explicit dueDate, fall back to periodTo
                   const dueDate =
-                    (r as any).dueDate?.slice(0, 10) ?? r.periodEnd.slice(0, 10);
+                    (r.dueDate ?? r.periodTo)?.slice(0, 10) ?? "-";
 
                   return (
                     <tr

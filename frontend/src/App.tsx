@@ -32,8 +32,12 @@ import LeaveTypesPage from "./pages/leave/LeaveTypesPage";
 import WorkWeekPage from "./pages/leave/WorkWeekPage";
 import HolidaysPage from "./pages/leave/HolidaysPage";
 
+// Time
+import MyTimesheetsPage from "./pages/time/MyTimesheetsPage";
+import MyTimesheetViewPage from "./pages/time/MyTimesheetViewPage";
+import EditTimesheetPage from "./pages/time/EditTimesheetPage";
+
 // Time, Org, Recruitment, Performance, Directory, Claim, Buzz, Maintenance
-import TimePage from "./pages/time/TimePage";
 import RecruitmentPage from "./pages/recruitment/RecruitmentPage";
 import PerformancePage from "./pages/performance/PerformancePage";
 import DirectoryPage from "./pages/directory/DirectoryPage";
@@ -68,14 +72,26 @@ import SystemUsersPage from "./pages/admin/user-management/SystemUsersPage";
 import EmailConfigPage from "./pages/admin/config/EmailConfigPage";
 import AddSkillPage from "./pages/admin/qualifications/AddSkillPage";
 
+// PIM Config
 import OptionalFieldsPage from "./pages/pim/config/OptionalFieldsPage";
 import CustomFieldsListPage from "./pages/pim/config/CustomFieldsListPage";
 import AddCustomFieldPage from "./pages/pim/config/AddCustomFieldPage";
 import DataImportPage from "./pages/pim/config/DataImportPage";
-
 import ReportingMethodsPage from "./pages/pim/config/ReportingMethodsPage";
 import AddReportingMethodPage from "./pages/pim/config/AddReportingMethodPage";
 import TerminationReasonsPage from "./pages/pim/config/TerminationReasonsPage";
+
+// NEW: Performance sub-pages
+import ConfigureKpisPage from "./pages/performance/ConfigureKpisPage";
+import ConfigureTrackersPage from "./pages/performance/ConfigureTrackersPage";
+import ManageReviewsPage from "./pages/performance/ManageReviewsPage";
+import AddReviewPage from "./pages/performance/AddReviewPage";
+import ViewReviewPage from "./pages/performance/ViewReviewPage";
+import EditReviewPage from "./pages/performance/EditReviewPage";
+import MyReviewsPage from "./pages/performance/MyReviewsPage";
+import EmployeeReviewsPage from "./pages/performance/EmployeeReviewsPage";
+import MyTrackersPage from "./pages/performance/MyTrackersPage";
+import EmployeeTrackersPage from "./pages/performance/EmployeeTrackersPage";
 
 export default function App() {
   return (
@@ -108,13 +124,40 @@ export default function App() {
         }
       />
 
-      {/* Time */}
+      {/* ==================== TIME ==================== */}
+      {/* Default Time route → My Timesheets list */}
+
+      {/* Explicit My Timesheets (matches topbar link) */}
       <Route
         path="/time"
         element={
           <RequireAuth>
             <Layout>
-              <TimePage />
+              <MyTimesheetsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* Single timesheet view */}
+      <Route
+        path="/time/timesheets/:id"
+        element={
+          <RequireAuth>
+            <Layout>
+              <MyTimesheetViewPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* Edit timesheet */}
+      <Route
+        path="/time/timesheets/:id/edit"
+        element={
+          <RequireAuth>
+            <Layout>
+              <EditTimesheetPage />
             </Layout>
           </RequireAuth>
         }
@@ -132,7 +175,7 @@ export default function App() {
         }
       />
 
-      {/* Performance */}
+      {/* Performance – main list page */}
       <Route
         path="/performance"
         element={
@@ -140,6 +183,94 @@ export default function App() {
             <Layout>
               <PerformancePage />
             </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* Performance – Configure */}
+      <Route
+        path="/performance/configure/kpis"
+        element={
+          <RequireAuth>
+            <ConfigureKpisPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/configure/trackers"
+        element={
+          <RequireAuth>
+            <ConfigureTrackersPage />
+          </RequireAuth>
+        }
+      />
+
+      {/* Performance – Manage Reviews */}
+      <Route
+        path="/performance/manage/reviews"
+        element={
+          <RequireAuth>
+            <ManageReviewsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/add"
+        element={
+          <RequireAuth>
+            <AddReviewPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/reviews/:id"
+        element={
+          <RequireAuth>
+            <ViewReviewPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/reviews/:id/edit"
+        element={
+          <RequireAuth>
+            <EditReviewPage />
+          </RequireAuth>
+        }
+      />
+
+      {/* Performance – My & Employee Reviews */}
+      <Route
+        path="/performance/my-reviews"
+        element={
+          <RequireAuth>
+            <MyReviewsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/employee-reviews"
+        element={
+          <RequireAuth>
+            <EmployeeReviewsPage />
+          </RequireAuth>
+        }
+      />
+
+      {/* Performance – Trackers */}
+      <Route
+        path="/performance/my-trackers"
+        element={
+          <RequireAuth>
+            <MyTrackersPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/employee-trackers"
+        element={
+          <RequireAuth>
+            <EmployeeTrackersPage />
           </RequireAuth>
         }
       />
@@ -215,10 +346,11 @@ export default function App() {
         }
       />
 
+      {/* FIXED: removed allowedRoles, added leading slash, no Layout since page has its own layout */}
       <Route
-        path="pim/config/termination-reasons"
+        path="/pim/config/termination-reasons"
         element={
-          <RequireAuth allowedRoles={["ADMIN", "HR"]}>
+          <RequireAuth>
             <TerminationReasonsPage />
           </RequireAuth>
         }
@@ -275,7 +407,6 @@ export default function App() {
       <Route path="/leave/config/holidays" element={<HolidaysPage />} />
 
       {/* PIM Configuration */}
-
       <Route
         path="/pim/config/optional-fields"
         element={
@@ -350,7 +481,6 @@ export default function App() {
 
         {/* Qualifications */}
         <Route path="qualifications/skills" element={<SkillsPage />} />
-
         <Route path="qualifications/skills/add" element={<AddSkillPage />} />
         <Route path="qualifications/education" element={<EducationPage />} />
         <Route path="qualifications/languages" element={<LanguagesPage />} />

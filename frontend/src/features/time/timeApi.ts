@@ -33,10 +33,26 @@ export const timeApi = createApi({
   baseQuery: authorizedBaseQuery,
   tagTypes: ["Timesheet", "Attendance"],
   endpoints: (builder) => ({
+    // ----- TIMESHEETS LISTS -----
     getMyTimesheets: builder.query<Timesheet[], void>({
       query: () => "time/timesheets/my",
+      // generic tag so all timesheet lists get invalidated together
       providesTags: ["Timesheet"],
     }),
+
+    getAllTimesheets: builder.query<Timesheet[], void>({
+      query: () => "time/timesheets",
+      providesTags: ["Timesheet"],
+    }),
+
+    // ----- SINGLE TIMESHEET (for view/edit) -----
+    getTimesheet: builder.query<Timesheet, string>({
+      query: (id) => `time/timesheets/${id}`,
+      // per-id tag so edits can invalidate this specific record
+      providesTags: (result, error, id) => [{ type: "Timesheet", id }],
+    }),
+
+    // create new timesheet (period + initial entries)
     createTimesheet: builder.mutation<
       Timesheet,
       { periodStart: string; periodEnd: string; entries: TimesheetEntry[] }
@@ -48,10 +64,8 @@ export const timeApi = createApi({
       }),
       invalidatesTags: ["Timesheet"],
     }),
-    getAllTimesheets: builder.query<Timesheet[], void>({
-      query: () => "time/timesheets",
-      providesTags: ["Timesheet"],
-    }),
+
+    // update only the status (SUBMITTED, APPROVED, etc.)
     updateTimesheetStatus: builder.mutation<
       Timesheet,
       { id: string; status: Timesheet["status"] }
@@ -61,9 +75,32 @@ export const timeApi = createApi({
         method: "PATCH",
         body: { status },
       }),
-      invalidatesTags: ["Timesheet"],
+      invalidatesTags: (result) =>
+        result
+          ? [
+              { type: "Timesheet" as const, id: result._id },
+              "Timesheet",
+            ]
+          : ["Timesheet"],
     }),
 
+    // FULL entries update – used by Edit screen
+    updateTimesheetEntries: builder.mutation<
+      Timesheet,
+      { id: string; entries: TimesheetEntry[] }
+    >({
+      query: ({ id, entries }) => ({
+        url: `time/timesheets/${id}`,
+        method: "PUT",
+        body: { entries },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Timesheet" as const, id },
+        "Timesheet",
+      ],
+    }),
+
+    // ----- ATTENDANCE -----
     clockIn: builder.mutation<AttendanceRecord, void>({
       query: () => ({
         url: "time/attendance/clock-in",
@@ -71,6 +108,7 @@ export const timeApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+
     clockOut: builder.mutation<AttendanceRecord, void>({
       query: () => ({
         url: "time/attendance/clock-out",
@@ -78,10 +116,12 @@ export const timeApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+
     getMyAttendance: builder.query<AttendanceRecord[], void>({
       query: () => "time/attendance/my",
       providesTags: ["Attendance"],
     }),
+
     getAllAttendance: builder.query<AttendanceRecord[], void>({
       query: () => "time/attendance",
       providesTags: ["Attendance"],
@@ -90,10 +130,14 @@ export const timeApi = createApi({
 });
 
 export const {
+  // timesheets
   useGetMyTimesheetsQuery,
-  useCreateTimesheetMutation,
   useGetAllTimesheetsQuery,
+  useGetTimesheetQuery,
+  useCreateTimesheetMutation,
   useUpdateTimesheetStatusMutation,
+  useUpdateTimesheetEntriesMutation,
+  // attendance
   useClockInMutation,
   useClockOutMutation,
   useGetMyAttendanceQuery,

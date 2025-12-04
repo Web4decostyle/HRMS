@@ -427,7 +427,8 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-3 text-slate-700">-</td>
                     <td className="px-6 py-3 text-center text-xs text-green-600">
-                      <button className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100">
+                      <button className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100"
+                        onClick={() => navigate(`/my-info`)}>
                         Edit
                       </button>
                     </td>
