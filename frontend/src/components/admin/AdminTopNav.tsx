@@ -29,11 +29,9 @@ const mainTabs = [
       { name: "Education", path: "/admin/qualifications/education" },
       { name: "Licenses", path: "/admin/qualifications/licenses" },
       { name: "Languages", path: "/admin/qualifications/languages" },
-      { name: "Memberships", path: "/admin/qualifications/memberships" },
     ],
   },
-  { name: "Nationalities", path: "/admin/nationalities" },
-  { name: "Corporate Branding", path: "/admin/branding" },
+  
   {
     name: "Configuration",
     dropdown: [

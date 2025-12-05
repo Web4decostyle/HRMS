@@ -69,7 +69,7 @@ export default function AddCustomFieldPage() {
           <button
             type="button"
             className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
-            onClick={() => navigate("/employees")}
+            onClick={() => navigate("/pim")}
           >
             Employee List
           </button>

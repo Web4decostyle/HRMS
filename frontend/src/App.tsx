@@ -80,6 +80,7 @@ import DataImportPage from "./pages/pim/config/DataImportPage";
 import ReportingMethodsPage from "./pages/pim/config/ReportingMethodsPage";
 import AddReportingMethodPage from "./pages/pim/config/AddReportingMethodPage";
 import TerminationReasonsPage from "./pages/pim/config/TerminationReasonsPage";
+import PimReportsPage from "./pages/pim/PimReportsPage";
 
 // NEW: Performance sub-pages
 import ConfigureKpisPage from "./pages/performance/ConfigureKpisPage";
@@ -92,6 +93,7 @@ import MyReviewsPage from "./pages/performance/MyReviewsPage";
 import EmployeeReviewsPage from "./pages/performance/EmployeeReviewsPage";
 import MyTrackersPage from "./pages/performance/MyTrackersPage";
 import EmployeeTrackersPage from "./pages/performance/EmployeeTrackersPage";
+import AddPimReportPage from "./pages/pim/AddPimReportPage";
 
 export default function App() {
   return (
@@ -345,6 +347,9 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      <Route path="/pim/reports" element={<PimReportsPage />} />
+      <Route path="/pim/reports/add" element={<AddPimReportPage />} />
 
       {/* FIXED: removed allowedRoles, added leading slash, no Layout since page has its own layout */}
       <Route

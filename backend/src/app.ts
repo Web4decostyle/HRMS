@@ -26,7 +26,7 @@ import emailConfigRoutes from "./modules/admin/config/emailConfig.routes";
 import qualificationRoutes from "./modules/admin/qualifications/Qualification.Routes";
 import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
 import claimConfigRoutes from "./modules/claim/claimConfig.routes";
-
+import pimReportRouter from "./modules/pim/reports/pimReport.routes";
 
 const app = express();
 
@@ -68,6 +68,7 @@ app.use("/api/claim", claimRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/pim", pimRoutes);
+app.use("/api/pim/reports", pimReportRouter);
 
 
 app.use("/api/my-info", myInfoRoutes);

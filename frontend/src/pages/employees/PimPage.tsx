@@ -166,7 +166,7 @@ export default function EmployeesPage() {
           <button
             type="button"
             className={`${tabBase} bg-green-500 text-white shadow-sm`}
-            onClick={() => navigate("/employees")}
+            onClick={() => navigate("/pim")}
           >
             Employee List
           </button>
