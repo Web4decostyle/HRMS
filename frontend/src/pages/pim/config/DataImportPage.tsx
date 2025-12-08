@@ -56,7 +56,7 @@ export default function DataImportPage() {
       
 
       <div className="flex-1 flex flex-col">
-        {/* Top orange gradient bar with user menu */}
+        {/* Top green gradient bar with user menu */}
 
         <main className="flex-1 px-8 py-6 space-y-6">
           {/* PIM / Configuration header + tabs */}

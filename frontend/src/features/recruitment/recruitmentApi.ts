@@ -28,18 +28,43 @@ export interface Candidate {
   notes?: string;
 }
 
+export type VacancyStatus = "OPEN" | "CLOSED";
+
+export interface Vacancy {
+  _id: string;
+  name: string; // vacancy name
+  job: Job | string;
+  hiringManagerName?: string;
+  status: VacancyStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateVacancyInput {
+  jobId: string;
+  name: string;
+  hiringManagerName?: string;
+  status?: VacancyStatus;
+}
+
 export const recruitmentApi = createApi({
   reducerPath: "recruitmentApi",
   baseQuery: authedBaseQuery,
-  tagTypes: ["Job", "Candidate"],
+  tagTypes: ["Job", "Candidate", "Vacancy"],
   endpoints: (builder) => ({
+    // Jobs
     getJobs: builder.query<Job[], void>({
       query: () => "recruitment/jobs",
       providesTags: ["Job"],
     }),
     createJob: builder.mutation<
       Job,
-      { title: string; code: string; description?: string; hiringManager?: string }
+      {
+        title: string;
+        code: string;
+        description?: string;
+        hiringManager?: string;
+      }
     >({
       query: (body) => ({
         url: "recruitment/jobs",
@@ -48,6 +73,8 @@ export const recruitmentApi = createApi({
       }),
       invalidatesTags: ["Job"],
     }),
+
+    // Candidates
     getCandidates: builder.query<Candidate[], { jobId?: string } | void>({
       query: (params) => {
         const search = params?.jobId ? `?jobId=${params.jobId}` : "";
@@ -85,6 +112,20 @@ export const recruitmentApi = createApi({
       }),
       invalidatesTags: ["Candidate"],
     }),
+
+    // Vacancies
+    getVacancies: builder.query<Vacancy[], void>({
+      query: () => "recruitment/vacancies",
+      providesTags: ["Vacancy"],
+    }),
+    createVacancy: builder.mutation<Vacancy, CreateVacancyInput>({
+      query: (body) => ({
+        url: "recruitment/vacancies",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Vacancy"],
+    }),
   }),
 });
 
@@ -94,4 +135,6 @@ export const {
   useGetCandidatesQuery,
   useCreateCandidateMutation,
   useUpdateCandidateStatusMutation,
+  useGetVacanciesQuery,
+  useCreateVacancyMutation,
 } = recruitmentApi;

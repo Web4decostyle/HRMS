@@ -45,7 +45,7 @@ export default function PimReportsPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
-        {/* Top orange gradient bar with user menu */}
+        {/* Top green gradient bar with user menu */}
         <Topbar />
 
         <main className="flex-1 px-8 py-6 space-y-6">
@@ -154,7 +154,7 @@ export default function PimReportsPage() {
             </div>
           </div>
 
-          {/* Outer container to match OrangeHRM spacing */}
+          
           <div className="space-y-5">
             {/* Search Card */}
             <section className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
@@ -178,7 +178,7 @@ export default function PimReportsPage() {
                     placeholder="Type for hints..."
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="mt-1 block w-full rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   />
                 </label>
 
@@ -228,7 +228,7 @@ export default function PimReportsPage() {
                   <thead className="bg-[#f3f5fa] text-[11px] text-slate-500">
                     <tr>
                       <th className="w-[40px] px-6 py-2">
-                        <input type="checkbox" className="accent-orange-500" />
+                        <input type="checkbox" className="accent-green-500" />
                       </th>
                       <th className="px-3 py-2 font-medium">
                         <div className="inline-flex items-center gap-1">
@@ -268,12 +268,12 @@ export default function PimReportsPage() {
                     {reports?.map((report) => (
                       <tr
                         key={report._id}
-                        className="border-t border-slate-100 hover:bg-orange-50/30"
+                        className="border-t border-slate-100 hover:bg-green-50/30"
                       >
                         <td className="px-6 py-3">
                           <input
                             type="checkbox"
-                            className="accent-orange-500"
+                            className="accent-green-500"
                           />
                         </td>
                         <td className="px-3 py-3 text-slate-700">

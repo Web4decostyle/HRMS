@@ -295,7 +295,7 @@ export default function AddPimReportPage() {
                 placeholder="Type here ..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full max-w-xl rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full max-w-xl rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
@@ -320,7 +320,7 @@ export default function AddPimReportPage() {
                         onChange={(e) =>
                           setSelectedCriteria(e.target.value || "")
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-8"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
                       >
                         <option value="">-- Select --</option>
                         {SELECTION_CRITERIA_OPTIONS.map((opt) => (
@@ -381,7 +381,7 @@ export default function AddPimReportPage() {
                       onChange={(e) =>
                         setInclude(e.target.value as IncludeFilter)
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-8"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
                     >
                       {INCLUDE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -418,7 +418,7 @@ export default function AddPimReportPage() {
                         setSelectedGroup(e.target.value);
                         setSelectedField("");
                       }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-8"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
                     >
                       <option value="">-- Select --</option>
                       {DISPLAY_GROUPS.map((g) => (
@@ -443,7 +443,7 @@ export default function AddPimReportPage() {
                       <select
                         value={selectedField}
                         onChange={(e) => setSelectedField(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-8"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
                       >
                         <option value="">-- Select --</option>
                         {DISPLAY_GROUPS.find(
@@ -528,7 +528,7 @@ export default function AddPimReportPage() {
                         onClick={() => toggleIncludeHeader(group.groupKey)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                           group.includeHeader
-                            ? "bg-orange-400"
+                            ? "bg-green-400"
                             : "bg-slate-300"
                         }`}
                       >

@@ -5,14 +5,14 @@ const pillBase =
 
 const getClass = ({ isActive }: { isActive: boolean }) =>
   isActive
-    ? `${pillBase} bg-white text-orange-600 shadow-sm`
+    ? `${pillBase} bg-white text-green-600 shadow-sm`
     : `${pillBase} text-slate-600 hover:bg-white/60`;
 
 export default function PimTopTabs() {
   const base = "/pim";
 
   return (
-    <div className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full px-2 py-1 shadow-md">
+    <div className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-red-500 rounded-full px-2 py-1 shadow-md">
       <NavLink to={`${base}/config`} className={getClass}>
         Configuration
       </NavLink>

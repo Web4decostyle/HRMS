@@ -94,6 +94,7 @@ import EmployeeReviewsPage from "./pages/performance/EmployeeReviewsPage";
 import MyTrackersPage from "./pages/performance/MyTrackersPage";
 import EmployeeTrackersPage from "./pages/performance/EmployeeTrackersPage";
 import AddPimReportPage from "./pages/pim/AddPimReportPage";
+import VacanciesPage from "./pages/recruitment/VacanciesPage";
 
 export default function App() {
   return (
@@ -176,6 +177,7 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route path="/recruitment/vacancies" element={<VacanciesPage />} />
 
       {/* Performance – main list page */}
       <Route

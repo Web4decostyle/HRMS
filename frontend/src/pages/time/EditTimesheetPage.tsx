@@ -22,7 +22,7 @@ const pillBase =
   "inline-flex items-center gap-1 px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
 
 const dropdownItemClasses =
-  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-orange-50";
+  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-green-50";
 
 const TimeTopTabs: React.FC = () => {
   const location = useLocation();
@@ -81,15 +81,15 @@ const TimeTopTabs: React.FC = () => {
 
   return (
     <div className="mb-4">
-      <div className="inline-flex gap-2 bg-orange-500/90 rounded-full px-2 py-1 shadow-sm">
+      <div className="inline-flex gap-2 bg-green-500/90 rounded-full px-2 py-1 shadow-sm">
         {menus.map((menu) => {
           const isGroupActive = menu.items.some((item) =>
             location.pathname.startsWith(item.to)
           );
 
           const pillClasses = isGroupActive
-            ? `${pillBase} bg-white text-orange-600 shadow-sm`
-            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-orange-700`;
+            ? `${pillBase} bg-white text-green-600 shadow-sm`
+            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-green-700`;
 
           return (
             <div
@@ -113,7 +113,7 @@ const TimeTopTabs: React.FC = () => {
                       to={item.to}
                       className={({ isActive }) =>
                         isActive
-                          ? `${dropdownItemClasses} bg-orange-50 font-semibold text-orange-600`
+                          ? `${dropdownItemClasses} bg-green-50 font-semibold text-green-600`
                           : dropdownItemClasses
                       }
                     >
@@ -383,7 +383,7 @@ export default function EditTimesheetPage() {
                               e.target.value
                             )
                           }
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
                         />
                       </td>
 
@@ -398,7 +398,7 @@ export default function EditTimesheetPage() {
                               e.target.value
                             )
                           }
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
                         >
                           <option value="">-- Select --</option>
                           <option value="Development">Development</option>
@@ -421,7 +421,7 @@ export default function EditTimesheetPage() {
                                 e.target.value
                               )
                             }
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-green-500"
                           />
                         </td>
                       ))}
@@ -446,7 +446,7 @@ export default function EditTimesheetPage() {
           <button
             type="button"
             onClick={handleAddRow}
-            className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-orange-600"
+            className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-green-600"
           >
             <FiPlusCircle className="text-slate-400" />
             <span>Add Row</span>
