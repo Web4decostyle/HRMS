@@ -27,6 +27,7 @@ import qualificationRoutes from "./modules/admin/qualifications/Qualification.Ro
 import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
 import claimConfigRoutes from "./modules/claim/claimConfig.routes";
 import pimReportRouter from "./modules/pim/reports/pimReport.routes";
+import path from "path";
 
 const app = express();
 
@@ -38,6 +39,11 @@ app.use(morgan("dev"));
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", message: "backend is alive" });
 });
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads"))
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);

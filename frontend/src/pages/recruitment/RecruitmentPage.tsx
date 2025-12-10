@@ -6,6 +6,7 @@ import {
   useGetCandidatesQuery,
 } from "../../features/recruitment/recruitmentApi";
 import { FiChevronDown, FiCalendar, FiPlus } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 /** Local top tabs for Recruitment (Candidates / Vacancies) */
 const RecruitmentTopTabs: React.FC = () => {
@@ -44,6 +45,7 @@ export default function RecruitmentPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [method, setMethod] = useState("");
+  const navigate = useNavigate();
 
   // Applied filters (only change when Search is clicked)
   const [appliedFilters, setAppliedFilters] = useState({
@@ -102,8 +104,7 @@ export default function RecruitmentPage() {
 
     return candidates.filter((c: any) => {
       if (appliedFilters.jobId) {
-        const idFromJob =
-          typeof c.job === "string" ? c.job : c.job?._id ?? "";
+        const idFromJob = typeof c.job === "string" ? c.job : c.job?._id ?? "";
         if (idFromJob !== appliedFilters.jobId) return false;
       }
 
@@ -337,7 +338,10 @@ export default function RecruitmentPage() {
       {/* Candidates list card */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-4">
-          <button className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-lime-600">
+          <button
+            onClick={() => navigate("/recruitment/candidates/add")}
+            className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
+          >
             <FiPlus className="text-sm" />
             <span>Add</span>
           </button>

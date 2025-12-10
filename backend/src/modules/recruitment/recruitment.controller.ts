@@ -1,9 +1,11 @@
 // backend/src/modules/recruitment/recruitment.controller.ts
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { Job } from "./job.model";
 import { Candidate } from "./candidate.model";
+import { Vacancy } from "./vacancy/vacancy.model";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { ApiError } from "../../utils/ApiError";
+import mongoose from "mongoose";
 
 // JOBS
 
@@ -47,74 +49,162 @@ export async function getJob(req: Request, res: Response) {
   res.json(job);
 }
 
-// CANDIDATES
+/** ----------------- CANDIDATES ----------------- */
 
 // POST /api/recruitment/candidates
-export async function createCandidate(req: Request, res: Response) {
-  const { firstName, lastName, email, phone, jobId, resumeUrl, notes } =
-    req.body;
+export async function createCandidate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const {
+      firstName,
+      middleName,
+      lastName,
+      vacancyId,
+      email,
+      contactNumber,
+      keywords,
+      dateOfApplication,
+      notes,
+      consentToKeepData,
+    } = req.body as {
+      firstName?: string;
+      middleName?: string;
+      lastName?: string;
+      vacancyId?: string;
+      email?: string;
+      contactNumber?: string;
+      keywords?: string; // comma separated
+      dateOfApplication?: string; // YYYY-MM-DD
+      notes?: string;
+      consentToKeepData?: string | boolean;
+    };
 
-  if (!firstName || !lastName || !email || !jobId) {
-    throw ApiError.badRequest(
-      "firstName, lastName, email and jobId are required"
-    );
+    if (!firstName || !firstName.trim()) {
+      return res.status(400).json({ message: "First name is required" });
+    }
+    if (!lastName || !lastName.trim()) {
+      return res.status(400).json({ message: "Last name is required" });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    let vacancy: mongoose.Types.ObjectId | undefined;
+    if (vacancyId) {
+      if (!mongoose.isValidObjectId(vacancyId)) {
+        return res.status(400).json({ message: "Invalid vacancyId" });
+      }
+      const vac = await Vacancy.findById(vacancyId).select("_id");
+      if (!vac) return res.status(404).json({ message: "Vacancy not found" });
+      vacancy = vac._id as mongoose.Types.ObjectId;
+    }
+
+    const keywordsArr =
+      typeof keywords === "string" && keywords.trim().length > 0
+        ? keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean)
+        : [];
+
+    const consent =
+      typeof consentToKeepData === "string"
+        ? consentToKeepData === "true" || consentToKeepData === "on"
+        : Boolean(consentToKeepData);
+
+    const date =
+      dateOfApplication && dateOfApplication.length > 0
+        ? new Date(dateOfApplication)
+        : new Date();
+
+    let resume;
+    if (req.file) {
+      const basePath = "/uploads/resumes";
+      resume = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        url: `${basePath}/${req.file.filename}`,
+      };
+    }
+
+    const candidate = await Candidate.create({
+      firstName: firstName.trim(),
+      middleName: middleName?.trim(),
+      lastName: lastName.trim(),
+      vacancy,
+      email: email.trim(),
+      contactNumber: contactNumber?.trim(),
+      keywords: keywordsArr,
+      dateOfApplication: date,
+      notes: notes?.trim(),
+      consentToKeepData: consent,
+      resume,
+      status: "APPLIED",
+    });
+
+    const populated = await candidate.populate([
+      { path: "vacancy", select: "name" },
+    ]);
+
+    res.status(201).json(populated);
+  } catch (err) {
+    next(err);
   }
-
-  const candidate = await Candidate.create({
-    firstName,
-    lastName,
-    email,
-    phone,
-    job: jobId,
-    resumeUrl,
-    notes,
-  });
-
-  res.status(201).json(candidate);
 }
 
 // GET /api/recruitment/candidates
-export async function listCandidates(req: Request, res: Response) {
-  const { jobId } = req.query;
-
-  const filter: any = {};
-  if (jobId) {
-    filter.job = jobId;
+export async function listCandidates(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const items = await Candidate.find()
+      .populate("vacancy", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(items);
+  } catch (err) {
+    next(err);
   }
-
-  const candidates = await Candidate.find(filter)
-    .populate("job")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  res.json(candidates);
 }
 
 // PATCH /api/recruitment/candidates/:id/status
-export async function updateCandidateStatus(req: Request, res: Response) {
-  const { id } = req.params;
-  const { status } = req.body;
+export async function updateCandidateStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body as { status?: string };
 
-  const allowed = [
-    "APPLIED",
-    "SHORTLISTED",
-    "INTERVIEW",
-    "OFFERED",
-    "HIRED",
-    "REJECTED",
-  ];
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid candidate id" });
+    }
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
 
-  if (!allowed.includes(status)) {
-    throw ApiError.badRequest("Invalid candidate status");
+    const candidate = await Candidate.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    )
+      .populate("vacancy", "name")
+      .lean();
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    res.json(candidate);
+  } catch (err) {
+    next(err);
   }
-
-  const candidate = await Candidate.findById(id).exec();
-  if (!candidate) {
-    throw ApiError.notFound("Candidate not found");
-  }
-
-  candidate.status = status;
-  await candidate.save();
-
-  res.json(candidate);
 }

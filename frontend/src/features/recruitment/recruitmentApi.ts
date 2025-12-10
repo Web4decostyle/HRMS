@@ -1,4 +1,3 @@
-// frontend/src/features/recruitment/recruitmentApi.ts
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { authedBaseQuery } from "../apiBase";
 
@@ -32,7 +31,7 @@ export type VacancyStatus = "OPEN" | "CLOSED";
 
 export interface Vacancy {
   _id: string;
-  name: string; // vacancy name
+  name: string;
   job: Job | string;
   hiringManagerName?: string;
   status: VacancyStatus;
@@ -54,7 +53,7 @@ export const recruitmentApi = createApi({
   endpoints: (builder) => ({
     // Jobs
     getJobs: builder.query<Job[], void>({
-      query: () => "recruitment/jobs",
+      query: () => "/recruitment/jobs",
       providesTags: ["Job"],
     }),
     createJob: builder.mutation<
@@ -67,7 +66,7 @@ export const recruitmentApi = createApi({
       }
     >({
       query: (body) => ({
-        url: "recruitment/jobs",
+        url: "/recruitment/jobs",
         method: "POST",
         body,
       }),
@@ -78,35 +77,48 @@ export const recruitmentApi = createApi({
     getCandidates: builder.query<Candidate[], { jobId?: string } | void>({
       query: (params) => {
         const search = params?.jobId ? `?jobId=${params.jobId}` : "";
-        return `recruitment/candidates${search}`;
+        return `/recruitment/candidates${search}`;
       },
       providesTags: ["Candidate"],
     }),
-    createCandidate: builder.mutation<
-      Candidate,
-      {
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone?: string;
-        jobId: string;
-        resumeUrl?: string;
-        notes?: string;
-      }
-    >({
-      query: (body) => ({
-        url: "recruitment/candidates",
+
+    // JSON version (no file upload)
+    // createCandidate: builder.mutation<
+    //   Candidate,
+    //   {
+    //     firstName: string;
+    //     lastName: string;
+    //     email: string;
+    //     phone?: string;
+    //     jobId: string;
+    //     resumeUrl?: string;
+    //     notes?: string;
+    //   }
+    // >({
+    //   query: (body) => ({
+    //     url: "/recruitment/candidates",
+    //     method: "POST",
+    //     body,
+    //   }),
+    //   invalidatesTags: ["Candidate"],
+    // }),
+
+    // ✅ If using file upload, use this :
+    createCandidate: builder.mutation<Candidate, FormData>({
+      query: (formData) => ({
+        url: "/recruitment/candidates",
         method: "POST",
-        body,
+        body: formData,
       }),
       invalidatesTags: ["Candidate"],
     }),
+
     updateCandidateStatus: builder.mutation<
       Candidate,
       { id: string; status: string }
     >({
       query: ({ id, status }) => ({
-        url: `recruitment/candidates/${id}/status`,
+        url: `/recruitment/candidates/${id}/status`,
         method: "PATCH",
         body: { status },
       }),
@@ -115,12 +127,12 @@ export const recruitmentApi = createApi({
 
     // Vacancies
     getVacancies: builder.query<Vacancy[], void>({
-      query: () => "recruitment/vacancies",
+      query: () => "/recruitment/vacancies",
       providesTags: ["Vacancy"],
     }),
     createVacancy: builder.mutation<Vacancy, CreateVacancyInput>({
       query: (body) => ({
-        url: "recruitment/vacancies",
+        url: "/recruitment/vacancies",
         method: "POST",
         body,
       }),

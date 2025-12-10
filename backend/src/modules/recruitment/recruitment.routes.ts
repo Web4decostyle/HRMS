@@ -1,5 +1,8 @@
-// backend/src/modules/recruitment/recruitment.routes.ts
 import { Router } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
 import {
   createJob,
   listJobs,
@@ -11,10 +14,30 @@ import {
 import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../utils/asyncHandler";
+import vacancyRoutes from "./vacancy/vacancy.routes";
 
 const router = Router();
 
-// Jobs
+/* ---------- Multer for resume upload ---------- */
+const resumeStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadPath = path.join(__dirname, "../../../uploads/resumes");
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (_req, file, cb) => {
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${unique}${ext}`);
+  },
+});
+
+const uploadResume = multer({
+  storage: resumeStorage,
+  limits: { fileSize: 1 * 1024 * 1024 }, // 1MB
+});
+
+/* ---------- Jobs ---------- */
 router.post(
   "/jobs",
   requireAuth,
@@ -36,11 +59,16 @@ router.get(
   asyncHandler(getJob)
 );
 
-// Candidates
+/* ---------- Vacancies (already fixed earlier) ---------- */
+router.use("/vacancies", vacancyRoutes);
+
+/* ---------- Candidates ---------- */
+
 router.post(
   "/candidates",
   requireAuth,
-  asyncHandler(createCandidate) // candidates can apply without HR role
+  uploadResume.single("resume"),
+  asyncHandler(createCandidate)
 );
 
 router.get(
