@@ -46,7 +46,7 @@ const TABS = [
       { label: "Holidays", path: "/leave/config/holidays" },
     ],
   },
-  { key: "leave-list", label: "Leave List", path: "/leave/list" },
+  { key: "leave-list", label: "Leave List", path: "/leave" },
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
 

@@ -4,7 +4,8 @@ import {
   useGetLeaveTypesQuery,
   useApplyLeaveMutation,
 } from "../../features/leave/leaveApi";
-
+import Topbar from "../../components/Topbar";
+import Sidebar from "../../components/Sidebar";
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
 const inputCls =
@@ -54,7 +55,7 @@ const TABS = [
       { label: "Holidays", path: "/leave/config/holidays" },
     ],
   },
-  { key: "leave-list", label: "Leave List", path: "/leave/list" },
+  { key: "leave-list", label: "Leave List", path: "/leave" },
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
 
@@ -109,6 +110,8 @@ export default function ApplyLeavePage() {
 
   return (
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
+      
+      
       {/* Top nav */}
       <div className="flex items-center gap-2 mb-4">
         {TABS.map((tab) => {
