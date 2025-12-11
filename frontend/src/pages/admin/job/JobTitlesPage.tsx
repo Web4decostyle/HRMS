@@ -3,6 +3,7 @@ import {
   useGetJobTitlesQuery,
   useCreateJobTitleMutation,
 } from "../../../features/admin/adminApi";
+import { useNavigate } from "react-router-dom";
 
 export default function JobTitlesPage() {
   const { data: titles, isLoading } = useGetJobTitlesQuery();
@@ -11,6 +12,7 @@ export default function JobTitlesPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
+  const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -42,6 +44,7 @@ export default function JobTitlesPage() {
             form="job-title-form"
             type="submit"
             disabled={isSaving}
+            onClick={() => navigate("/admin/job/job-titles/add")}
             className="px-4 py-1.5 rounded-full bg-lime-500 hover:bg-lime-600 text-white text-xs font-semibold disabled:opacity-60"
           >
             + Add

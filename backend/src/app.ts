@@ -27,6 +27,10 @@ import qualificationRoutes from "./modules/admin/qualifications/Qualification.Ro
 import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
 import claimConfigRoutes from "./modules/claim/claimConfig.routes";
 import pimReportRouter from "./modules/pim/reports/pimReport.routes";
+import jobTitleRoutes from "./modules/admin/job/jobTitle/jobTitle.routes";
+import payGradeRoutes from "./modules/admin/job/payGrade/payGrade.routes";
+import employmentStatusRoutes from "./modules/admin/job/employmentStatus/employmentStatus.routes";
+import jobCategoryRoutes from "./modules/admin/job/jobCategory/jobCategory.routes";
 import path from "path";
 
 const app = express();
@@ -40,10 +44,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", message: "backend is alive" });
 });
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "../uploads"))
-);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -76,13 +77,18 @@ app.use("/api/help", helpRoutes);
 app.use("/api/pim", pimRoutes);
 app.use("/api/pim/reports", pimReportRouter);
 
-
 app.use("/api/my-info", myInfoRoutes);
 app.use("/config/email", emailConfigRoutes);
 
 app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/pim-config", pimConfigRoutes);
 app.use("/api/claim-config", claimConfigRoutes);
+
+app.use("/api/admin/job-titles", jobTitleRoutes);
+app.use("/api/admin/pay-grades", payGradeRoutes);
+app.use("/api/admin/employment-status", employmentStatusRoutes);
+
+app.use("/api/admin/job-categories", jobCategoryRoutes);
 
 app.use(errorHandler);
 

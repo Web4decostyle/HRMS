@@ -17,6 +17,8 @@ export interface JobTitle {
   name: string;
   code?: string;
   description?: string;
+  note?: string;
+  specFilePath?: string; // path/URL of uploaded job spec
 }
 
 export interface PayGrade {
@@ -101,6 +103,11 @@ export interface SystemUser {
   employeeName?: string;
 }
 
+/* Helper type for createJobTitle – supports JSON or FormData */
+export type CreateJobTitlePayload =
+  | { name: string; code?: string; description?: string; note?: string }
+  | FormData;
+
 /* ========= API ========= */
 
 export const adminApi = createApi({
@@ -150,14 +157,11 @@ export const adminApi = createApi({
       query: () => "admin/job-titles",
       providesTags: ["JobTitle"],
     }),
-    createJobTitle: builder.mutation<
-      JobTitle,
-      { name: string; code?: string; description?: string }
-    >({
+    createJobTitle: builder.mutation<JobTitle, CreateJobTitlePayload>({
       query: (body) => ({
         url: "admin/job-titles",
         method: "POST",
-        body,
+        body, // can be JSON object or FormData (for file upload)
       }),
       invalidatesTags: ["JobTitle"],
     }),
@@ -183,36 +187,134 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["PayGrade"],
     }),
-
-    /* ----- Employment Status ----- */
-    getEmploymentStatuses: builder.query<EmploymentStatus[], void>({
-      query: () => "admin/employment-statuses",
-      providesTags: ["EmploymentStatus"],
+    updatePayGrade: builder.mutation<
+      PayGrade,
+      {
+        id: string;
+        name: string;
+        currency?: string;
+        minSalary?: number;
+        maxSalary?: number;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `admin/pay-grades/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["PayGrade"],
     }),
+    deletePayGrade: builder.mutation<{ success: boolean; id: string }, string>({
+      query: (id) => ({
+        url: `admin/pay-grades/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["PayGrade"],
+    }),
+
+    /* ----- Employment Statuses ----- */
+    getEmploymentStatuses: builder.query<EmploymentStatus[], void>({
+      query: () => "admin/employment-status", // plural: matches backend
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((s) => ({
+                type: "EmploymentStatus" as const,
+                id: s._id,
+              })),
+              { type: "EmploymentStatus" as const, id: "LIST" },
+            ]
+          : [{ type: "EmploymentStatus" as const, id: "LIST" }],
+    }),
+
     createEmploymentStatus: builder.mutation<
       EmploymentStatus,
       { name: string }
     >({
       query: (body) => ({
-        url: "admin/employment-statuses",
+        url: "admin/employment-status",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["EmploymentStatus"],
+      invalidatesTags: [{ type: "EmploymentStatus", id: "LIST" }],
+    }),
+
+    updateEmploymentStatus: builder.mutation<
+      EmploymentStatus,
+      { id: string; name: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `admin/employment-status/${id}`, // plural path
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "EmploymentStatus", id },
+      ],
+    }),
+
+    deleteEmploymentStatus: builder.mutation<
+      { success: boolean; id: string },
+      string
+    >({
+      query: (id) => ({
+        url: `admin/employment-status/${id}`, // plural path
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "EmploymentStatus", id },
+        { type: "EmploymentStatus", id: "LIST" },
+      ],
     }),
 
     /* ----- Job Categories ----- */
     getJobCategories: builder.query<JobCategory[], void>({
       query: () => "admin/job-categories",
-      providesTags: ["JobCategory"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((r) => ({
+                type: "JobCategory" as const,
+                id: r._id,
+              })),
+              { type: "JobCategory" as const, id: "LIST" },
+            ]
+          : [{ type: "JobCategory" as const, id: "LIST" }],
     }),
+
     createJobCategory: builder.mutation<JobCategory, { name: string }>({
       query: (body) => ({
         url: "admin/job-categories",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["JobCategory"],
+      invalidatesTags: [{ type: "JobCategory", id: "LIST" }],
+    }),
+
+    updateJobCategory: builder.mutation<
+      JobCategory,
+      { id: string; name: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `admin/job-categories/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "JobCategory", id }],
+    }),
+
+    deleteJobCategory: builder.mutation<
+      { success: boolean; id: string },
+      string
+    >({
+      query: (id) => ({
+        url: `admin/job-categories/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "JobCategory", id },
+        { type: "JobCategory", id: "LIST" },
+      ],
     }),
 
     /* ----- Work Shifts ----- */
@@ -343,7 +445,6 @@ export const adminApi = createApi({
     >({
       query: (params) => ({
         url: "admin/system-users",
-        // if params is undefined, this becomes `undefined` which is valid
         params: params ?? undefined,
       }),
       providesTags: ["SystemUser"],
@@ -389,33 +490,54 @@ export const adminApi = createApi({
   }),
 });
 
+/* ========= Export hooks ========= */
+
 export const {
   useGetOrgUnitsQuery,
   useCreateOrgUnitMutation,
+
   useGetJobTitlesQuery,
   useCreateJobTitleMutation,
+
   useGetPayGradesQuery,
   useCreatePayGradeMutation,
+  useUpdatePayGradeMutation,
+  useDeletePayGradeMutation,
+
   useGetEmploymentStatusesQuery,
   useCreateEmploymentStatusMutation,
+  useUpdateEmploymentStatusMutation,
+  useDeleteEmploymentStatusMutation,
+
   useGetJobCategoriesQuery,
   useCreateJobCategoryMutation,
+  useUpdateJobCategoryMutation,
+  useDeleteJobCategoryMutation,
+
   useGetWorkShiftsQuery,
   useCreateWorkShiftMutation,
+
   useGetLocationsQuery,
   useCreateLocationMutation,
+
   useGetGeneralInfoQuery,
   useUpdateGeneralInfoMutation,
+
   useGetSkillsQuery,
   useCreateSkillMutation,
+
   useGetEducationLevelsQuery,
   useCreateEducationLevelMutation,
+
   useGetLanguagesQuery,
   useCreateLanguageMutation,
+
   useGetLicensesQuery,
   useCreateLicenseMutation,
+
   useGetNationalitiesQuery,
   useCreateNationalityMutation,
+
   useGetSystemUsersQuery,
   useCreateSystemUserMutation,
   useUpdateSystemUserStatusMutation,

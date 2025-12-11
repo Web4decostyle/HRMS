@@ -139,22 +139,22 @@ router.delete(
 /* -------- Employment Status -------- */
 
 router.get(
-  "/employment-statuses",
+  "/employment-status",
   ...withAuth,
   asyncHandler(listEmploymentStatuses)
 );
 router.post(
-  "/employment-statuses",
+  "/employment-status",
   ...withAuth,
   asyncHandler(createEmploymentStatus)
 );
 router.put(
-  "/employment-statuses/:id",
+  "/employment-status/:id",
   ...withAuth,
   asyncHandler(updateEmploymentStatus)
 );
 router.delete(
-  "/employment-statuses/:id",
+  "/employment-status/:id",
   ...withAuth,
   asyncHandler(deleteEmploymentStatus)
 );

@@ -96,6 +96,9 @@ import EmployeeTrackersPage from "./pages/performance/EmployeeTrackersPage";
 import AddPimReportPage from "./pages/pim/AddPimReportPage";
 import VacanciesPage from "./pages/recruitment/VacanciesPage";
 import CandidatesPage from "./pages/recruitment/CandidatesPage";
+import AddJobTitlePage from "./pages/admin/job/AddJobTitlePage";
+import AddEmploymentStatusPage from "./pages/admin/job/AddEmploymentStatusPage";
+import AddJobCategoryPage from "./pages/admin/job/AddJobCategoryPage";
 
 export default function App() {
   return (
@@ -482,13 +485,16 @@ export default function App() {
 
         {/* Job */}
         <Route path="job/job-titles" element={<JobTitlesPage />} />
+        <Route path="job/job-titles/add" element={<AddJobTitlePage />} />
         <Route path="job/pay-grades" element={<PayGradesPage />} />
         <Route
           path="job/employment-status"
           element={<EmploymentStatusPage />}
         />
+        <Route path="job/employment-status/add" element={<AddEmploymentStatusPage />} />
         <Route path="job/job-categories" element={<JobCategoriesPage />} />
         <Route path="job/work-shifts" element={<WorkShiftsPage />} />
+        <Route path="job/job-categories/add" element={<AddJobCategoryPage />} />
 
         {/* Organization */}
         <Route path="org/general-info" element={<GeneralInfoPage />} />
