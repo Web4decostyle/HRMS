@@ -58,6 +58,28 @@ interface TerminationReasonListResponse {
   total: number;
 }
 
+/** Import endpoint response types */
+export type ImportRowResult = {
+  row: number;
+  status: "success" | "error";
+  errors?: string[];
+  data?: Record<string, any>;
+};
+
+export type ImportSummary = {
+  total: number;
+  success: number;
+  failed: number;
+};
+
+export interface UploadImportResponse {
+  success: boolean;
+  message?: string;
+  summary?: ImportSummary;
+  results?: ImportRowResult[];
+  parseErrors?: string[];
+}
+
 /** ---- API ---- */
 export const pimConfigApi = createApi({
   reducerPath: "pimConfigApi",
@@ -69,13 +91,12 @@ export const pimConfigApi = createApi({
     "TerminationReason",
   ],
   endpoints: (builder) => ({
-    // (Optional) if you want enum screens from backend later
+    // Optional: screens (server may or may not implement)
     getPimScreens: builder.query<PimScreen[], void>({
       query: () => "/pim/screens",
     }),
 
     /* ================== OPTIONAL FIELDS ================== */
-    // GET /api/pim-config/optional-fields
     getOptionalFields: builder.query<
       { success: boolean; data: PimOptionalFields },
       void
@@ -84,7 +105,6 @@ export const pimConfigApi = createApi({
       providesTags: ["PimSettings"],
     }),
 
-    // PUT /api/pim-config/optional-fields
     updateOptionalFields: builder.mutation<
       { success: boolean; data: PimOptionalFields },
       PimOptionalFields
@@ -119,7 +139,7 @@ export const pimConfigApi = createApi({
     }),
 
     deleteReportingMethod: builder.mutation<
-      { success: boolean; message: string },
+      { success: boolean; message?: string },
       string
     >({
       query: (id) => ({
@@ -130,7 +150,6 @@ export const pimConfigApi = createApi({
     }),
 
     /* ================== CUSTOM FIELDS ================== */
-    // GET /api/pim-config/custom-fields
     getCustomFields: builder.query<
       { success: boolean; data: PimCustomField[] },
       void
@@ -139,7 +158,6 @@ export const pimConfigApi = createApi({
       providesTags: ["PimCustomFields"],
     }),
 
-    // POST /api/pim-config/custom-fields
     createCustomField: builder.mutation<
       { success: boolean; data: PimCustomField },
       {
@@ -158,7 +176,6 @@ export const pimConfigApi = createApi({
       invalidatesTags: ["PimCustomFields"],
     }),
 
-    // DELETE /api/pim-config/custom-fields/:id
     deleteCustomField: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/pim-config/custom-fields/${id}`,
@@ -168,7 +185,6 @@ export const pimConfigApi = createApi({
     }),
 
     /* ================== TERMINATION REASONS ================== */
-    // GET /api/pim-config/termination-reasons
     getTerminationReasons: builder.query<TerminationReasonListResponse, void>({
       query: () => "/pim-config/termination-reasons",
       providesTags: (result) =>
@@ -183,11 +199,7 @@ export const pimConfigApi = createApi({
           : [{ type: "TerminationReason" as const, id: "LIST" }],
     }),
 
-    // POST /api/pim-config/termination-reasons
-    createTerminationReason: builder.mutation<
-      any,
-      { name: string }
-    >({
+    createTerminationReason: builder.mutation<any, { name: string }>({
       query: (body) => ({
         url: "/pim-config/termination-reasons",
         method: "POST",
@@ -196,7 +208,6 @@ export const pimConfigApi = createApi({
       invalidatesTags: [{ type: "TerminationReason", id: "LIST" }],
     }),
 
-    // PUT /api/pim-config/termination-reasons/:id
     updateTerminationReason: builder.mutation<
       any,
       { id: string; name: string }
@@ -212,7 +223,6 @@ export const pimConfigApi = createApi({
       ],
     }),
 
-    // DELETE /api/pim-config/termination-reasons/:id
     deleteTerminationReason: builder.mutation<any, string>({
       query: (id) => ({
         url: `/pim-config/termination-reasons/${id}`,
@@ -224,21 +234,21 @@ export const pimConfigApi = createApi({
       ],
     }),
 
-    /* ================== IMPORT (if used) ================== */
-    // POST /pim/import  (CSV upload)
-    uploadImport: builder.mutation<
-      { success: boolean; message?: string },
-      FormData
-    >({
+    /* ================== IMPORT (CSV upload) ================== */
+    uploadImport: builder.mutation<UploadImportResponse, FormData>({
       query: (formData) => ({
         url: "/pim/import",
         method: "POST",
         body: formData,
+        // ensure we accept JSON; DO NOT set Content-Type so browser can set multipart boundary
+        headers: { Accept: "application/json" },
       }),
+      invalidatesTags: ["PimSettings"],
     }),
   }),
 });
 
+/* ====== Export hooks ====== */
 export const {
   useGetPimScreensQuery,
   useGetOptionalFieldsQuery,
@@ -250,8 +260,6 @@ export const {
   useGetReportingMethodsQuery,
   useCreateReportingMethodMutation,
   useDeleteReportingMethodMutation,
-
-  // NEW:
   useGetTerminationReasonsQuery,
   useCreateTerminationReasonMutation,
   useUpdateTerminationReasonMutation,

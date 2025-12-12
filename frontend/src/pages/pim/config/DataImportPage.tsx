@@ -6,25 +6,45 @@ import { useUploadImportMutation } from "../../../features/pim/pimConfigApi";
 const tabBase =
   "px-5 py-2 text-xs md:text-sm rounded-full transition-colors whitespace-nowrap";
 
+type ImportRowResult = {
+  row: number;
+  status: "success" | "error";
+  errors?: string[];
+  data?: Record<string, any>;
+};
+
+type UploadResponse = {
+  success?: boolean;
+  message?: string;
+  summary?: { total: number; success: number; failed: number };
+  results?: ImportRowResult[];
+  parseErrors?: string[];
+};
+
 export default function DataImportPage() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [detailedResults, setDetailedResults] = useState<ImportRowResult[] | null>(
+    null
+  );
 
   const [uploadImport, { isLoading }] = useUploadImportMutation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] || null;
+    const f = e.target.files?.[0] ?? null;
     setFile(f);
     setMessage(null);
     setError(null);
+    setDetailedResults(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
     setError(null);
+    setDetailedResults(null);
 
     if (!file) {
       setError("Please select a CSV file to upload.");
@@ -35,38 +55,83 @@ export default function DataImportPage() {
     formData.append("file", file);
 
     try {
-      const res = await uploadImport(formData).unwrap();
-      setMessage(res?.message || "Import completed successfully.");
+      const res = (await uploadImport(formData).unwrap()) as UploadResponse;
+
+      if (res?.summary) {
+        setMessage(
+          `Imported: ${res.summary.success}/${res.summary.total} succeeded, ${res.summary.failed} failed`
+        );
+      } else {
+        setMessage(res?.message ?? "Import completed successfully.");
+      }
+
+      if (res?.results) setDetailedResults(res.results);
       setFile(null);
     } catch (err: any) {
       console.error("PIM import failed", err);
-      setError(
-        err?.data?.message || "Failed to upload/import file. Please try again."
-      );
+      // RTK Query error shape may vary; try common fields
+      const msg =
+        err?.data?.message ??
+        err?.error ??
+        (typeof err === "string" ? err : undefined) ??
+        "Failed to upload/import file. Please try again.";
+      setError(msg);
     }
   };
 
-  // sample CSV link (served by backend GET /api/pim/import/sample)
-  const sampleUrl = "/api/pim/import/sample";
+  function downloadFailedAsCsv() {
+    if (!detailedResults) {
+      alert("No import results available.");
+      return;
+    }
 
+    const failed = detailedResults.filter((r) => r.status === "error");
+    if (failed.length === 0) {
+      alert("No failed rows to download.");
+      return;
+    }
+
+    const header = ["Row", "Errors", "Data"];
+    const rows = failed.map((f) => [
+      String(f.row),
+      (f.errors || []).join("; "),
+      JSON.stringify(f.data || {}),
+    ]);
+
+    const csv = [header, ...rows]
+      .map((r) =>
+        r
+          .map((cell) => {
+            const s = String(cell ?? "");
+            return `"${s.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "import-failed-rows.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const sampleUrl = "/api/pim/import/sample";
 
   return (
     <div className="flex min-h-screen bg-[#f4f5fb]">
-      {/* Left main sidebar */}
-      
-
       <div className="flex-1 flex flex-col">
-        {/* Top green gradient bar with user menu */}
-
         <main className="flex-1 px-8 py-6 space-y-6">
-          {/* PIM / Configuration header + tabs */}
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl font-semibold text-slate-800">
               PIM / Configuration
             </h1>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Configuration tab (active) */}
               <button
                 type="button"
                 className={`${tabBase} bg-green-500 text-white shadow-sm`}
@@ -74,7 +139,6 @@ export default function DataImportPage() {
                 Configuration
               </button>
 
-              {/* Employee List */}
               <button
                 type="button"
                 className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
@@ -83,7 +147,6 @@ export default function DataImportPage() {
                 Employee List
               </button>
 
-              {/* Add Employee */}
               <button
                 type="button"
                 className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
@@ -92,7 +155,6 @@ export default function DataImportPage() {
                 Add Employee
               </button>
 
-              {/* Reports */}
               <button
                 type="button"
                 className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
@@ -103,18 +165,14 @@ export default function DataImportPage() {
             </div>
           </div>
 
-          {/* Data Import card */}
           <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            {/* Card header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <h2 className="text-sm md:text-base font-semibold text-slate-800">
                 Data Import
               </h2>
             </div>
 
-            {/* Card body */}
             <div className="px-6 pt-6 pb-4">
-              {/* Note section */}
               <div className="rounded-2xl bg-[#f2f4f8] px-6 py-4 mb-6">
                 <h3 className="text-xs font-semibold text-slate-700 mb-2">
                   Note:
@@ -126,27 +184,22 @@ export default function DataImportPage() {
                     All date fields should be in <b>YYYY-MM-DD</b> format
                   </li>
                   <li>
-                    If gender is specified, value should be either{" "}
-                    <b>Male</b> or <b>Female</b>
+                    If gender is specified, value should be either <b>Male</b> or{" "}
+                    <b>Female</b>
                   </li>
                   <li>
-                    Each import file should be configured for{" "}
-                    <b>100 records or less</b>
+                    Each import file should be configured for <b>100 records or less</b>
                   </li>
                   <li>Multiple import files may be required</li>
                   <li>
                     Sample CSV file :{" "}
-                    <a
-                      href={sampleUrl}
-                      className="text-[#ff9800] hover:underline"
-                    >
+                    <a href={sampleUrl} className="text-[#ff9800] hover:underline">
                       Download
                     </a>
                   </li>
                 </ul>
               </div>
 
-              {/* Upload form */}
               <form
                 onSubmit={handleSubmit}
                 className="space-y-4 max-w-xl"
@@ -173,9 +226,7 @@ export default function DataImportPage() {
                     </label>
                   </div>
 
-                  <p className="text-[10px] text-slate-400">
-                    Accepts up to 1MB
-                  </p>
+                  <p className="text-[10px] text-slate-400">Accepts up to 1MB</p>
                 </div>
 
                 {error && (
@@ -189,7 +240,6 @@ export default function DataImportPage() {
                   </p>
                 )}
 
-                {/* Footer */}
                 <div className="flex items-center justify-between pt-4">
                   <p className="text-[10px] text-slate-400">* Required</p>
 
@@ -202,6 +252,56 @@ export default function DataImportPage() {
                   </button>
                 </div>
               </form>
+
+              {/* results */}
+              {detailedResults && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold">Import Results</h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={downloadFailedAsCsv}
+                        className="px-3 py-1 rounded-full border text-xs hover:bg-slate-50"
+                      >
+                        Download Failed
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto border rounded">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2 text-left w-20">Row</th>
+                          <th className="px-3 py-2 text-left">Status</th>
+                          <th className="px-3 py-2 text-left">Errors</th>
+                          <th className="px-3 py-2 text-left">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailedResults.map((r) => (
+                          <tr key={r.row} className="odd:bg-white even:bg-slate-50/50">
+                            <td className="px-3 py-2">{r.row}</td>
+                            <td
+                              className={`px-3 py-2 ${
+                                r.status === "success" ? "text-green-700" : "text-red-600"
+                              }`}
+                            >
+                              {r.status}
+                            </td>
+                            <td className="px-3 py-2">{r.errors?.join("; ")}</td>
+                            <td className="px-3 py-2">
+                              <pre className="whitespace-normal max-w-xl text-[11px]">
+                                {JSON.stringify(r.data || {}, null, 0)}
+                              </pre>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </main>

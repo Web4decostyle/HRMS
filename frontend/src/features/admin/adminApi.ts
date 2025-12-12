@@ -43,6 +43,9 @@ export interface WorkShift {
   _id: string;
   name: string;
   hoursPerDay: number;
+  from?: string;
+  to?: string;
+  assignedEmployees?: string[];
 }
 
 export interface Location {
@@ -334,6 +337,37 @@ export const adminApi = createApi({
       invalidatesTags: ["WorkShift"],
     }),
 
+    // New: updateWorkShift
+    updateWorkShift: builder.mutation<
+      WorkShift,
+      {
+        id: string;
+        name?: string;
+        hoursPerDay?: number;
+        from?: string;
+        to?: string;
+        assignedEmployees?: string[];
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `admin/work-shifts/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["WorkShift"],
+    }),
+
+    // New: deleteWorkShift
+    deleteWorkShift: builder.mutation<{ success: boolean; id: string }, string>(
+      {
+        query: (id) => ({
+          url: `admin/work-shifts/${id}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: ["WorkShift"],
+      }
+    ),
+
     /* ----- Locations ----- */
     getLocations: builder.query<Location[], void>({
       query: () => "admin/locations",
@@ -516,6 +550,8 @@ export const {
 
   useGetWorkShiftsQuery,
   useCreateWorkShiftMutation,
+  useUpdateWorkShiftMutation, 
+  useDeleteWorkShiftMutation, 
 
   useGetLocationsQuery,
   useCreateLocationMutation,
