@@ -6,36 +6,27 @@ import BuzzLatestPostWidget from "./widgets/BuzzLatestPostWidget";
 import EmployeesOnLeaveWidget from "./widgets/EmployeesOnLeaveWidget";
 import EmployeeSubunitWidget from "./widgets/EmployeeSubunitWidget";
 import EmployeeLocationWidget from "./widgets/EmployeeLocationWidget";
-import { useMeQuery } from "../../features/auth/authApi";
 
 export default function DashboardPage() {
-  const { data } = useMeQuery();
-
-  const userName = data?.user
-    ? `${data.user.firstName} ${data.user.lastName}`
-    : "User";
-
   return (
-    <div className="space-y-6">
-      {/* Header / greeting */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-800">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Welcome back, {userName}. Here’s what’s happening in your organization today.
-        </p>
-      </div>
-
-      {/* Widgets grid – matches DecoStyle dashboard layout */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+    <div className="min-h-[calc(100vh-120px)]">
+      {/* ORANGEHRM style: 2-column dashboard grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Row 1 */}
         <EmployeeAttendanceWidget />
         <MyActionSummaryWidget />
+
+        {/* Row 2 */}
         <QuickLaunchWidget />
         <BuzzLatestPostWidget />
+
+        {/* Row 3 */}
         <EmployeesOnLeaveWidget />
         <EmployeeSubunitWidget />
+
+        {/* Row 4 (left only like screenshot) */}
         <EmployeeLocationWidget />
+        <div className="hidden lg:block" />
       </div>
     </div>
   );

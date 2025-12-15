@@ -44,7 +44,7 @@ export default function AddEmploymentStatusPage() {
               Name <span className="text-red-500">*</span>
             </label>
             <input
-              className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-400"
+              className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400"
               placeholder="e.g. Full Time, Part Time, Contract"
               value={name}
               onChange={(e) => setName(e.target.value)}

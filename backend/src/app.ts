@@ -44,7 +44,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", message: "backend is alive" });
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -68,7 +68,6 @@ app.use("/api/time/attendance", attendanceRoutes);
 app.use("/api/recruitment", recruitmentRoutes);
 app.use("/api/performance", performanceRoutes);
 app.use("/api/directory", directoryRoutes);
-app.use("/api/buzz", buzzRoutes);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/claim", claimRoutes);

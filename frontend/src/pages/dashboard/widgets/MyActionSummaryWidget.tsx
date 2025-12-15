@@ -1,30 +1,41 @@
-// frontend/src/pages/dashboard/widgets/MyActionSummaryWidget.tsx
 import BaseWidget from "./BaseWidget";
+import { useGetMyActionsQuery } from "../../../features/dashboard/dashboardApi";
 
 export default function MyActionSummaryWidget() {
-  const items = [
-    { label: "Pending Leave Requests", value: 4 },
-    { label: "Candidate to Interview", value: 2 },
-    { label: "Timesheets to Approve", value: 3 },
-  ];
+  const { data, isLoading } = useGetMyActionsQuery();
+
+  const total =
+    (data?.pendingLeaveApprovals || 0) +
+    (data?.pendingTimesheets || 0) +
+    (data?.pendingClaims || 0);
 
   return (
-    <BaseWidget title="My Actions" icon="📌" empty={items.length === 0}>
-      <ul className="divide-y divide-slate-100">
-        {items.map((item) => (
-          <li
-            key={item.label}
-            className="flex items-center justify-between py-2"
-          >
-            <span className="text-xs text-slate-600">
-              {item.label}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-800">
-              {item.value}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <BaseWidget title="My Actions" icon="📋">
+      {isLoading ? (
+        <div className="text-xs text-slate-400">Loading…</div>
+      ) : total === 0 ? (
+        <div className="h-[220px] flex flex-col items-center justify-center text-center">
+          <div className="w-28 h-28 rounded-2xl bg-slate-50 border border-slate-100" />
+          <div className="mt-3 text-[11px] text-slate-400">
+            No Pending Actions to Perform
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2 text-xs text-slate-600">
+          <div className="flex justify-between">
+            <span>Leave Approvals</span>
+            <span className="font-semibold">{data?.pendingLeaveApprovals || 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Timesheets</span>
+            <span className="font-semibold">{data?.pendingTimesheets || 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Claims</span>
+            <span className="font-semibold">{data?.pendingClaims || 0}</span>
+          </div>
+        </div>
+      )}
     </BaseWidget>
   );
 }

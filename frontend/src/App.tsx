@@ -100,6 +100,13 @@ import AddJobTitlePage from "./pages/admin/job/AddJobTitlePage";
 import AddEmploymentStatusPage from "./pages/admin/job/AddEmploymentStatusPage";
 import AddJobCategoryPage from "./pages/admin/job/AddJobCategoryPage";
 
+// Maintenance
+import MaintenanceAuthPage from "./pages/maintenance/MaintenanceAuthPage";
+import MaintenanceEntryPage from "./pages/maintenance/MaintenanceEntryPage";
+import PurgeRecordsPage from "./pages/maintenance/PurgeRecordsPage";
+import PurgeCandidateRecordsPage from "./pages/maintenance/PurgeCandidateRecordsPage";
+import AccessRecordsPage from "./pages/maintenance/AccessRecordsPage";
+
 export default function App() {
   return (
     <Routes>
@@ -132,9 +139,6 @@ export default function App() {
       />
 
       {/* ==================== TIME ==================== */}
-      {/* Default Time route → My Timesheets list */}
-
-      {/* Explicit My Timesheets (matches topbar link) */}
       <Route
         path="/time"
         element={
@@ -146,7 +150,6 @@ export default function App() {
         }
       />
 
-      {/* Single timesheet view */}
       <Route
         path="/time/timesheets/:id"
         element={
@@ -158,7 +161,6 @@ export default function App() {
         }
       />
 
-      {/* Edit timesheet */}
       <Route
         path="/time/timesheets/:id/edit"
         element={
@@ -191,7 +193,7 @@ export default function App() {
         }
       />
 
-      {/* Performance – main list page */}
+      {/* Performance */}
       <Route
         path="/performance"
         element={
@@ -203,7 +205,6 @@ export default function App() {
         }
       />
 
-      {/* Performance – Configure */}
       <Route
         path="/performance/configure/kpis"
         element={
@@ -221,7 +222,6 @@ export default function App() {
         }
       />
 
-      {/* Performance – Manage Reviews */}
       <Route
         path="/performance/manage/reviews"
         element={
@@ -255,7 +255,6 @@ export default function App() {
         }
       />
 
-      {/* Performance – My & Employee Reviews */}
       <Route
         path="/performance/my-reviews"
         element={
@@ -273,7 +272,6 @@ export default function App() {
         }
       />
 
-      {/* Performance – Trackers */}
       <Route
         path="/performance/my-trackers"
         element={
@@ -327,9 +325,30 @@ export default function App() {
         }
       />
 
-      {/* Maintenance */}
+      {/* ==================== MAINTENANCE ==================== */}
+
+      {/* ✅ /maintenance should LAND on Purge Records (via entry redirect) */}
       <Route
         path="/maintenance"
+        element={
+          <RequireAuth>
+            <MaintenanceEntryPage />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/maintenance/auth"
+        element={
+          <RequireAuth>
+            <MaintenanceAuthPage />
+          </RequireAuth>
+        }
+      />
+
+      {/* Optional: keep system-info route if you still want it */}
+      <Route
+        path="/maintenance/system-info"
         element={
           <RequireAuth>
             <Layout>
@@ -339,7 +358,40 @@ export default function App() {
         }
       />
 
-      {/* PIM */}
+      <Route
+        path="/maintenance/purge-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PurgeRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/maintenance/purge-candidate-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PurgeCandidateRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/maintenance/access-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AccessRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== PIM ==================== */}
       <Route
         path="/pim"
         element={
@@ -365,7 +417,6 @@ export default function App() {
       <Route path="/pim/reports" element={<PimReportsPage />} />
       <Route path="/pim/reports/add" element={<AddPimReportPage />} />
 
-      {/* FIXED: removed allowedRoles, added leading slash, no Layout since page has its own layout */}
       <Route
         path="/pim/config/termination-reasons"
         element={
@@ -408,10 +459,7 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route
-        path="/leave/entitlements/add"
-        element={<AddLeaveEntitlementPage />}
-      />
+      <Route path="/leave/entitlements/add" element={<AddLeaveEntitlementPage />} />
       <Route
         path="/leave/entitlements/employee"
         element={<EmployeeEntitlementsPage />}
@@ -479,43 +527,34 @@ export default function App() {
           </RequireAuth>
         }
       >
-        {/* Default */}
         <Route index element={<SystemUsersPage />} />
         <Route path="user-management" element={<SystemUsersPage />} />
 
-        {/* Job */}
         <Route path="job/job-titles" element={<JobTitlesPage />} />
         <Route path="job/job-titles/add" element={<AddJobTitlePage />} />
         <Route path="job/pay-grades" element={<PayGradesPage />} />
+        <Route path="job/employment-status" element={<EmploymentStatusPage />} />
         <Route
-          path="job/employment-status"
-          element={<EmploymentStatusPage />}
+          path="job/employment-status/add"
+          element={<AddEmploymentStatusPage />}
         />
-        <Route path="job/employment-status/add" element={<AddEmploymentStatusPage />} />
         <Route path="job/job-categories" element={<JobCategoriesPage />} />
         <Route path="job/work-shifts" element={<WorkShiftsPage />} />
         <Route path="job/job-categories/add" element={<AddJobCategoryPage />} />
 
-        {/* Organization */}
         <Route path="org/general-info" element={<GeneralInfoPage />} />
         <Route path="org/locations" element={<LocationsPage />} />
         <Route path="org/structure" element={<OrgStructurePage />} />
 
-        {/* Qualifications */}
         <Route path="qualifications/skills" element={<SkillsPage />} />
         <Route path="qualifications/skills/add" element={<AddSkillPage />} />
         <Route path="qualifications/education" element={<EducationPage />} />
         <Route path="qualifications/languages" element={<LanguagesPage />} />
         <Route path="qualifications/licenses" element={<LicensesPage />} />
 
-        {/* Nationalities */}
         <Route path="nationalities" element={<NationalitiesPage />} />
 
-        {/* Configurations */}
-        <Route
-          path="configuration/email-config"
-          element={<EmailConfigPage />}
-        />
+        <Route path="configuration/email-config" element={<EmailConfigPage />} />
       </Route>
 
       {/* Fallback */}

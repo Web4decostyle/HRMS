@@ -51,7 +51,7 @@ export default function JobTitlesPage() {
           </button>
         </div>
 
-        {/* Add form (inline, like greenHRM modal but simpler) */}
+        
         <form
           id="job-title-form"
           onSubmit={handleSubmit}

@@ -1,46 +1,54 @@
-// frontend/src/pages/dashboard/widgets/EmployeeSubunitWidget.tsx
 import BaseWidget from "./BaseWidget";
+import { useGetSubunitDistributionQuery } from "../../../features/dashboard/dashboardApi";
 
-const SUBUNITS = [
-  { name: "HR", count: 5 },
-  { name: "Sales", count: 12 },
-  { name: "Engineering", count: 22 },
-];
-
-export default function EmployeeSubunitWidget() {
-  const total = SUBUNITS.reduce((sum, s) => sum + s.count, 0);
+function Donut({ percent }: { percent: number }) {
+  const p = Math.max(0, Math.min(100, percent));
+  const r = 52;
+  const c = 2 * Math.PI * r;
+  const dash = (p / 100) * c;
 
   return (
-    <BaseWidget title="Employee Distribution by Subunit" icon="🏢">
-      <div className="space-y-3 text-xs">
-        <div className="flex items-center justify-between text-slate-500">
-          <span>Total Employees</span>
-          <span className="font-semibold text-slate-800">
-            {total}
-          </span>
+    <svg width="220" height="220" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r={r} strokeWidth="26" stroke="#eef2ff" fill="none" />
+      <circle
+        cx="70"
+        cy="70"
+        r={r}
+        strokeWidth="26"
+        stroke="#ff4d4f"
+        fill="none"
+        strokeDasharray={`${dash} ${c - dash}`}
+        strokeLinecap="round"
+        transform="rotate(-90 70 70)"
+      />
+      <circle cx="70" cy="70" r="8" fill="#fff" />
+      <text x="70" y="78" textAnchor="middle" fontSize="12" fill="#fff" fontWeight="700">
+        {p.toFixed(1)}%
+      </text>
+    </svg>
+  );
+}
+
+export default function EmployeeSubunitWidget() {
+  const { data = [], isLoading } = useGetSubunitDistributionQuery();
+
+  const total = data.reduce((a, b) => a + b.value, 0);
+  const top = data[0];
+  const pct = total ? (top.value / total) * 100 : 0;
+
+  return (
+    <BaseWidget title="Employee Distribution by Sub Unit" icon="📊">
+      {isLoading ? (
+        <div className="text-xs text-slate-400">Loading…</div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <Donut percent={total ? pct : 100} />
+          <div className="text-[11px] text-slate-500 flex items-center gap-2 -mt-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span>{top?.label || "Unassigned"}</span>
+          </div>
         </div>
-        <ul className="space-y-2">
-          {SUBUNITS.map((subunit) => {
-            const pct = total ? Math.round((subunit.count / total) * 100) : 0;
-            return (
-              <li key={subunit.name}>
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-slate-700">{subunit.name}</span>
-                  <span className="text-slate-500">
-                    {subunit.count} ({pct}%)
-                  </span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className="h-full bg-slate-400"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      )}
     </BaseWidget>
   );
 }

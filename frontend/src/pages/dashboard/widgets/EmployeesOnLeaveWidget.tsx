@@ -1,38 +1,28 @@
-// frontend/src/pages/dashboard/widgets/EmployeesOnLeaveWidget.tsx
 import BaseWidget from "./BaseWidget";
-
-const EMPLOYEES_ON_LEAVE = [
-  { name: "John Smith", type: "Annual", period: "Today" },
-  { name: "Jane Doe", type: "Sick", period: "Today" },
-];
+import { useGetEmployeesOnLeaveTodayQuery } from "../../../features/dashboard/dashboardApi";
 
 export default function EmployeesOnLeaveWidget() {
-  const empty = EMPLOYEES_ON_LEAVE.length === 0;
+  const { data, isLoading } = useGetEmployeesOnLeaveTodayQuery();
+
+  const total = data?.total ?? 0;
 
   return (
-    <BaseWidget
-      title="Employees on Leave Today"
-      icon="🌴"
-      empty={empty}
-      emptyText="No employees are on leave today."
-    >
-      <ul className="divide-y divide-slate-100">
-        {EMPLOYEES_ON_LEAVE.map((emp) => (
-          <li
-            key={emp.name}
-            className="flex items-center justify-between py-2 text-xs"
-          >
-            <div className="flex flex-col">
-              <span className="font-medium text-slate-800">
-                {emp.name}
-              </span>
-              <span className="text-slate-500">
-                {emp.type} · {emp.period}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <BaseWidget title="Employees on Leave Today" icon="🏖️">
+      {isLoading ? (
+        <div className="text-xs text-slate-400">Loading…</div>
+      ) : total === 0 ? (
+        <div className="h-[220px] flex flex-col items-center justify-center text-center">
+          <div className="w-28 h-28 rounded-2xl bg-slate-50 border border-slate-100" />
+          <div className="mt-3 text-[11px] text-slate-400">
+            No Employees are on Leave Today
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-slate-700">
+          <div className="text-xs text-slate-500">Total</div>
+          <div className="text-3xl font-semibold">{total}</div>
+        </div>
+      )}
     </BaseWidget>
   );
 }

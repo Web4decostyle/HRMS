@@ -31,7 +31,7 @@ export default function SystemUsersPage() {
   const [updateStatus] = useUpdateSystemUserStatusMutation();
   const [deleteUser] = useDeleteSystemUserMutation();
 
-  // "Add User" inline form (hidden by default, greenHRM style)
+  // "Add User" inline form (hidden by default)
   const [showAddRow, setShowAddRow] = useState(false);
   const [form, setForm] = useState({
     username: "",
@@ -215,7 +215,7 @@ export default function SystemUsersPage() {
           </button>
         </div>
 
-        {/* Inline Add Row (hidden by default – greenHRM opens a separate page, this keeps your existing backend) */}
+        {/* Inline Add Row (hidden by default –  opens a separate page, this keeps your existing backend) */}
         {showAddRow && (
           <form
             onSubmit={handleCreateUser}

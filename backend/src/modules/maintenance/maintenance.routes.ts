@@ -1,17 +1,27 @@
-// backend/src/modules/maintenance/maintenance.routes.ts
 import { Router } from "express";
-import { getSystemInfo } from "./maintenance.controller";
 import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
+import { requireMaintenanceAccess } from "../../middleware/requireMaintenance";
+import { verifyMaintenance } from "./maintenance.controller";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { getSystemInfo } from "./maintenance.controller";
 
 const router = Router();
 
-// GET /api/maintenance/system-info
+/* Step-up verification */
+router.post(
+  "/verify",
+  requireAuth,
+  requireRole("ADMIN"),
+  asyncHandler(verifyMaintenance)
+);
+
+/* Page-protected routes */
 router.get(
   "/system-info",
   requireAuth,
   requireRole("ADMIN"),
+  requireMaintenanceAccess("system-info"),
   asyncHandler(getSystemInfo)
 );
 

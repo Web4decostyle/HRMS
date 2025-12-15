@@ -1,41 +1,34 @@
-// frontend/src/pages/dashboard/widgets/QuickLaunchWidget.tsx
-import { useNavigate } from "react-router-dom";
 import BaseWidget from "./BaseWidget";
+import { useNavigate } from "react-router-dom";
 
-const ACTIONS = [
-  { key: "assignLeave", label: "Assign Leave", path: "/leave/assign" },
-  { key: "leaveList", label: "Leave List", path: "/leave/list" },
-  { key: "timesheets", label: "Timesheets", path: "/time/timesheets" },
-  { key: "applyLeave", label: "Apply Leave", path: "/leave/apply" },
-  { key: "myLeave", label: "My Leave", path: "/leave/my" },
-  { key: "myTimesheet", label: "My Timesheet", path: "/time/my-timesheet" },
+const items = [
+  { label: "Assign Leave", to: "/leave/assign", icon: "👤" },
+  { label: "Leave List", to: "/leave", icon: "🗒️" },
+  { label: "Timesheets", to: "/time", icon: "⏱️" },
+  { label: "Apply Leave", to: "/leave/apply", icon: "✅" },
+  { label: "My Leave", to: "/leave/my-leave", icon: "📅" },
+  { label: "My Timesheet", to: "/time", icon: "🕓" },
 ];
 
 export default function QuickLaunchWidget() {
-  const navigate = useNavigate();
-
-  function handleClick(path: string) {
-    // For now, these routes may not exist.
-    // Router will fallback, which is fine until we implement them.
-    navigate(path);
-  }
+  const nav = useNavigate();
 
   return (
-    <BaseWidget title="Quick Launch" icon="⚡" empty={ACTIONS.length === 0}>
-      <div className="grid grid-cols-3 gap-3">
-        {ACTIONS.map((action) => (
+    <BaseWidget title="Quick Launch" icon="⚡">
+      <div className="grid grid-cols-3 gap-5">
+        {items.map((x) => (
           <button
-            key={action.key}
+            key={x.label}
             type="button"
-            onClick={() => handleClick(action.path)}
-            className="flex flex-col items-center gap-1 px-2 py-3 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 transition text-xs text-slate-700"
+            onClick={() => nav(x.to)}
+            className="flex flex-col items-center gap-2"
           >
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-base">
-              ⚙
+            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-xl">
+              {x.icon}
             </div>
-            <span className="text-[11px] text-center leading-tight">
-              {action.label}
-            </span>
+            <div className="text-[11px] text-slate-500 text-center">
+              {x.label}
+            </div>
           </button>
         ))}
       </div>

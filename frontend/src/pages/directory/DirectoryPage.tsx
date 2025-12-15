@@ -1,141 +1,205 @@
-// frontend/src/pages/directory/DirectoryPage.tsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useGetEmployeesQuery } from "../../features/employees/employeesApi";
 
 export default function DirectoryPage() {
-  const [filters, setFilters] = useState({
+  // UI fields (what user types/selects)
+  const [ui, setUi] = useState({
     name: "",
     jobTitle: "",
-    subUnit: "",
+    location: "",
   });
 
-  const { data: employees } = useGetEmployeesQuery(
-    filters.name || filters.jobTitle || filters.subUnit
-      ? {
-          name: filters.name || undefined,
-          jobTitle: filters.jobTitle || undefined,
-          subUnit: filters.subUnit || undefined,
-        }
-      : undefined
-  );
+  // Applied filters (only set when Search is clicked)
+  const [applied, setApplied] = useState({
+    name: "",
+    jobTitle: "",
+    location: "",
+  });
 
-  function handleReset() {
-    setFilters({ name: "", jobTitle: "", subUnit: "" });
+  const queryArgs = useMemo(() => {
+    const has =
+      applied.name.trim() || applied.jobTitle.trim() || applied.location.trim();
+
+    if (!has) return undefined;
+
+    return {
+      name: applied.name.trim() || undefined,
+      jobTitle: applied.jobTitle || undefined,
+      subUnit: applied.location || undefined, // mapping location -> subUnit/department filter
+    };
+  }, [applied]);
+
+  const { data: employees = [], isLoading } = useGetEmployeesQuery(queryArgs);
+
+  function onReset() {
+    setUi({ name: "", jobTitle: "", location: "" });
+    setApplied({ name: "", jobTitle: "", location: "" });
+  }
+
+  function onSearch() {
+    setApplied({
+      name: ui.name,
+      jobTitle: ui.jobTitle,
+      location: ui.location,
+    });
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5fb] p-8">
-      {/* PAGE TITLE */}
-      <h1 className="text-lg font-semibold text-slate-700 mb-6">Directory</h1>
-
+    <div className="min-h-screen bg-[#f4f5fb] px-8 py-6">
       {/* FILTER CARD */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-6">
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        {/* Header row */}
+        <div className="px-6 pt-6 flex items-center justify-between">
+          <h1 className="text-sm font-semibold text-slate-700">Directory</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* EMPLOYEE NAME */}
-          <div className="space-y-1">
-            <label className="text-xs text-slate-500">Employee Name</label>
-            <input
-              value={filters.name}
-              onChange={(e) =>
-                setFilters({ ...filters, name: e.target.value })
-              }
-              placeholder="Type for hints..."
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
-            />
-          </div>
-
-          {/* JOB TITLE */}
-          <div className="space-y-1">
-            <label className="text-xs text-slate-500">Job Title</label>
-            <select
-              value={filters.jobTitle}
-              onChange={(e) =>
-                setFilters({ ...filters, jobTitle: e.target.value })
-              }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
-            >
-              <option value="">-- Select --</option>
-              <option value="Manager">Manager</option>
-              <option value="Team Lead">Team Lead</option>
-              <option value="Staff">Staff</option>
-            </select>
-          </div>
-
-          {/* LOCATION (use subUnit / department) */}
-          <div className="space-y-1">
-            <label className="text-xs text-slate-500">Location</label>
-            <select
-              value={filters.subUnit}
-              onChange={(e) =>
-                setFilters({ ...filters, subUnit: e.target.value })
-              }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
-            >
-              <option value="">-- Select --</option>
-              <option value="Indore">Indore</option>
-              <option value="Mumbai">Mumbai</option>
-              <option value="Delhi">Delhi</option>
-            </select>
-          </div>
-        </div>
-
-        {/* BUTTONS */}
-        <div className="flex justify-end gap-3">
+          {/* Collapse icon (visual only) */}
           <button
-            onClick={handleReset}
-            className="px-6 py-2 rounded-full border border-slate-300 text-slate-700 text-xs hover:bg-slate-50"
+            type="button"
+            className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"
+            title="Collapse"
           >
-            Reset
-          </button>
-          <button
-            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs hover:bg-green-700"
-          >
-            Search
+            ▴
           </button>
         </div>
-      </div>
 
-      {/* RESULTS */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 mt-6">
-        <div className="text-xs text-slate-600 mb-4">
-          ({employees?.length ?? 0}) Record Found
-        </div>
+        <div className="px-6 pb-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Employee Name */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-500">
+                Employee Name
+              </label>
+              <input
+                value={ui.name}
+                onChange={(e) => setUi((s) => ({ ...s, name: e.target.value }))}
+                placeholder="Type for hints..."
+                className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
+              />
+            </div>
 
-        {/* GRID OF EMPLOYEE CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees?.map((emp) => (
-            <div
-              key={emp._id}
-              className="bg-white rounded-xl shadow border border-slate-200 p-6 flex flex-col items-center text-center"
+            {/* Job Title */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-500">Job Title</label>
+
+              <div className="relative">
+                <select
+                  value={ui.jobTitle}
+                  onChange={(e) =>
+                    setUi((s) => ({ ...s, jobTitle: e.target.value }))
+                  }
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
+                >
+                  <option value="">-- Select --</option>
+                  {/* TODO: replace with dynamic job titles from backend later */}
+                  <option value="Manager">Manager</option>
+                  <option value="Team Lead">Team Lead</option>
+                  <option value="Staff">Staff</option>
+                </select>
+
+                {/* right dropdown pill  */}
+                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  ▾
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-500">Location</label>
+
+              <div className="relative">
+                <select
+                  value={ui.location}
+                  onChange={(e) =>
+                    setUi((s) => ({ ...s, location: e.target.value }))
+                  }
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
+                >
+                  <option value="">-- Select --</option>
+                  {/* TODO: replace with dynamic locations from backend later */}
+                  <option value="Indore">Indore</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Delhi">Delhi</option>
+                </select>
+
+                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  ▾
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider  */}
+          <div className="mt-6 border-t border-slate-100" />
+
+          {/* Buttons row */}
+          <div className="mt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onReset}
+              className="h-9 px-10 rounded-full border border-[#76c043] text-[#76c043] text-xs font-semibold bg-white hover:bg-[#f6fff0]"
             >
-              {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center mb-4"></div>
-
-              {/* Name */}
-              <div className="text-sm font-semibold text-slate-700">
-                {emp.firstName} {emp.lastName}
-              </div>
-
-              {/* Job Title */}
-              <div className="text-[11px] text-slate-500 mt-1">
-                {emp.jobTitle || "-"}
-              </div>
-
-              {/* Location */}
-              <div className="text-[11px] text-slate-400 mt-1">
-                {emp.department || "-"}
-              </div>
-            </div>
-          ))}
-
-          {!employees?.length && (
-            <div className="text-xs text-slate-400 col-span-full text-center py-10">
-              No Records Found
-            </div>
-          )}
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={onSearch}
+              className="h-9 px-10 rounded-full bg-[#76c043] text-white text-xs font-semibold hover:opacity-95"
+            >
+              Search
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* RESULTS WRAP (grey zone like screenshot) */}
+      <section className="mt-6 bg-[#e9ecf1] rounded-2xl border border-slate-100 shadow-sm">
+        <div className="px-6 py-4 text-slate-600 text-sm">
+          ({isLoading ? "…" : employees.length}) Records Found
+        </div>
+
+        <div className="px-6 pb-8">
+          {/* Employee cards grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {!isLoading &&
+              employees.map((emp: any) => (
+                <div
+                  key={emp._id}
+                  className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center"
+                >
+                  <div className="text-sm font-semibold text-slate-700 capitalize mb-4">
+                    {(emp.firstName || "") + " " + (emp.lastName || "")}
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-slate-300" />
+                  </div>
+
+                  {/* Optional meta (hidden in screenshot cards, keep minimal) */}
+                  {/* <div className="mt-3 text-[11px] text-slate-500">
+                    {emp.jobTitle || "-"}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {emp.department || "-"}
+                  </div> */}
+                </div>
+              ))}
+
+            {isLoading && (
+              <div className="col-span-full text-xs text-slate-500">
+                Loading…
+              </div>
+            )}
+
+            {!isLoading && employees.length === 0 && (
+              <div className="col-span-full text-center text-sm text-slate-500 py-10">
+                No Records Found
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

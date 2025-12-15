@@ -142,13 +142,13 @@ export default function JobCategoriesPage() {
                     const isEditing = editingId === c._id;
                     if (isEditing) {
                       return (
-                        <tr key={c._id} className="bg-orange-50/40">
+                        <tr key={c._id} className="bg-green-50/40">
                           <td className="px-4 py-2">
                             <input type="checkbox" className="accent-green-500" />
                           </td>
                           <td className="px-4 py-2">
                             <input
-                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-orange-400 focus:outline-none"
+                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
                             />
