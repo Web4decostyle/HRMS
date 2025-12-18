@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+// frontend/src/pages/my-info/PersonalDetailsTab.tsx
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import AttachmentsBlock from "./AttachmentsBlock";
 import { labelCls, inputCls } from "./myInfoStyles";
 import {
@@ -30,16 +31,30 @@ interface FormState {
   gender: string;
   smoker: boolean;
   militaryService: string;
-
-  // store custom field values by id: { [fieldId]: value }
   customValues: Record<string, string>;
 }
 
-export default function PersonalDetailsTab({
-  employee,
-  onSave,
-  isSaving,
-}: PersonalProps) {
+const emptyForm: FormState = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  nickname: "",
+  employeeId: "",
+  otherId: "",
+  driversLicense: "",
+  licenseExpiry: "",
+  ssnNumber: "",
+  sinNumber: "",
+  nationality: "",
+  maritalStatus: "",
+  dateOfBirth: "",
+  gender: "",
+  smoker: false,
+  militaryService: "",
+  customValues: {},
+};
+
+export default function PersonalDetailsTab({ employee, onSave, isSaving }: PersonalProps) {
   // ------------- Load config -------------
   const { data: optResp } = useGetOptionalFieldsQuery();
   const { data: customResp } = useGetCustomFieldsQuery();
@@ -55,50 +70,49 @@ export default function PersonalDetailsTab({
 
   // All custom fields for "personal" screen and active
   const personalCustomFields: PimCustomField[] = useMemo(
-    () =>
-      (customResp?.data || []).filter(
-        (f) => f.screen === "personal" && f.active
-      ),
+    () => (customResp?.data || []).filter((f) => f.screen === "personal" && f.active),
     [customResp]
   );
 
-  // ------------- Initial form state -------------
-  const [form, setForm] = useState<FormState>({
-    firstName: employee.firstName || "",
-    middleName: employee.middleName || "",
-    lastName: employee.lastName || "",
-    nickname: employee.nickname || "",
-    employeeId: employee.employeeId || "",
-    otherId: employee.otherId || "",
-    driversLicense: employee.driversLicense || "",
-    licenseExpiry: employee.licenseExpiry?.slice(0, 10) || "",
-    ssnNumber: employee.ssnNumber || "",
-    sinNumber: employee.sinNumber || "",
-    nationality: employee.nationality || "",
-    maritalStatus: employee.maritalStatus || "",
-    dateOfBirth: employee.dateOfBirth?.slice(0, 10) || "",
-    gender: employee.gender || "",
-    smoker: employee.smoker || false,
-    militaryService: employee.militaryService || "",
-    customValues: employee.customValues || {}, // if you store them
-  });
+  // ✅ IMPORTANT: don't initialize from employee directly (stale state bug)
+  const [form, setForm] = useState<FormState>(emptyForm);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) {
+  // ✅ CRITICAL FIX: whenever employee changes (new login), sync form
+  useEffect(() => {
+    if (!employee?._id) return;
+
+    setForm({
+      firstName: employee.firstName || "",
+      middleName: employee.middleName || "",
+      lastName: employee.lastName || "",
+      nickname: employee.nickname || "",
+      employeeId: employee.employeeId || "",
+      otherId: employee.otherId || "",
+      driversLicense: employee.driversLicense || "",
+      licenseExpiry: employee.licenseExpiry?.slice(0, 10) || "",
+      ssnNumber: employee.ssnNumber || "",
+      sinNumber: employee.sinNumber || "",
+      nationality: employee.nationality || "",
+      maritalStatus: employee.maritalStatus || "",
+      dateOfBirth: employee.dateOfBirth?.slice(0, 10) || "",
+      gender: employee.gender || "",
+      smoker: !!employee.smoker,
+      militaryService: employee.militaryService || "",
+      customValues: employee.customValues || {},
+    });
+  }, [employee?._id]);
+
+  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleCheckbox(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleCheckbox(e: ChangeEvent<HTMLInputElement>) {
     const { name, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: checked }));
   }
 
-  function handleCustomChange(
-    fieldId: string,
-    value: string
-  ) {
+  function handleCustomChange(fieldId: string, value: string) {
     setForm((prev) => ({
       ...prev,
       customValues: {
@@ -108,36 +122,27 @@ export default function PersonalDetailsTab({
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     await onSave({
       ...form,
-      dateOfBirth: form.dateOfBirth
-        ? new Date(form.dateOfBirth).toISOString()
-        : undefined,
-      licenseExpiry: form.licenseExpiry
-        ? new Date(form.licenseExpiry).toISOString()
-        : undefined,
-
-      // IMPORTANT:
-      // Make sure your backend + Employee model know what to do with this:
+      dateOfBirth: form.dateOfBirth ? new Date(form.dateOfBirth).toISOString() : undefined,
+      licenseExpiry: form.licenseExpiry ? new Date(form.licenseExpiry).toISOString() : undefined,
       customValues: form.customValues,
     });
   }
 
+  // Optional: while employee loads, avoid rendering broken inputs
+  if (!employee?._id) return null;
+
   return (
     <>
       <div className="px-7 py-4 border-b border-[#edf0f7]">
-        <h2 className="text-[13px] font-semibold text-slate-800">
-          Personal Details
-        </h2>
+        <h2 className="text-[13px] font-semibold text-slate-800">Personal Details</h2>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="px-7 pt-5 pb-4 flex-1 flex flex-col"
-      >
+      <form onSubmit={handleSubmit} className="px-7 pt-5 pb-4 flex-1 flex flex-col">
         <div className="grid grid-cols-[220px_minmax(0,1fr)] gap-6">
           {/* Left avatar area */}
           <div className="flex flex-col items-center pt-1">
@@ -234,7 +239,7 @@ export default function PersonalDetailsTab({
               </div>
             </div>
 
-            {/* SSN / SIN (controlled by optional fields) */}
+            {/* SSN / SIN */}
             {(optional.showSSN || optional.showSIN) && (
               <div className="grid grid-cols-2 gap-4">
                 {optional.showSSN && (
@@ -292,7 +297,7 @@ export default function PersonalDetailsTab({
               </div>
             </div>
 
-            {/* DOB / Gender / Smoker (optional) */}
+            {/* DOB / Gender / Smoker */}
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <label className={labelCls}>Date of Birth</label>
@@ -304,6 +309,7 @@ export default function PersonalDetailsTab({
                   className={inputCls}
                 />
               </div>
+
               <div>
                 <label className={labelCls}>Gender</label>
                 <div className="flex items-center h-9">
@@ -329,6 +335,7 @@ export default function PersonalDetailsTab({
                   </label>
                 </div>
               </div>
+
               {optional.showSmoker && (
                 <div>
                   <label className={labelCls}>Smoker</label>
@@ -347,7 +354,7 @@ export default function PersonalDetailsTab({
               )}
             </div>
 
-            {/* Military (optional) */}
+            {/* Military */}
             {optional.showMilitaryService && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -362,7 +369,7 @@ export default function PersonalDetailsTab({
               </div>
             )}
 
-            {/* -------- Dynamic Custom Fields (personal) -------- */}
+            {/* Dynamic Custom Fields */}
             {personalCustomFields.length > 0 && (
               <div className="grid grid-cols-2 gap-4">
                 {personalCustomFields.map((field) => (
@@ -375,9 +382,7 @@ export default function PersonalDetailsTab({
                     {field.type === "dropdown" && field.dropdownOptions && (
                       <select
                         value={form.customValues[field._id] || ""}
-                        onChange={(e) =>
-                          handleCustomChange(field._id, e.target.value)
-                        }
+                        onChange={(e) => handleCustomChange(field._id, e.target.value)}
                         className={inputCls}
                       >
                         <option value="">-- Select --</option>
@@ -392,9 +397,7 @@ export default function PersonalDetailsTab({
                     {field.type === "text" && (
                       <input
                         value={form.customValues[field._id] || ""}
-                        onChange={(e) =>
-                          handleCustomChange(field._id, e.target.value)
-                        }
+                        onChange={(e) => handleCustomChange(field._id, e.target.value)}
                         className={inputCls}
                       />
                     )}
@@ -417,7 +420,8 @@ export default function PersonalDetailsTab({
           </button>
         </div>
 
-        <AttachmentsBlock employeeId={employee._id} />
+        {/* ✅ guard attachments */}
+        {employee?._id && <AttachmentsBlock employeeId={employee._id} />}
       </form>
     </>
   );

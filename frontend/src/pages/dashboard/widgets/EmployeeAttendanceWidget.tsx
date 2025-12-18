@@ -34,7 +34,7 @@ export default function EmployeeAttendanceWidget() {
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-100" />
             <div className="flex-1">
-              <div className="text-xs font-semibold text-orange-600">
+              <div className="text-xs font-semibold text-green-600">
                 {statusText}
               </div>
               <div className="text-[11px] text-slate-400">
@@ -48,7 +48,7 @@ export default function EmployeeAttendanceWidget() {
 
             <button
               type="button"
-              className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center"
               title="Punch"
             >
               ⏱️

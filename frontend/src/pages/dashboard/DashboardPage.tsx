@@ -10,7 +10,7 @@ import EmployeeLocationWidget from "./widgets/EmployeeLocationWidget";
 export default function DashboardPage() {
   return (
     <div className="min-h-[calc(100vh-120px)]">
-      {/* ORANGEHRM style: 2-column dashboard grid */}
+      {/*  2-column dashboard grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Row 1 */}
         <EmployeeAttendanceWidget />

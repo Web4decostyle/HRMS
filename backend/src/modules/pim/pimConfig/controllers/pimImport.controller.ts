@@ -1,35 +1,42 @@
-// backend/src/modules/pim/pimImport.controller.ts
 import { Request, Response } from "express";
 import { parse } from "csv-parse/sync";
 import PimImportHistory from "../models/pimImportHistory.model";
 import { Employee } from "../../../employees/employee.model";
+import { Counter } from "../models/counter.model";
 
-// Simple extension: just say "file" is any
-type MulterRequest = Request & {
-  file?: any;
-};
+type MulterRequest = Request & { file?: any };
 
-// GET /api/pim/import/sample
+const normalizeHeader = (h: string) =>
+  h
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+async function nextEmployeeId(prefix = "EMP", pad = 4) {
+  const c = await Counter.findOneAndUpdate(
+    { key: "employeeId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  const num = String(c.seq).padStart(pad, "0");
+  return `${prefix}${num}`;
+}
+
 export async function downloadPimSampleCsv(req: Request, res: Response) {
   const sample = [
     "employeeId,firstName,lastName,email,jobTitle,department,status,dateOfBirth,gender,maritalStatus,nationality",
-    "EMP001,John,Doe,john.doe@example.com,Software Engineer,IT,ACTIVE,1990-01-01,MALE,single,Indian",
+    "EMP0001,John,Doe,john.doe@example.com,Software Engineer,IT,ACTIVE,1990-01-01,MALE,single,Indian",
   ].join("\n");
 
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    'attachment; filename="pim_import_sample.csv"'
-  );
+  res.setHeader("Content-Disposition", 'attachment; filename="pim_import_sample.csv"');
   res.send(sample);
 }
 
-// POST /api/pim/import
 export async function importEmployeesCsv(req: MulterRequest, res: Response) {
   if (!req.file) {
-    return res
-      .status(400)
-      .json({ success: false, message: "File is required" });
+    return res.status(400).json({ success: false, message: "File is required" });
   }
 
   const fileName = req.file.originalname;
@@ -42,58 +49,100 @@ export async function importEmployeesCsv(req: MulterRequest, res: Response) {
   });
 
   try {
-    const csv = req.file.buffer.toString("utf8");
+    const csvText = req.file.buffer.toString("utf8");
 
-    const records: any[] = parse(csv, {
-      columns: true,
+    // ✅ normalize headers so "Employee Id" / "employee_id" also works
+    const records: any[] = parse(csvText, {
+      columns: (headers: string[]) => headers.map(normalizeHeader),
       skip_empty_lines: true,
       trim: true,
     });
 
-    let processed = 0;
+    const results: any[] = [];
+    let success = 0;
+    let failed = 0;
 
-    for (const row of records) {
-      if (!row.employeeId || !row.firstName || !row.lastName) continue;
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      const rowNumber = i + 2; // assuming row1 is header
 
-      const gender =
-        row.gender?.toString().toUpperCase() === "FEMALE" ? "FEMALE" : "MALE";
+      try {
+        const firstName = row.firstname;
+        const lastName = row.lastname;
 
-      const status =
-        row.status?.toString().toUpperCase() === "INACTIVE"
-          ? "INACTIVE"
-          : "ACTIVE";
+        if (!firstName || !lastName) {
+          failed++;
+          results.push({
+            row: rowNumber,
+            status: "error",
+            errors: ["firstName and lastName are required"],
+            data: row,
+          });
+          continue;
+        }
 
-      const dob = row.dateOfBirth ? new Date(row.dateOfBirth) : undefined;
+        // ✅ employeeId optional now
+        const employeeId = row.employeeid || (await nextEmployeeId());
 
-      await Employee.findOneAndUpdate(
-        { employeeId: row.employeeId },
-        {
-          employeeId: row.employeeId,
-          firstName: row.firstName,
-          lastName: row.lastName,
-          email: row.email,
-          jobTitle: row.jobTitle,
-          department: row.department,
-          status,
-          dateOfBirth: dob,
-          gender,
-          maritalStatus: row.maritalStatus,
-          nationality: row.nationality,
-        },
-        { upsert: true, setDefaultsOnInsert: true }
-      );
+        const status =
+          String(row.status || "")
+            .toUpperCase()
+            .trim() === "INACTIVE"
+            ? "INACTIVE"
+            : "ACTIVE";
 
-      processed++;
+        const genderRaw = String(row.gender || "").toUpperCase().trim();
+        const gender =
+          genderRaw === "FEMALE" ? "FEMALE" : genderRaw === "MALE" ? "MALE" : undefined;
+
+        const dob = row.dateofbirth ? new Date(row.dateofbirth) : undefined;
+
+        // ✅ email optional: generate safe placeholder if empty
+        const email =
+          row.email?.trim() ||
+          `${employeeId.toLowerCase()}@import.local`;
+
+        await Employee.findOneAndUpdate(
+          { employeeId },
+          {
+            employeeId,
+            firstName,
+            lastName,
+            email,
+            jobTitle: row.jobtitle,
+            department: row.department,
+            status,
+            ...(dob ? { dateOfBirth: dob } : {}),
+            ...(gender ? { gender } : {}),
+            maritalStatus: row.maritalstatus,
+            nationality: row.nationality,
+          },
+          { upsert: true, setDefaultsOnInsert: true }
+        );
+
+        success++;
+        results.push({ row: rowNumber, status: "success", data: row });
+      } catch (e: any) {
+        failed++;
+        results.push({
+          row: rowNumber,
+          status: "error",
+          errors: [e?.message || "Row import failed"],
+          data: row,
+        });
+      }
     }
 
     history.status = "COMPLETED";
     history.totalRecords = records.length;
-    history.processedRecords = processed;
+    history.processedRecords = success;
     await history.save();
 
     return res.json({
       success: true,
-      message: `Imported ${processed} of ${records.length} record(s)`,
+      message: `Imported ${success}/${records.length}`,
+      summary: { total: records.length, success, failed },
+      results,
     });
   } catch (err) {
     console.error("PIM import error:", err);

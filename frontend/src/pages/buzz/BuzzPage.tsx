@@ -267,7 +267,7 @@ export default function BuzzPage() {
                   </div>
                 )}
 
-                {/* ✅ Media big like OrangeHRM */}
+                
                 {p.media?.length > 0 && (
                   <div className="mt-3 space-y-3">
                     {p.media.map((m, i) =>
