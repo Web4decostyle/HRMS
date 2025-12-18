@@ -1,4 +1,4 @@
-// frontend/src/pages/employees/AddEmployeePage.tsx
+// frontend/src/pages/pim/AddEmployeePage.tsx
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

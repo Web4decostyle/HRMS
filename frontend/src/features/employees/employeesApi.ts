@@ -116,8 +116,8 @@ export const employeesApi = createApi({
       transformResponse: (employees: Employee[]): SimpleEmployee[] =>
         employees.map((e) => ({
           _id: e._id,
-          fullName: `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() ||
-            e.employeeId,
+          fullName:
+            `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || e.employeeId,
           status: e.status,
         })),
       providesTags: (result) =>
@@ -139,8 +139,8 @@ export const employeesApi = createApi({
     }),
 
     getEmployeeById: builder.query<Employee, string>({
-      query: (id) => `employees/${id}`,
-      providesTags: (_result, _err, id) => [{ type: "Employee" as const, id }],
+      query: (id) => `/employees/${id}`,
+      providesTags: (_r, _e, id) => [{ type: "Employee", id }],
     }),
 
     // 🔹 My Info – current user's employee record

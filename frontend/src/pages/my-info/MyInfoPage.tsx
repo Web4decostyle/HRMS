@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   useGetMyEmployeeQuery,
+  useGetEmployeeByIdQuery,
   useUpdateEmployeeMutation,
 } from "../../features/employees/employeesApi";
 
@@ -39,14 +40,28 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "report", label: "Report-to" },
 ];
 
-const MyInfoPage = () => {
+type MyInfoPageProps = {
+  /** If provided, page works like PIM employee profile (Admin edits any employee) */
+  employeeId?: string;
+};
+
+const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
   const [active, setActive] = useState<TabKey>("personal");
 
-  const { data: employee, isLoading } = useGetMyEmployeeQuery();
+  const isPimMode = !!employeeId;
+
+  // If opened from PIM, fetch by id; otherwise fetch current user's employee
+  const myQ = useGetMyEmployeeQuery(undefined, { skip: isPimMode });
+  const byIdQ = useGetEmployeeByIdQuery(employeeId!, { skip: !isPimMode });
+
+  const employee = (isPimMode ? byIdQ.data : myQ.data) as any;
+  const isLoading = isPimMode ? byIdQ.isLoading : myQ.isLoading;
+  const isError = isPimMode ? byIdQ.isError : false;
+
   const [updateEmployee, { isLoading: isSavingEmployee }] =
     useUpdateEmployeeMutation();
 
-  if (isLoading || !employee) {
+  if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-[#f5f6fa] text-sm text-slate-500">
         Loading My Info...
@@ -54,9 +69,19 @@ const MyInfoPage = () => {
     );
   }
 
+  if (isError || !employee) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#f5f6fa] text-sm text-red-500">
+        Failed to load employee.
+      </div>
+    );
+  }
+
   const fullName = `${employee.firstName ?? ""}${
     employee.lastName ? " " + employee.lastName : ""
   }`;
+
+  const save = (data: any) => updateEmployee({ id: employee._id, data }).unwrap();
 
   return (
     <div className="flex h-full bg-[#f5f6fa]">
@@ -67,6 +92,14 @@ const MyInfoPage = () => {
           <p className="text-[13px] font-semibold text-slate-800 text-center">
             {fullName || "Employee"}
           </p>
+          {employee.employeeId ? (
+            <p className="text-[11px] text-slate-500 mt-1">
+              {employee.employeeId}
+            </p>
+          ) : null}
+          {isPimMode ? (
+            <p className="text-[10px] text-slate-400 mt-1">PIM · Employee Profile</p>
+          ) : null}
         </div>
 
         <nav className="flex-1 py-3 text-[12px]">
@@ -93,9 +126,7 @@ const MyInfoPage = () => {
           {active === "personal" && (
             <PersonalDetailsTab
               employee={employee}
-              onSave={(data) =>
-                updateEmployee({ id: employee._id, data }).unwrap()
-              }
+              onSave={save}
               isSaving={isSavingEmployee}
             />
           )}
@@ -104,9 +135,7 @@ const MyInfoPage = () => {
           {active === "contact" && (
             <ContactDetailsTab
               employee={employee}
-              onSave={(data) =>
-                updateEmployee({ id: employee._id, data }).unwrap()
-              }
+              onSave={save}
               isSaving={isSavingEmployee}
             />
           )}
@@ -117,9 +146,7 @@ const MyInfoPage = () => {
           )}
 
           {/* DEPENDENTS */}
-          {active === "dependents" && (
-            <DependentsTab employeeId={employee._id} />
-          )}
+          {active === "dependents" && <DependentsTab employeeId={employee._id} />}
 
           {/* IMMIGRATION */}
           {active === "immigration" && (
@@ -129,9 +156,7 @@ const MyInfoPage = () => {
           {/* JOB / SALARY / TAX / REPORT-TO */}
           {active === "job" && <JobTab employeeId={employee._id} />}
           {active === "salary" && <SalaryTab employeeId={employee._id} />}
-          {active === "tax" && (
-            <TaxExemptionsTab employeeId={employee._id} />
-          )}
+          {active === "tax" && <TaxExemptionsTab employeeId={employee._id} />}
           {active === "report" && <ReportToTab employeeId={employee._id} />}
         </div>
       </div>

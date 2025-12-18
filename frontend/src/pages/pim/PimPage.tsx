@@ -1,4 +1,4 @@
-// frontend/src/pages/employees/EmployeesPage.tsx
+// frontend/src/pages/pim/EmployeesPage.tsx
 import { FormEvent, useState } from "react";
 import {
   useGetEmployeesQuery,
@@ -428,7 +428,7 @@ export default function EmployeesPage() {
                     <td className="px-6 py-3 text-slate-700">-</td>
                     <td className="px-6 py-3 text-center text-xs text-green-600">
                       <button className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100"
-                        onClick={() => navigate(`/my-info`)}>
+                        onClick={() => navigate(`/pim/employee/${emp._id}`)}>
                         Edit
                       </button>
                     </td>

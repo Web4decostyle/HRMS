@@ -13,8 +13,8 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 
 // PIM
-import EmployeesPage from "./pages/employees/PimPage";
-import AddEmployeePage from "./pages/employees/AddEmployeePage";
+import EmployeesPage from "./pages/pim/PimPage";
+import AddEmployeePage from "./pages/pim/AddEmployeePage";
 
 // My Info
 import MyInfoPage from "./pages/my-info/MyInfoPage";
@@ -106,6 +106,7 @@ import MaintenanceEntryPage from "./pages/maintenance/MaintenanceEntryPage";
 import PurgeRecordsPage from "./pages/maintenance/PurgeRecordsPage";
 import PurgeCandidateRecordsPage from "./pages/maintenance/PurgeCandidateRecordsPage";
 import AccessRecordsPage from "./pages/maintenance/AccessRecordsPage";
+import PimEmployeeMyInfoPage from "./pages/pim/PimEmployeeMyInfoPage";
 
 export default function App() {
   return (
@@ -448,6 +449,9 @@ export default function App() {
         }
       />
 
+      <Route path="/pim/employee/:id" element={<PimEmployeeMyInfoPage />} />
+      
+
       {/* Leave */}
       <Route
         path="/leave"
@@ -459,7 +463,10 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route path="/leave/entitlements/add" element={<AddLeaveEntitlementPage />} />
+      <Route
+        path="/leave/entitlements/add"
+        element={<AddLeaveEntitlementPage />}
+      />
       <Route
         path="/leave/entitlements/employee"
         element={<EmployeeEntitlementsPage />}
@@ -533,7 +540,10 @@ export default function App() {
         <Route path="job/job-titles" element={<JobTitlesPage />} />
         <Route path="job/job-titles/add" element={<AddJobTitlePage />} />
         <Route path="job/pay-grades" element={<PayGradesPage />} />
-        <Route path="job/employment-status" element={<EmploymentStatusPage />} />
+        <Route
+          path="job/employment-status"
+          element={<EmploymentStatusPage />}
+        />
         <Route
           path="job/employment-status/add"
           element={<AddEmploymentStatusPage />}
@@ -554,7 +564,10 @@ export default function App() {
 
         <Route path="nationalities" element={<NationalitiesPage />} />
 
-        <Route path="configuration/email-config" element={<EmailConfigPage />} />
+        <Route
+          path="configuration/email-config"
+          element={<EmailConfigPage />}
+        />
       </Route>
 
       {/* Fallback */}

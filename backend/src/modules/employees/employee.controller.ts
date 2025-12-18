@@ -126,7 +126,6 @@ export async function getMyEmployee(req: AuthRequest, res: Response) {
   return res.json(employee);
 }
 
-
 export async function updateEmployee(req: Request, res: Response) {
   const { id } = req.params;
   const update = req.body;
