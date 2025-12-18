@@ -3,6 +3,8 @@ import { Request, Response } from "express";
 import { Employee } from "./employee.model";
 import { ApiError } from "../../utils/ApiError"; 
 import { AuthRequest } from "../../middleware/authMiddleware"; 
+import { User } from "../auth/auth.model";
+import { Counter } from "../pim/pimConfig/models/counter.model";
 
 export async function listEmployees(req: Request, res: Response) {
   const {
@@ -74,40 +76,56 @@ export async function getEmployee(req: Request, res: Response) {
   res.json(employee);
 }
 
+async function nextEmployeeId(prefix = "", pad = 4) {
+  const c = await Counter.findOneAndUpdate(
+    { key: "employeeId" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return `${prefix}${String(c.seq).padStart(pad, "0")}`;
+}
+
 export async function getMyEmployee(req: AuthRequest, res: Response) {
   const user = req.user;
 
-  // 1) Basic auth check
-  if (!user) {
+  if (!user?.id) {
     return res.status(401).json({ message: "Unauthenticated" });
   }
 
-  // Depending on how your token is built, email might be in user.email or not at all.
-  const email = (user as any).email;
-  const username = user.username;
+  const dbUser = await User.findById(user.id).select("email username").lean();
+  if (!dbUser) return res.status(404).json({ message: "User not found" });
 
-  let employee = null;
+  const email = (dbUser.email || "").trim();
+  const username = (dbUser.username || "").trim();
 
-  // 2) First try to match by email (best case)
-  if (email) {
-    employee = await Employee.findOne({ email }).lean();
-  }
-
-  // 3) Fallback: try matching by username (in case you use username as email/workEmail)
-  if (!employee) {
-    employee = await Employee.findOne({
-      $or: [{ email: username }, { workEmail: username }],
-    }).lean();
-  }
+  let employee =
+    (email && (await Employee.findOne({ email }).lean())) ||
+    (username && (await Employee.findOne({ email: username }).lean()));
 
   if (!employee) {
-    return res
-      .status(404)
-      .json({ message: "Employee record not found for current user" });
+    const base = username || (email ? email.split("@")[0] : "New Employee");
+    const parts = base.replace(/[._-]+/g, " ").trim().split(/\s+/);
+
+    const firstName = parts[0] || "New";
+    const lastName = parts.slice(1).join(" ") || "Employee";
+
+    // ✅ generate required employeeId
+    const employeeId = await nextEmployeeId("", 4); // => 0001, 0002...
+
+    const created = await Employee.create({
+      employeeId,
+      firstName,
+      lastName,
+      email: email || username || undefined,
+      status: "ACTIVE",
+    });
+
+    return res.json(created);
   }
 
-  res.json(employee);
+  return res.json(employee);
 }
+
 
 export async function updateEmployee(req: Request, res: Response) {
   const { id } = req.params;

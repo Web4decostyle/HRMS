@@ -87,13 +87,15 @@ export async function login(req: Request, res: Response) {
   }
 
   const token = jwt.sign(
-    {
-      sub: user.id,
-      role: user.role,
-    },
-    JWT_SECRET as jwt.Secret,
-    { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
-  );
+  {
+    sub: user.id,
+    role: user.role,
+    username: user.username,
+    email: user.email,
+  },
+  JWT_SECRET as jwt.Secret,
+  { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
+);
 
   res.json({
     token,

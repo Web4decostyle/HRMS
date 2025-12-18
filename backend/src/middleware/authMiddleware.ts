@@ -38,7 +38,13 @@ export function requireAuth(
       return next(ApiError.unauthorized("Invalid auth token payload"));
     }
 
-    req.user = { id: String(userId), role: String(role) };
+    req.user = {
+  id: String(userId),
+  role: String(role),
+  username: payload.username,
+  email: payload.email,
+};
+
     next();
   } catch (err) {
     return next(ApiError.unauthorized("Invalid auth token"));
