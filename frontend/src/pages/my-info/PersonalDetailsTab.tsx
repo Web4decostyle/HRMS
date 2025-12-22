@@ -1,5 +1,11 @@
 // frontend/src/pages/my-info/PersonalDetailsTab.tsx
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import AttachmentsBlock from "./AttachmentsBlock";
 import { labelCls, inputCls } from "./myInfoStyles";
 import {
@@ -54,7 +60,11 @@ const emptyForm: FormState = {
   customValues: {},
 };
 
-export default function PersonalDetailsTab({ employee, onSave, isSaving }: PersonalProps) {
+export default function PersonalDetailsTab({
+  employee,
+  onSave,
+  isSaving,
+}: PersonalProps) {
   // ------------- Load config -------------
   const { data: optResp } = useGetOptionalFieldsQuery();
   const { data: customResp } = useGetCustomFieldsQuery();
@@ -70,7 +80,10 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
 
   // All custom fields for "personal" screen and active
   const personalCustomFields: PimCustomField[] = useMemo(
-    () => (customResp?.data || []).filter((f) => f.screen === "personal" && f.active),
+    () =>
+      (customResp?.data || []).filter(
+        (f) => f.screen === "personal" && f.active
+      ),
     [customResp]
   );
 
@@ -127,8 +140,12 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
 
     await onSave({
       ...form,
-      dateOfBirth: form.dateOfBirth ? new Date(form.dateOfBirth).toISOString() : undefined,
-      licenseExpiry: form.licenseExpiry ? new Date(form.licenseExpiry).toISOString() : undefined,
+      dateOfBirth: form.dateOfBirth
+        ? new Date(form.dateOfBirth).toISOString()
+        : undefined,
+      licenseExpiry: form.licenseExpiry
+        ? new Date(form.licenseExpiry).toISOString()
+        : undefined,
       customValues: form.customValues,
     });
   }
@@ -139,10 +156,15 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
   return (
     <>
       <div className="px-7 py-4 border-b border-[#edf0f7]">
-        <h2 className="text-[13px] font-semibold text-slate-800">Personal Details</h2>
+        <h2 className="text-[13px] font-semibold text-slate-800">
+          Personal Details
+        </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-7 pt-5 pb-4 flex-1 flex flex-col">
+      <form
+        onSubmit={handleSubmit}
+        className="px-7 pt-5 pb-4 flex-1 flex flex-col"
+      >
         <div className="grid grid-cols-[220px_minmax(0,1fr)] gap-6">
           {/* Left avatar area */}
           <div className="flex flex-col items-center pt-1">
@@ -339,15 +361,32 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
               {optional.showSmoker && (
                 <div>
                   <label className={labelCls}>Smoker</label>
-                  <div className="flex items-center h-9">
-                    <label className="flex items-center gap-1 text-[12px] text-slate-700">
+
+                  <div className="flex items-center gap-4 h-9">
+                    {/* YES */}
+                    <label className="flex items-center gap-2 text-[12px] text-slate-700">
                       <input
-                        type="checkbox"
-                        name="smoker"
-                        checked={form.smoker}
-                        onChange={handleCheckbox}
+                        type="radio"
+                        name="smoker_choice"
+                        checked={form.smoker === true}
+                        onChange={() =>
+                          setForm((p) => ({ ...p, smoker: true }))
+                        }
                       />
                       <span>Yes</span>
+                    </label>
+
+                    {/* NO */}
+                    <label className="flex items-center gap-2 text-[12px] text-slate-700">
+                      <input
+                        type="radio"
+                        name="smoker_choice"
+                        checked={form.smoker === false}
+                        onChange={() =>
+                          setForm((p) => ({ ...p, smoker: false }))
+                        }
+                      />
+                      <span>No</span>
                     </label>
                   </div>
                 </div>
@@ -376,13 +415,17 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
                   <div key={field._id}>
                     <label className={labelCls}>
                       {field.fieldName}
-                      {field.required && <span className="text-red-500">*</span>}
+                      {field.required && (
+                        <span className="text-red-500">*</span>
+                      )}
                     </label>
 
                     {field.type === "dropdown" && field.dropdownOptions && (
                       <select
                         value={form.customValues[field._id] || ""}
-                        onChange={(e) => handleCustomChange(field._id, e.target.value)}
+                        onChange={(e) =>
+                          handleCustomChange(field._id, e.target.value)
+                        }
                         className={inputCls}
                       >
                         <option value="">-- Select --</option>
@@ -397,7 +440,9 @@ export default function PersonalDetailsTab({ employee, onSave, isSaving }: Perso
                     {field.type === "text" && (
                       <input
                         value={form.customValues[field._id] || ""}
-                        onChange={(e) => handleCustomChange(field._id, e.target.value)}
+                        onChange={(e) =>
+                          handleCustomChange(field._id, e.target.value)
+                        }
                         className={inputCls}
                       />
                     )}
