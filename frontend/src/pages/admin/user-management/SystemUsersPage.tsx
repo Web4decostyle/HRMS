@@ -7,7 +7,7 @@ import {
 } from "../../../features/admin/adminApi";
 import { ChevronUp, KeyRound, Pencil, Trash2 } from "lucide-react";
 
-type RoleOption = "ADMIN" | "HR" | "ESS" | "";
+type RoleOption = "ADMIN" | "HR" | "ESS" | "ESS_VIEWER" | "";
 type StatusOption = "ENABLED" | "DISABLED" | "";
 
 export default function SystemUsersPage() {
@@ -31,7 +31,6 @@ export default function SystemUsersPage() {
   const [updateStatus] = useUpdateSystemUserStatusMutation();
   const [deleteUser] = useDeleteSystemUserMutation();
 
-  // "Add User" inline form (hidden by default)
   const [showAddRow, setShowAddRow] = useState(false);
   const [form, setForm] = useState({
     username: "",
@@ -39,6 +38,8 @@ export default function SystemUsersPage() {
     role: "ESS" as RoleOption,
     employeeName: "",
   });
+
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   function handleFilterChange(
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -60,44 +61,61 @@ export default function SystemUsersPage() {
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
-    // filters already bound to query
   }
 
   async function handleCreateUser(e: FormEvent) {
     e.preventDefault();
-    if (!form.username.trim() || !form.password.trim()) return;
+    setErrorMsg("");
 
-    await createUser({
-      username: form.username.trim(),
-      password: form.password.trim(),
-      role: (form.role || "ESS") as any,
-      employeeName: form.employeeName.trim() || undefined,
-    }).unwrap();
+    if (!form.username.trim() || !form.password.trim()) {
+      setErrorMsg("Username and password are required.");
+      return;
+    }
 
-    setForm({
-      username: "",
-      password: "",
-      role: "ESS",
-      employeeName: "",
-    });
-    setShowAddRow(false);
+    try {
+      await createUser({
+        username: form.username.trim(), // backend normalizes
+        password: form.password.trim(),
+        role: (form.role || "ESS") as any,
+        employeeName: form.employeeName.trim() || undefined,
+      }).unwrap();
+
+      setForm({
+        username: "",
+        password: "",
+        role: "ESS",
+        employeeName: "",
+      });
+      setShowAddRow(false);
+    } catch (err: any) {
+      setErrorMsg(err?.data?.message || "Failed to create user.");
+    }
   }
 
   async function toggleStatus(id: string, current: "ENABLED" | "DISABLED") {
+    setErrorMsg("");
     const next = current === "ENABLED" ? "DISABLED" : "ENABLED";
-    await updateStatus({ id, status: next }).unwrap();
+    try {
+      await updateStatus({ id, status: next }).unwrap();
+    } catch (err: any) {
+      setErrorMsg(err?.data?.message || "Failed to update status.");
+    }
   }
 
   async function handleDelete(id: string) {
+    setErrorMsg("");
     if (!window.confirm("Delete this user?")) return;
-    await deleteUser(id).unwrap();
+    try {
+      await deleteUser(id).unwrap();
+    } catch (err: any) {
+      setErrorMsg(err?.data?.message || "Failed to delete user.");
+    }
   }
 
   const recordCount = users?.length ?? 0;
 
   return (
     <div className="space-y-6 text-xs">
-      {/* Breadcrumb / Page title */}
       <div className="flex flex-col gap-1">
         <p className="text-[11px] text-slate-400">Admin</p>
         <h1 className="text-base md:text-lg font-semibold text-slate-900">
@@ -106,13 +124,15 @@ export default function SystemUsersPage() {
         </h1>
       </div>
 
-      {/* FILTER CARD */}
+      {errorMsg && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[11px] text-red-700">
+          {errorMsg}
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Card header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">
-            System Users
-          </h2>
+          <h2 className="text-sm font-semibold text-slate-800">System Users</h2>
           <button
             type="button"
             className="h-7 w-7 flex items-center justify-center rounded-full border border-slate-200 bg-slate-50"
@@ -121,7 +141,6 @@ export default function SystemUsersPage() {
           </button>
         </div>
 
-        {/* Filters */}
         <form
           onSubmit={handleSearch}
           className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-4"
@@ -152,6 +171,7 @@ export default function SystemUsersPage() {
               <option value="ADMIN">Admin</option>
               <option value="HR">HR</option>
               <option value="ESS">ESS</option>
+              <option value="ESS_VIEWER">ESS (View Only)</option>
             </select>
           </div>
 
@@ -182,7 +202,6 @@ export default function SystemUsersPage() {
             </select>
           </div>
 
-          {/* Buttons row */}
           <div className="md:col-span-4 flex justify-end gap-3 mt-2">
             <button
               type="button"
@@ -201,13 +220,14 @@ export default function SystemUsersPage() {
         </form>
       </div>
 
-      {/* ADD + TABLE CARD */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Top bar with +Add */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <button
             type="button"
-            onClick={() => setShowAddRow((v) => !v)}
+            onClick={() => {
+              setErrorMsg("");
+              setShowAddRow((v) => !v);
+            }}
             disabled={isSaving}
             className="px-6 py-1.5 rounded-full bg-lime-500 hover:bg-lime-600 text-white text-[11px] font-semibold disabled:opacity-60 flex items-center justify-center shadow-sm"
           >
@@ -215,7 +235,6 @@ export default function SystemUsersPage() {
           </button>
         </div>
 
-        {/* Inline Add Row (hidden by default –  opens a separate page, this keeps your existing backend) */}
         {showAddRow && (
           <form
             onSubmit={handleCreateUser}
@@ -259,6 +278,7 @@ export default function SystemUsersPage() {
                 <option value="ADMIN">Admin</option>
                 <option value="HR">HR</option>
                 <option value="ESS">ESS</option>
+                <option value="ESS_VIEWER">ESS (View Only)</option>
               </select>
             </div>
 
@@ -294,12 +314,10 @@ export default function SystemUsersPage() {
           </form>
         )}
 
-        {/* Record count */}
         <div className="px-6 pt-4 pb-2 text-[11px] text-slate-500">
           ({recordCount}) Record Found
         </div>
 
-        {/* Table */}
         <div className="px-6 pb-5">
           <div className="mt-1 border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/70">
             <table className="w-full text-[11px]">
@@ -308,7 +326,9 @@ export default function SystemUsersPage() {
                   <th className="px-4 py-2 w-10 text-left">
                     <input type="checkbox" className="accent-green-500" />
                   </th>
-                  <th className="px-4 py-2 text-left font-semibold">Username</th>
+                  <th className="px-4 py-2 text-left font-semibold">
+                    Username
+                  </th>
                   <th className="px-4 py-2 text-left font-semibold">User Role</th>
                   <th className="px-4 py-2 text-left font-semibold">
                     Employee Name
@@ -369,14 +389,12 @@ export default function SystemUsersPage() {
                           <button
                             type="button"
                             className="h-7 w-7 rounded-full border border-slate-200 flex items-center justify-center bg-white hover:bg-slate-50"
-                            // TODO: implement reset password / view details
                           >
                             <KeyRound className="h-3.5 w-3.5 text-slate-500" />
                           </button>
                           <button
                             type="button"
                             className="h-7 w-7 rounded-full border border-slate-200 flex items-center justify-center bg-white hover:bg-slate-50"
-                            // TODO: implement edit flow
                           >
                             <Pencil className="h-3.5 w-3.5 text-slate-500" />
                           </button>

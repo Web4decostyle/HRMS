@@ -1,6 +1,7 @@
 import AdminSidebar from "../../components/Sidebar";
 import AdminTopNav from "../../components/admin/AdminTopNav";
 import { Outlet } from "react-router-dom";
+import ViewOnlyGuard from "../../components/ViewOnlyGuard";
 
 export default function AdminLayout() {
   return (
@@ -11,7 +12,9 @@ export default function AdminLayout() {
         <AdminTopNav />
 
         <div className="flex-1 overflow-auto bg-gray-100 p-4">
-          <Outlet />
+          <ViewOnlyGuard>
+            <Outlet />
+          </ViewOnlyGuard>
         </div>
       </div>
     </div>

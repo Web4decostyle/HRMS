@@ -101,7 +101,7 @@ export interface Nationality {
 export interface SystemUser {
   _id: string;
   username: string;
-  role: "ADMIN" | "HR" | "ESS";
+  role: "ADMIN" | "HR" | "ESS" | "ESS_VIEWER";
   status: "ENABLED" | "DISABLED";
   employeeName?: string;
 }
@@ -164,7 +164,7 @@ export const adminApi = createApi({
       query: (body) => ({
         url: "admin/job-titles",
         method: "POST",
-        body, // can be JSON object or FormData (for file upload)
+        body,
       }),
       invalidatesTags: ["JobTitle"],
     }),
@@ -217,7 +217,7 @@ export const adminApi = createApi({
 
     /* ----- Employment Statuses ----- */
     getEmploymentStatuses: builder.query<EmploymentStatus[], void>({
-      query: () => "admin/employment-status", // plural: matches backend
+      query: () => "admin/employment-status",
       providesTags: (result) =>
         result
           ? [
@@ -247,7 +247,7 @@ export const adminApi = createApi({
       { id: string; name: string }
     >({
       query: ({ id, ...body }) => ({
-        url: `admin/employment-status/${id}`, // plural path
+        url: `admin/employment-status/${id}`,
         method: "PUT",
         body,
       }),
@@ -261,7 +261,7 @@ export const adminApi = createApi({
       string
     >({
       query: (id) => ({
-        url: `admin/employment-status/${id}`, // plural path
+        url: `admin/employment-status/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: (result, error, id) => [
@@ -294,41 +294,36 @@ export const adminApi = createApi({
       invalidatesTags: [{ type: "JobCategory", id: "LIST" }],
     }),
 
-    updateJobCategory: builder.mutation<
-      JobCategory,
-      { id: string; name: string }
-    >({
-      query: ({ id, ...body }) => ({
-        url: `admin/job-categories/${id}`,
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: (result, error, { id }) => [{ type: "JobCategory", id }],
-    }),
+    updateJobCategory: builder.mutation<JobCategory, { id: string; name: string }>(
+      {
+        query: ({ id, ...body }) => ({
+          url: `admin/job-categories/${id}`,
+          method: "PUT",
+          body,
+        }),
+        invalidatesTags: (result, error, { id }) => [{ type: "JobCategory", id }],
+      }
+    ),
 
-    deleteJobCategory: builder.mutation<
-      { success: boolean; id: string },
-      string
-    >({
-      query: (id) => ({
-        url: `admin/job-categories/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: "JobCategory", id },
-        { type: "JobCategory", id: "LIST" },
-      ],
-    }),
+    deleteJobCategory: builder.mutation<{ success: boolean; id: string }, string>(
+      {
+        query: (id) => ({
+          url: `admin/job-categories/${id}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: (result, error, id) => [
+          { type: "JobCategory", id },
+          { type: "JobCategory", id: "LIST" },
+        ],
+      }
+    ),
 
     /* ----- Work Shifts ----- */
     getWorkShifts: builder.query<WorkShift[], void>({
       query: () => "admin/work-shifts",
       providesTags: ["WorkShift"],
     }),
-    createWorkShift: builder.mutation<
-      WorkShift,
-      { name: string; hoursPerDay: number }
-    >({
+    createWorkShift: builder.mutation<WorkShift, { name: string; hoursPerDay: number }>({
       query: (body) => ({
         url: "admin/work-shifts",
         method: "POST",
@@ -336,8 +331,6 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["WorkShift"],
     }),
-
-    // New: updateWorkShift
     updateWorkShift: builder.mutation<
       WorkShift,
       {
@@ -356,27 +349,20 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["WorkShift"],
     }),
-
-    // New: deleteWorkShift
-    deleteWorkShift: builder.mutation<{ success: boolean; id: string }, string>(
-      {
-        query: (id) => ({
-          url: `admin/work-shifts/${id}`,
-          method: "DELETE",
-        }),
-        invalidatesTags: ["WorkShift"],
-      }
-    ),
+    deleteWorkShift: builder.mutation<{ success: boolean; id: string }, string>({
+      query: (id) => ({
+        url: `admin/work-shifts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["WorkShift"],
+    }),
 
     /* ----- Locations ----- */
     getLocations: builder.query<Location[], void>({
       query: () => "admin/locations",
       providesTags: ["Location"],
     }),
-    createLocation: builder.mutation<
-      Location,
-      { name: string; city?: string; country?: string; address?: string }
-    >({
+    createLocation: builder.mutation<Location, { name: string; city?: string; country?: string; address?: string }>({
       query: (body) => ({
         url: "admin/locations",
         method: "POST",
@@ -404,10 +390,7 @@ export const adminApi = createApi({
       query: () => "admin/qualifications/skills",
       providesTags: ["Skill"],
     }),
-    createSkill: builder.mutation<
-      Skill,
-      { name: string; description?: string }
-    >({
+    createSkill: builder.mutation<Skill, { name: string; description?: string }>({
       query: (body) => ({
         url: "admin/qualifications/skills",
         method: "POST",
@@ -483,12 +466,14 @@ export const adminApi = createApi({
       }),
       providesTags: ["SystemUser"],
     }),
+
+    // ✅ FIXED: include ESS_VIEWER in role union
     createSystemUser: builder.mutation<
       SystemUser,
       {
         username: string;
         password: string;
-        role: "ADMIN" | "HR" | "ESS";
+        role: "ADMIN" | "HR" | "ESS" | "ESS_VIEWER";
         status?: "ENABLED" | "DISABLED";
         employeeName?: string;
       }
@@ -500,6 +485,7 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["SystemUser"],
     }),
+
     updateSystemUserStatus: builder.mutation<
       SystemUser,
       { id: string; status: "ENABLED" | "DISABLED" }
@@ -511,10 +497,8 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["SystemUser"],
     }),
-    deleteSystemUser: builder.mutation<
-      { success: boolean; id: string },
-      string
-    >({
+
+    deleteSystemUser: builder.mutation<{ success: boolean; id: string }, string>({
       query: (id) => ({
         url: `admin/system-users/${id}`,
         method: "DELETE",
@@ -550,8 +534,8 @@ export const {
 
   useGetWorkShiftsQuery,
   useCreateWorkShiftMutation,
-  useUpdateWorkShiftMutation, 
-  useDeleteWorkShiftMutation, 
+  useUpdateWorkShiftMutation,
+  useDeleteWorkShiftMutation,
 
   useGetLocationsQuery,
   useCreateLocationMutation,

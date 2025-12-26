@@ -7,3 +7,35 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
+/* ---------------------------
+   View-only UX (ESS_VIEWER)
+   Scope: only inside .view-only-scope
+---------------------------- */
+
+/* Disable common mutation buttons */
+.view-only-scope button[type="submit"],
+.view-only-scope button[data-mutate="true"],
+.view-only-scope .btn-danger,
+.view-only-scope .btn-primary,
+.view-only-scope .btn-save,
+.view-only-scope .btn-add {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Disable typical form fields that cause updates */
+.view-only-scope input:not([type="search"]):not([type="text"][data-allow-view-only="true"]),
+.view-only-scope textarea,
+.view-only-scope select {
+  pointer-events: none !important;
+  opacity: 0.75;
+  background: rgba(148, 163, 184, 0.12); /* slate hint */
+}
+
+/* Keep links clickable (navigation still works) */
+.view-only-scope a {
+  pointer-events: auto !important;
+}
+
+/* If you have icon buttons for delete/edit in tables, tag them with data-mutate="true" */

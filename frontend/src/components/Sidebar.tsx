@@ -1,22 +1,48 @@
-// frontend/src/components/Sidebar.tsx
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 import {
   useGetMenuQuery,
   MenuItem,
 } from "../features/navigation/navigationApi";
+import { selectAuthRole } from "../features/auth/selectors";
 
 export default function Sidebar() {
   const { data, isLoading } = useGetMenuQuery();
   const location = useLocation();
+  const role = useSelector(selectAuthRole);
+  const isViewOnly = role === "ESS_VIEWER";
 
-  const items: MenuItem[] = data?.items ?? [];
+  // 🔒 ROLE-BASED FILTER (NO UI CHANGE)
+    const items: MenuItem[] = (data?.items ?? []).filter((item) => {
+    if (!isViewOnly) return true;
+
+    // Section headers (no path) should still appear
+    if (!item.path) return true;
+
+    const path = item.path; // ✅ TS narrowing happens here
+
+    // Allowed ESS_VIEWER routes (OrangeHRM-style)
+    const allowedPaths = [
+      "/", // Dashboard
+      "/my-info",
+      "/leave",
+      "/time",
+      "/directory",
+      "/claim",
+      "/buzz",
+    ];
+
+    return allowedPaths.some(
+      (p) => path === p || path.startsWith(p + "/")
+    );
+  });
+
 
   const baseItemClasses =
     "flex items-center gap-3 px-4 py-2.5 text-sm rounded-r-full transition-colors";
 
   function renderIcon(icon?: string) {
-    // Very simple icon mapping (you can swap to lucide-react later)
     switch (icon) {
       case "home":
         return "🏠";
@@ -54,7 +80,7 @@ export default function Sidebar() {
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 140, damping: 18 }}
     >
-      {/* Logo / Brand bar */}
+      {/* Logo */}
       <div className="h-14 px-4 flex items-center border-b border-slate-200 bg-gradient-to-r from-green-50 via-white to-white">
         <div className="flex items-center gap-2">
           <motion.div
@@ -100,7 +126,7 @@ export default function Sidebar() {
             );
           }
 
-          const path = item.path; // guaranteed string in this block
+          const path = item.path;
 
           return (
             <NavLink key={item.key} to={path} className="block">
@@ -141,7 +167,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer strip */}
+      {/* Footer */}
       <div className="h-10 px-4 flex items-center border-t border-slate-200 text-[11px] text-slate-400 bg-slate-50">
         <span className="truncate">
           © {new Date().getFullYear()} DecoStyle

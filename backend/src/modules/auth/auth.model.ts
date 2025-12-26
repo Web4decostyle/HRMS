@@ -1,7 +1,6 @@
-// backend/src/modules/auth/auth.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
-export type UserRole = "ADMIN" | "ESS" | "HR" | "SUPERVISOR";
+export type UserRole = "ADMIN" | "ESS" | "ESS_VIEWER" | "HR" | "SUPERVISOR";
 
 export interface IUser extends Document {
   username: string;
@@ -21,6 +20,7 @@ const UserSchema = new Schema<IUser>(
       unique: true,
       index: true,
       trim: true,
+      lowercase: true, // ✅ IMPORTANT to avoid case-duplicates
     },
     email: {
       type: String,
@@ -44,8 +44,9 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["ADMIN", "ESS", "HR", "SUPERVISOR"],
+      enum: ["ADMIN", "ESS", "ESS_VIEWER", "HR", "SUPERVISOR"],
       default: "ESS",
+      required: true,
     },
     isActive: {
       type: Boolean,

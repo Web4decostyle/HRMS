@@ -1,4 +1,3 @@
-// backend/src/modules/auth/auth.controller.ts
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -6,6 +5,10 @@ import { User, IUser } from "./auth.model";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../../config/jwt";
 import { ApiError } from "../../utils/ApiError";
+
+function normalizeUsername(u: string) {
+  return String(u || "").trim().toLowerCase();
+}
 
 function buildUserPayload(user: IUser) {
   return {
@@ -21,15 +24,8 @@ function buildUserPayload(user: IUser) {
 
 // POST /api/auth/register
 export async function register(req: Request, res: Response) {
-  const {
-    username,
-    email,
-    password,
-    firstName,
-    lastName,
-    role,
-    isActive,
-  } = req.body;
+  const { username, email, password, firstName, lastName, role, isActive } =
+    req.body;
 
   if (!username || !password || !firstName || !lastName) {
     throw ApiError.badRequest(
@@ -37,7 +33,13 @@ export async function register(req: Request, res: Response) {
     );
   }
 
-  const existing = await User.findOne({ username }).exec();
+  const normalizedUsername = normalizeUsername(username);
+
+  // ✅ match unique index behavior (case-insensitive)
+  const existing = await User.findOne({ username: normalizedUsername })
+    .collation({ locale: "en", strength: 2 })
+    .exec();
+
   if (existing) {
     throw new ApiError(409, "User already exists");
   }
@@ -45,18 +47,13 @@ export async function register(req: Request, res: Response) {
   const passwordHash = await bcrypt.hash(password, 10);
 
   const user = await User.create({
-    username,
+    username: normalizedUsername,
     email,
     passwordHash,
     firstName,
     lastName,
-    // default remains same as before when role not sent
     role: (role as any) || "ADMIN",
-    // if isActive is explicitly passed (true/false) use it, else default true
-    isActive:
-      typeof isActive === "boolean"
-        ? isActive
-        : true,
+    isActive: typeof isActive === "boolean" ? isActive : true,
   });
 
   res.status(201).json({
@@ -72,7 +69,12 @@ export async function login(req: Request, res: Response) {
     throw ApiError.badRequest("username and password are required");
   }
 
-  const user = await User.findOne({ username }).exec();
+  const normalizedUsername = normalizeUsername(username);
+
+  const user = await User.findOne({ username: normalizedUsername })
+    .collation({ locale: "en", strength: 2 })
+    .exec();
+
   if (!user) {
     throw ApiError.unauthorized("Invalid credentials");
   }
@@ -87,15 +89,15 @@ export async function login(req: Request, res: Response) {
   }
 
   const token = jwt.sign(
-  {
-    sub: user.id,
-    role: user.role,
-    username: user.username,
-    email: user.email,
-  },
-  JWT_SECRET as jwt.Secret,
-  { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
-);
+    {
+      sub: user.id,
+      role: user.role,
+      username: user.username,
+      email: user.email,
+    },
+    JWT_SECRET as jwt.Secret,
+    { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
+  );
 
   res.json({
     token,
