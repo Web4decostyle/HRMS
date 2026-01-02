@@ -90,12 +90,30 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-export async function getMenu(req: AuthRequest, res: Response) {
-  const role = req.user?.role || "ESS";
+// export async function getMenu(req: AuthRequest, res: Response) {
+//   const role = req.user?.role || "ESS";
 
-  const filteredItems = MENU_ITEMS.filter((item) => {
+//   const filteredItems = MENU_ITEMS.filter((item) => {
+//     if (!item.roles || item.roles.length === 0) return true;
+//     return item.roles.includes(role as any);
+//   });
+
+//   return res.json({ items: filteredItems });
+// }
+
+export async function getMenu(req: AuthRequest, res: Response) {
+  // Default role should be ESS (safe)
+  const rawRole = (req.user?.role as string) || "ESS";
+
+  // ✅ FIX: ESS_VIEWER should still see ESS menu items
+  const role = rawRole === "ESS_VIEWER" ? "ESS" : rawRole;
+
+  const filteredItems = (MENU_ITEMS || []).filter((item: any) => {
+    // If item has no roles -> visible to all
     if (!item.roles || item.roles.length === 0) return true;
-    return item.roles.includes(role as any);
+
+    // roles can be string[] like ["ADMIN","HR",...]
+    return item.roles.includes(role);
   });
 
   return res.json({ items: filteredItems });

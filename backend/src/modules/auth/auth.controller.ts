@@ -23,9 +23,46 @@ function buildUserPayload(user: IUser) {
 }
 
 // POST /api/auth/register
+// export async function register(req: Request, res: Response) {
+//   const { username, email, password, firstName, lastName, role, isActive } =
+//     req.body;
+
+//   if (!username || !password || !firstName || !lastName) {
+//     throw ApiError.badRequest(
+//       "username, password, firstName, lastName are required"
+//     );
+//   }
+
+//   const normalizedUsername = normalizeUsername(username);
+
+//   // ✅ match unique index behavior (case-insensitive)
+//   const existing = await User.findOne({ username: normalizedUsername })
+//     .collation({ locale: "en", strength: 2 })
+//     .exec();
+
+//   if (existing) {
+//     throw new ApiError(409, "User already exists");
+//   }
+
+//   const passwordHash = await bcrypt.hash(password, 10);
+
+//   const user = await User.create({
+//     username: normalizedUsername,
+//     email,
+//     passwordHash,
+//     firstName,
+//     lastName,
+//     role: (role as any) || "ADMIN",
+//     isActive: typeof isActive === "boolean" ? isActive : true,
+//   });
+
+//   res.status(201).json({
+//     user: buildUserPayload(user),
+//   });
+// }
+// POST /api/auth/register
 export async function register(req: Request, res: Response) {
-  const { username, email, password, firstName, lastName, role, isActive } =
-    req.body;
+  const { username, email, password, firstName, lastName } = req.body;
 
   if (!username || !password || !firstName || !lastName) {
     throw ApiError.badRequest(
@@ -35,7 +72,7 @@ export async function register(req: Request, res: Response) {
 
   const normalizedUsername = normalizeUsername(username);
 
-  // ✅ match unique index behavior (case-insensitive)
+  // unique username check (case-insensitive)
   const existing = await User.findOne({ username: normalizedUsername })
     .collation({ locale: "en", strength: 2 })
     .exec();
@@ -52,11 +89,27 @@ export async function register(req: Request, res: Response) {
     passwordHash,
     firstName,
     lastName,
-    role: (role as any) || "ADMIN",
-    isActive: typeof isActive === "boolean" ? isActive : true,
+
+    // ✅ FIX: public register always ESS
+    role: "ESS",
+
+    isActive: true,
   });
 
-  res.status(201).json({
+  // If you want token on register (optional, but common):
+  const token = jwt.sign(
+    {
+      sub: user.id,
+      role: user.role,
+      username: user.username,
+      email: user.email,
+    },
+    JWT_SECRET as jwt.Secret,
+    { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
+  );
+
+  return res.status(201).json({
+    token,
     user: buildUserPayload(user),
   });
 }
@@ -118,3 +171,6 @@ export async function me(req: AuthRequest, res: Response) {
 
   res.json({ user: buildUserPayload(user) });
 }
+
+
+

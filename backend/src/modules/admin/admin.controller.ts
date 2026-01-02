@@ -18,7 +18,6 @@ import {
 
 import { Education } from "../pim/pim.model";
 
-
 /* ================= ORG UNITS ================= */
 
 export async function listOrgUnits(_req: Request, res: Response) {

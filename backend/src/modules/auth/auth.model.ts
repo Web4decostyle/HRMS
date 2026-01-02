@@ -20,11 +20,13 @@ const UserSchema = new Schema<IUser>(
       unique: true,
       index: true,
       trim: true,
-      lowercase: true, // ✅ IMPORTANT to avoid case-duplicates
+      lowercase: true,
     },
     email: {
       type: String,
       required: false,
+      unique: true,
+      sparse: true, // ✅ THIS IS THE FIX
       lowercase: true,
       trim: true,
     },

@@ -12,19 +12,20 @@ function getNameParts(employeeName: string | undefined, username: string) {
 }
 
 function normalizeUsername(u: string) {
-  // normalize spaces + case
-  return u.trim().toLowerCase();
+  return String(u || "").trim().toLowerCase();
 }
 
 function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function getPasswordFieldName(): "passwordHash" | "password" {
-  if ((User as any).schema?.path?.("passwordHash")) return "passwordHash";
-  if ((User as any).schema?.path?.("password")) return "password";
-  return "passwordHash";
-}
+const allowedRoles = new Set([
+  "ADMIN",
+  "HR",
+  "ESS",
+  "ESS_VIEWER",
+  "SUPERVISOR",
+]);
 
 export async function listSystemUsers(req: Request, res: Response) {
   const { username, role, status } = req.query as {
@@ -34,7 +35,12 @@ export async function listSystemUsers(req: Request, res: Response) {
   };
 
   const filter: any = {};
-  if (username) filter.username = { $regex: username, $options: "i" };
+
+  if (username) {
+    // safer regex (avoid breaking search with special chars)
+    const safe = escapeRegex(username);
+    filter.username = { $regex: safe, $options: "i" };
+  }
   if (role) filter.role = role;
   if (status === "ENABLED") filter.isActive = true;
   if (status === "DISABLED") filter.isActive = false;
@@ -55,68 +61,92 @@ export async function listSystemUsers(req: Request, res: Response) {
 
 export async function createSystemUser(req: Request, res: Response) {
   try {
-    const { username, password, role, status, employeeName } = req.body as {
-      username?: string;
-      password?: string;
-      role?: "ADMIN" | "HR" | "ESS" | "ESS_VIEWER";
-      status?: "ENABLED" | "DISABLED";
-      employeeName?: string;
-    };
+    const { username, email, password, firstName, lastName, role, employeeName, status } =
+      req.body as {
+        username?: string;
+        email?: string;
+        password?: string;
+        firstName?: string;
+        lastName?: string;
+        employeeName?: string;
+        status?: "ENABLED" | "DISABLED";
+        role?: "ADMIN" | "HR" | "ESS" | "ESS_VIEWER" | "SUPERVISOR";
+      };
 
+    // ✅ Required: username + password.
+    // ✅ Names are required by your schema, so we will derive them if not provided.
     if (!username || !password) {
-      throw ApiError.badRequest("username and password are required");
+      return res.status(400).json({
+        message: "username and password are required",
+      });
     }
 
-    const normalized = normalizeUsername(username);
+    const normalizedUsername = normalizeUsername(username);
 
-    const allowedRoles = new Set(["ADMIN", "HR", "ESS", "ESS_VIEWER"]);
-    const finalRole = role && allowedRoles.has(role) ? role : "ESS";
+    // ✅ Check username conflicts (case-insensitive)
+    const existing = await User.findOne({ username: normalizedUsername })
+      .collation({ locale: "en", strength: 2 })
+      .exec();
 
-    // ✅ Important: find conflicts even if DB has weird casing/spaces
-    // - exact match by normalized
-    // - case-insensitive exact match (helps you debug old data)
-const conflict = await User.findOne({ username: normalized })
-  .collation({ locale: "en", strength: 2 }) // 👈 IMPORTANT
-  .lean();
+    if (existing) {
+      return res.status(409).json({ message: "User already exists" });
+    }
 
-if (conflict) {
-  throw ApiError.conflict(
-    `Username already exists (conflict with: "${conflict.username}")`
-  );
-}
+    const passwordHash = await bcrypt.hash(password, 10);
 
+    const finalRole = role && allowedRoles.has(role as string) ? role : "ESS";
 
-    const { firstName, lastName } = getNameParts(employeeName, normalized);
-    const hashed = await bcrypt.hash(password, 10);
+    // ✅ Ensure firstName/lastName always exist (schema requires them)
+    let finalFirstName = (firstName || "").trim();
+    let finalLastName = (lastName || "").trim();
 
-    const passwordField = getPasswordFieldName();
+    if (!finalFirstName || !finalLastName) {
+      const derived = getNameParts(employeeName, normalizedUsername);
+      if (!finalFirstName) finalFirstName = derived.firstName;
+      if (!finalLastName) finalLastName = derived.lastName;
+    }
 
-    const payload: any = {
-      username: normalized,
-      firstName,
-      lastName,
+    // ✅ Build payload safely so we NEVER store email: null/undefined
+    const doc: any = {
+      username: normalizedUsername,
+      passwordHash,
+      firstName: finalFirstName,
+      lastName: finalLastName,
       role: finalRole,
       isActive: status ? status === "ENABLED" : true,
     };
-    payload[passwordField] = hashed;
 
-    const user = await User.create(payload);
+    // ✅ Only attach email if provided (prevents duplicate key { email: null })
+    if (email && String(email).trim()) {
+      doc.email = String(email).trim().toLowerCase();
+    }
 
-    res.status(201).json({
-      _id: user._id,
-      username: (user as any).username,
-      role: (user as any).role,
-      status: (user as any).isActive ? "ENABLED" : "DISABLED",
-      employeeName: `${(user as any).firstName ?? ""} ${(user as any).lastName ?? ""}`.trim(),
+    const user = await User.create(doc);
+
+    return res.status(201).json({
+      user: {
+        id: user.id,
+        _id: (user as any)._id,
+        username: (user as any).username,
+        // email: (user as any).email,
+        firstName: (user as any).firstName,
+        lastName: (user as any).lastName,
+        role: (user as any).role,
+        isActive: (user as any).isActive,
+      },
     });
   } catch (err: any) {
-    if (err?.name === "ValidationError") {
-      throw ApiError.badRequest(err.message);
-    }
+    // ✅ Handle duplicate key errors with helpful message
     if (err?.code === 11000) {
-      throw ApiError.conflict("Username already exists (duplicate key index)");
+      const key = err?.keyPattern
+        ? Object.keys(err.keyPattern)[0]
+        : "field";
+      return res.status(409).json({
+        message: `Duplicate ${key}. Please use another value.`,
+      });
     }
-    throw err;
+
+    return res.status(500).json({ message: err?.message || "Server error" });
   }
 }
 
@@ -139,7 +169,9 @@ export async function updateSystemUserStatus(req: Request, res: Response) {
     username: (user as any).username,
     role: (user as any).role,
     status: (user as any).isActive ? "ENABLED" : "DISABLED",
-    employeeName: `${(user as any).firstName ?? ""} ${(user as any).lastName ?? ""}`.trim(),
+    employeeName: `${(user as any).firstName ?? ""} ${
+      (user as any).lastName ?? ""
+    }`.trim(),
   });
 }
 
