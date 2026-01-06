@@ -36,6 +36,7 @@ import HolidaysPage from "./pages/leave/HolidaysPage";
 import MyTimesheetsPage from "./pages/time/MyTimesheetsPage";
 import MyTimesheetViewPage from "./pages/time/MyTimesheetViewPage";
 import EditTimesheetPage from "./pages/time/EditTimesheetPage";
+import PunchInPage from "./pages/time/attendance/PunchInPage";
 
 // Time, Org, Recruitment, Performance, Directory, Claim, Buzz, Maintenance
 import RecruitmentPage from "./pages/recruitment/RecruitmentPage";
@@ -107,6 +108,7 @@ import PurgeRecordsPage from "./pages/maintenance/PurgeRecordsPage";
 import PurgeCandidateRecordsPage from "./pages/maintenance/PurgeCandidateRecordsPage";
 import AccessRecordsPage from "./pages/maintenance/AccessRecordsPage";
 import PimEmployeeMyInfoPage from "./pages/pim/PimEmployeeMyInfoPage";
+import MyAttendanceRecordsPage from "./pages/time/MyAttendanceRecordsPage";
 
 export default function App() {
   return (
@@ -168,6 +170,28 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <EditTimesheetPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/time/attendance/punch-in"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PunchInPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/time/attendance/my-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <MyAttendanceRecordsPage />
             </Layout>
           </RequireAuth>
         }
@@ -450,7 +474,6 @@ export default function App() {
       />
 
       <Route path="/pim/employee/:id" element={<PimEmployeeMyInfoPage />} />
-      
 
       {/* Leave */}
       <Route

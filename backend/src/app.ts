@@ -31,6 +31,8 @@ import jobTitleRoutes from "./modules/admin/job/jobTitle/jobTitle.routes";
 import payGradeRoutes from "./modules/admin/job/payGrade/payGrade.routes";
 import employmentStatusRoutes from "./modules/admin/job/employmentStatus/employmentStatus.routes";
 import jobCategoryRoutes from "./modules/admin/job/jobCategory/jobCategory.routes";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
+import timeRoutes from "./modules/time/time.routes";
 import path from "path";
 
 const app = express();
@@ -53,7 +55,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/navigation", navigationRoutes);
 
-app.use("/api/time/timesheets", timesheetRoutes);
 app.use("/api/recruitment", recruitmentRoutes);
 app.use("/api/performance", performanceRoutes);
 app.use("/api/directory", directoryRoutes);
@@ -64,6 +65,7 @@ app.use("/api/leave", leaveRoutes);
 app.use("/api/leave-entitlements", leaveEntitlementRoutes);
 app.use("/api/navigation", navigationRoutes);
 app.use("/api/time/timesheets", timesheetRoutes);
+app.use("/api/time", timeRoutes);
 app.use("/api/time/attendance", attendanceRoutes);
 app.use("/api/recruitment", recruitmentRoutes);
 app.use("/api/performance", performanceRoutes);
@@ -75,6 +77,8 @@ app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/pim", pimRoutes);
 app.use("/api/pim/reports", pimReportRouter);
+
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/my-info", myInfoRoutes);
 app.use("/config/email", emailConfigRoutes);

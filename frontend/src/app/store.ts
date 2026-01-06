@@ -21,6 +21,7 @@ import { qualificationApiSlice } from "../features/qualifications/qualificationA
 import { pimConfigApi } from "../features/pim/pimConfigApi";
 import { pimReportsApi } from "../features/pim/pimReportsApi";
 import { dashboardApi } from "../features/dashboard/dashboardApi";
+import { attendanceApi } from "../features/time/attendanceApi";
 
 
 
@@ -47,6 +48,7 @@ export const store = configureStore({
     [pimConfigApi.reducerPath]: pimConfigApi.reducer,
     [pimReportsApi.reducerPath]: pimReportsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [attendanceApi.reducerPath]: attendanceApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -71,6 +73,7 @@ export const store = configureStore({
       qualificationApiSlice.middleware,
       pimConfigApi.middleware,
       pimReportsApi.middleware,
+      attendanceApi.middleware,
       dashboardApi.middleware
     ),
 });

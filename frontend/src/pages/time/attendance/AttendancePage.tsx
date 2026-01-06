@@ -2,7 +2,7 @@ import {
   useGetMyAttendanceQuery,
   useClockInMutation,
   useClockOutMutation,
-} from "../../features/time/timeApi";
+} from "../../../features/time/timeApi";
 
 export default function AttendancePage() {
   const { data: records = [], isLoading } = useGetMyAttendanceQuery();

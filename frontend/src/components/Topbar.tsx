@@ -1,9 +1,7 @@
-// frontend/src/components/Topbar.tsx
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMeQuery } from "../features/auth/authApi";
 
 interface TopbarProps {
-  /** optional page key, e.g. "pim-config-termination-reasons" */
   active?: string;
 }
 
@@ -12,43 +10,54 @@ export default function Topbar({ active }: TopbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const user = data?.user;
-  const fullName = user ? `${user.firstName} ${user.lastName}` : "User";
-  const roleLabel = user?.role ?? "ESS";
+  const user = data?.user as any;
+
+  const fullName: string =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.fullName ||
+    user?.name ||
+    user?.username ||
+    "User";
+
+  const roleLabel: string = user?.role ?? "ESS";
 
   function handleLogout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("userInfo");
     localStorage.removeItem("user");
+    localStorage.removeItem("username");
     navigate("/login");
   }
 
-  // You can also use `active` here later if you want to tweak the title
   function getPageTitle() {
     if (location.pathname.startsWith("/employees")) return "Employees";
     if (location.pathname.startsWith("/leave")) return "Leave";
     if (location.pathname.startsWith("/time")) return "Time";
     if (location.pathname.startsWith("/recruitment")) return "Recruitment";
     if (location.pathname.startsWith("/my-info")) return "My Info";
-    if (location.pathname.startsWith("/admin/pim")) return "PIM"; // optional tweak
+    if (location.pathname.startsWith("/admin/pim")) return "PIM";
     if (location.pathname.startsWith("/admin")) return "Admin";
     return "Dashboard";
   }
 
+  const initials: string =
+    fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p: string) => p[0]!.toUpperCase())
+      .join("") || "U";
+
   return (
     <header className="h-14 px-5 border-b bg-white flex items-center justify-between">
-      {/* Left side: page title */}
       <div>
         <h1 className="text-base font-semibold text-slate-800">
           {getPageTitle()}
         </h1>
-        <p className="text-[11px] text-slate-400">
-          DecoStyle · {roleLabel}
-        </p>
+        <p className="text-[11px] text-slate-400">DecoStyle · {roleLabel}</p>
       </div>
 
-      {/* Right side: search + icons + user */}
       <div className="flex items-center gap-4">
-        {/* Search */}
         <div className="hidden md:flex items-center px-2 py-1 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-500 w-56">
           <span className="mr-2">🔍</span>
           <input
@@ -57,7 +66,6 @@ export default function Topbar({ active }: TopbarProps) {
           />
         </div>
 
-        {/* Icons */}
         <button type="button" className="text-lg" title="Help">
           ❓
         </button>
@@ -65,20 +73,12 @@ export default function Topbar({ active }: TopbarProps) {
           🔔
         </button>
 
-        {/* User */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
-            {fullName
-              .split(" ")
-              .map((p) => p[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
+            {initials}
           </div>
           <div className="leading-tight">
-            <div className="text-xs font-medium text-slate-800">
-              {fullName}
-            </div>
+            <div className="text-xs font-medium text-slate-800">{fullName}</div>
             <button
               type="button"
               onClick={handleLogout}

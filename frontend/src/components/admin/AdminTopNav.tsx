@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, LogOut } from "lucide-react";
+import { useMeQuery } from "../../features/auth/authApi";
 
 const mainTabs = [
   { name: "User Management", path: "/admin/user-management" },
@@ -31,7 +32,6 @@ const mainTabs = [
       { name: "Languages", path: "/admin/qualifications/languages" },
     ],
   },
-  
   {
     name: "Configuration",
     dropdown: [
@@ -47,29 +47,32 @@ export default function AdminTopNav() {
   const { pathname } = useLocation();
 
   const [userMenu, setUserMenu] = useState(false);
-  const [displayName, setDisplayName] = useState<string>("User");
-  const [openTab, setOpenTab] = useState<string | null>(null); // which dropdown is open
+  const [openTab, setOpenTab] = useState<string | null>(null);
 
-  // Read name (adjust keys to your auth)
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("userInfo");
-      const info = raw ? JSON.parse(raw) : null;
-      const nameFromInfo: string | undefined =
-        info?.name || info?.fullName || info?.username;
-      const fallback =
-        localStorage.getItem("username") || localStorage.getItem("email");
-      setDisplayName(nameFromInfo || fallback || "User");
-    } catch {
-      setDisplayName("User");
-    }
-  }, []);
+  const { data } = useMeQuery();
+  const user = data?.user as any;
+
+  const displayName: string =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.fullName ||
+    user?.name ||
+    user?.username ||
+    "User";
+
+  const initials: string =
+    displayName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w: string) => w[0]!.toUpperCase())
+      .join("") || "U";
 
   const isActive = (path: string) => pathname.startsWith(path);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("user");
     localStorage.removeItem("username");
     window.location.href = "/login";
   };
@@ -82,17 +85,19 @@ export default function AdminTopNav() {
     <div className="w-full bg-white">
       {/* Top green gradient bar */}
       <div className="w-full bg-gradient-to-r from-green-500 to-red-500 text-white px-6 py-3 flex items-center justify-between">
-        <h1 className="text-sm font-semibold">Admin </h1>
+        <h1 className="text-sm font-semibold">Admin</h1>
 
         <div className="flex items-center gap-3">
-          
           {/* User menu */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setUserMenu((v) => !v)}
               className="flex items-center gap-2 px-3 py-1.5 bg-white/30 rounded-full text-sm hover:bg-white/40 transition"
             >
-              <div className="h-7 w-7 rounded-full bg-white/70 border border-white/50" />
+              <div className="h-7 w-7 rounded-full bg-white/70 border border-white/50 flex items-center justify-center text-[11px] font-semibold text-slate-700">
+                {initials}
+              </div>
               <span className="text-white font-medium">{displayName}</span>
               <ChevronDown className="w-4 h-4 text-white" />
             </button>
@@ -100,6 +105,7 @@ export default function AdminTopNav() {
             {userMenu && (
               <div className="absolute right-0 mt-2 w-40 bg-white shadow-xl rounded-xl border border-slate-100 z-50">
                 <button
+                  type="button"
                   className="flex w-full items-center gap-2 px-4 py-2 text-red-500 hover:bg-slate-100"
                   onClick={handleLogout}
                 >
@@ -121,12 +127,11 @@ export default function AdminTopNav() {
                 ? true
                 : tab.dropdown?.some((d) => isActive(d.path));
 
-            // simple tab
             if (!tab.dropdown) {
               return (
                 <Link
                   key={tab.name}
-                  to={tab.path}
+                  to={(tab as any).path}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                     active
                       ? "bg-green-100 text-green-600 border border-green-300"
@@ -138,7 +143,6 @@ export default function AdminTopNav() {
               );
             }
 
-            // dropdown tab – CLICK TO OPEN/CLOSE
             return (
               <div key={tab.name} className="relative">
                 <button
