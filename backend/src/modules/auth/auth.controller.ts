@@ -14,9 +14,6 @@ function buildUserPayload(user: IUser) {
   return {
     id: user.id,
     username: user.username,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
     role: user.role,
     isActive: user.isActive,
   };
@@ -102,7 +99,6 @@ export async function register(req: Request, res: Response) {
       sub: user.id,
       role: user.role,
       username: user.username,
-      email: user.email,
     },
     JWT_SECRET as jwt.Secret,
     { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
@@ -146,7 +142,6 @@ export async function login(req: Request, res: Response) {
       sub: user.id,
       role: user.role,
       username: user.username,
-      email: user.email,
     },
     JWT_SECRET as jwt.Secret,
     { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
@@ -171,6 +166,3 @@ export async function me(req: AuthRequest, res: Response) {
 
   res.json({ user: buildUserPayload(user) });
 }
-
-
-

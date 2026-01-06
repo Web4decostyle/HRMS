@@ -33,7 +33,7 @@ export default function SystemUsersPage() {
 
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  // ✅ OrangeHRM style "Add User" modal
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({
     role: "" as RoleOption, // required like screenshot
@@ -87,7 +87,7 @@ export default function SystemUsersPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    // ✅ validations similar to OrangeHRM required fields
+    // ✅ validations 
     if (!addForm.role) return setErrorMsg("User Role is required.");
     if (!addForm.employeeName.trim())
       return setErrorMsg("Employee Name is required.");
@@ -149,7 +149,7 @@ export default function SystemUsersPage() {
 
   const recordCount = users?.length ?? 0;
 
-  // shared input styles (OrangeHRM-like)
+  // shared input styles 
   const labelCls = "font-medium text-slate-700 text-[11px]";
   const inputCls =
     "border border-slate-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-lime-400 focus:border-lime-400";
@@ -373,7 +373,7 @@ export default function SystemUsersPage() {
         </div>
       </div>
 
-      {/* ✅ Add User Modal (OrangeHRM style) */}
+      {/* ✅ Add User Modal  */}
       {showAddModal && (
         <div className="fixed inset-0 z-50">
           {/* overlay */}

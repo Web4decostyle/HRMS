@@ -22,7 +22,7 @@ export default function Sidebar() {
 
     const path = item.path; // ✅ TS narrowing happens here
 
-    // Allowed ESS_VIEWER routes (OrangeHRM-style)
+    
     const allowedPaths = [
       "/", // Dashboard
       "/my-info",
