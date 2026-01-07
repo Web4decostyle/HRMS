@@ -1,4 +1,3 @@
-// backend/src/modules/navigation/navigation.controller.ts
 import { Response } from "express";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { MenuItem } from "./navigation.types";
@@ -18,6 +17,16 @@ const MENU_ITEMS: MenuItem[] = [
     path: "/admin",
     roles: ["ADMIN", "HR"],
   },
+
+  // ✅ NEW: Approvals (Admin only)
+  {
+    key: "approvals",
+    label: "Approvals",
+    icon: "check",
+    path: "/admin/approvals",
+    roles: ["ADMIN"],
+  },
+
   {
     key: "pim",
     label: "PIM",
@@ -90,29 +99,14 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-// export async function getMenu(req: AuthRequest, res: Response) {
-//   const role = req.user?.role || "ESS";
-
-//   const filteredItems = MENU_ITEMS.filter((item) => {
-//     if (!item.roles || item.roles.length === 0) return true;
-//     return item.roles.includes(role as any);
-//   });
-
-//   return res.json({ items: filteredItems });
-// }
-
 export async function getMenu(req: AuthRequest, res: Response) {
-  // Default role should be ESS (safe)
   const rawRole = (req.user?.role as string) || "ESS";
 
-  // ✅ FIX: ESS_VIEWER should still see ESS menu items
+  // ✅ ESS_VIEWER sees ESS menu items
   const role = rawRole === "ESS_VIEWER" ? "ESS" : rawRole;
 
   const filteredItems = (MENU_ITEMS || []).filter((item: any) => {
-    // If item has no roles -> visible to all
     if (!item.roles || item.roles.length === 0) return true;
-
-    // roles can be string[] like ["ADMIN","HR",...]
     return item.roles.includes(role);
   });
 

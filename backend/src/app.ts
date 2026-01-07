@@ -1,10 +1,11 @@
-// backend/src/app.ts
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
+import path from "path";
 
 import { errorHandler } from "./middleware/errorHandler";
+
 import authRoutes from "./modules/auth/auth.routes";
 import employeeRoutes from "./modules/employees/employee.routes";
 import leaveRoutes from "./modules/leave/leave.routes";
@@ -33,7 +34,8 @@ import employmentStatusRoutes from "./modules/admin/job/employmentStatus/employm
 import jobCategoryRoutes from "./modules/admin/job/jobCategory/jobCategory.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import timeRoutes from "./modules/time/time.routes";
-import path from "path";
+
+import changeRequestRoutes from "./modules/change-requests/changeRequest.routes";
 
 const app = express();
 
@@ -48,50 +50,47 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-app.use("/api/auth", authRoutes);
-app.use("/api/employees", employeeRoutes);
-app.use("/api/navigation", navigationRoutes);
+// Core
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/navigation", navigationRoutes);
 
+// Modules
 app.use("/api/recruitment", recruitmentRoutes);
 app.use("/api/performance", performanceRoutes);
 app.use("/api/directory", directoryRoutes);
 app.use("/api/buzz", buzzRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/employees", employeeRoutes);
+
 app.use("/api/leave", leaveRoutes);
 app.use("/api/leave-entitlements", leaveEntitlementRoutes);
-app.use("/api/navigation", navigationRoutes);
+
 app.use("/api/time/timesheets", timesheetRoutes);
 app.use("/api/time", timeRoutes);
 app.use("/api/time/attendance", attendanceRoutes);
-app.use("/api/recruitment", recruitmentRoutes);
-app.use("/api/performance", performanceRoutes);
-app.use("/api/directory", directoryRoutes);
 
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/job-titles", jobTitleRoutes);
+app.use("/api/admin/pay-grades", payGradeRoutes);
+app.use("/api/admin/employment-status", employmentStatusRoutes);
+app.use("/api/admin/job-categories", jobCategoryRoutes);
+
 app.use("/api/claim", claimRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/help", helpRoutes);
+
 app.use("/api/pim", pimRoutes);
 app.use("/api/pim/reports", pimReportRouter);
 
 app.use("/api/dashboard", dashboardRoutes);
-
 app.use("/api/my-info", myInfoRoutes);
-app.use("/config/email", emailConfigRoutes);
 
+app.use("/config/email", emailConfigRoutes);
 app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/pim-config", pimConfigRoutes);
 app.use("/api/claim-config", claimConfigRoutes);
 
-app.use("/api/admin/job-titles", jobTitleRoutes);
-app.use("/api/admin/pay-grades", payGradeRoutes);
-app.use("/api/admin/employment-status", employmentStatusRoutes);
-
-app.use("/api/admin/job-categories", jobCategoryRoutes);
+// ✅ Change Requests (Approval workflow)
+app.use("/api/change-requests", changeRequestRoutes);
 
 app.use(errorHandler);
 

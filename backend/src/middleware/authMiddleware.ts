@@ -1,4 +1,3 @@
-// backend/src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/jwt";
@@ -42,9 +41,12 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
       email: payload.email,
     };
 
-    // ✅ HARD BACKEND PROTECTION: view-only users can only read
-    if (req.user.role === "ESS_VIEWER" && !READ_ONLY_METHODS.has(req.method)) {
-      return next(ApiError.forbidden("View-only account: changes are not allowed"));
+    // ✅ HARD BACKEND PROTECTION: view-only roles can only read
+    if (
+      (req.user.role === "ESS_VIEWER" || req.user.role === "SUPERVISOR") &&
+      !READ_ONLY_METHODS.has(req.method)
+    ) {
+      return next(ApiError.forbidden("Read-only role: changes are not allowed"));
     }
 
     next();

@@ -1,9 +1,8 @@
-// backend/src/middleware/requireRole.ts
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "./authMiddleware";
 import { ApiError } from "../utils/ApiError";
 
-type Role = "ADMIN" | "HR" | "ESS" | "ESS_VIEWER" | "SUPERVISOR";
+export type Role = "ADMIN" | "HR" | "ESS" | "ESS_VIEWER" | "SUPERVISOR";
 
 export function requireRole(...allowedRoles: Role[]) {
   return (req: AuthRequest, _res: Response, next: NextFunction) => {

@@ -1,8 +1,11 @@
-// backend/src/modules/pim/pim.routes.ts
 import { Router } from "express";
+import multer from "multer";
+
 import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { adminOrRequestChange } from "../../middleware/adminOrRequest";
+
 import {
   listEmergencyContacts,
   createEmergencyContact,
@@ -17,94 +20,160 @@ import {
   createWorkExperience,
   deleteWorkExperience,
 } from "./pim.controller";
-import multer from "multer";
-import { importEmployeesCsv, downloadPimSampleCsv } from "./pimConfig/controllers/pimImport.controller";
 
+import {
+  importEmployeesCsv,
+  downloadPimSampleCsv,
+} from "./pimConfig/controllers/pimImport.controller";
 
 const router = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 1 * 1024 * 1024 }, 
+  limits: { fileSize: 1 * 1024 * 1024 },
 });
 
-// Emergency contacts
+/* ===================== Emergency Contacts ===================== */
+
 router.get(
   "/employees/:employeeId/emergency-contacts",
   requireAuth,
   asyncHandler(listEmergencyContacts)
 );
+
 router.post(
   "/employees/:employeeId/emergency-contacts",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "EmergencyContact",
+    action: "CREATE",
+    buildPayload: (req) => ({
+      employee: req.params.employeeId,
+      ...req.body,
+    }),
+  }),
   asyncHandler(createEmergencyContact)
 );
+
 router.delete(
   "/employees/:employeeId/emergency-contacts/:id",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "EmergencyContact",
+    action: "DELETE",
+    getTargetId: (req) => req.params.id,
+  }),
   asyncHandler(deleteEmergencyContact)
 );
 
-// Dependents
+/* ===================== Dependents ===================== */
+
 router.get(
   "/employees/:employeeId/dependents",
   requireAuth,
   asyncHandler(listDependents)
 );
+
 router.post(
   "/employees/:employeeId/dependents",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "Dependent",
+    action: "CREATE",
+    buildPayload: (req) => ({
+      employee: req.params.employeeId,
+      ...req.body,
+    }),
+  }),
   asyncHandler(createDependent)
 );
+
 router.delete(
   "/employees/:employeeId/dependents/:id",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "Dependent",
+    action: "DELETE",
+    getTargetId: (req) => req.params.id,
+  }),
   asyncHandler(deleteDependent)
 );
 
-// Education
+/* ===================== Education ===================== */
+
 router.get(
   "/employees/:employeeId/education",
   requireAuth,
   asyncHandler(listEducation)
 );
+
 router.post(
   "/employees/:employeeId/education",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "Education",
+    action: "CREATE",
+    buildPayload: (req) => ({
+      employee: req.params.employeeId,
+      ...req.body,
+    }),
+  }),
   asyncHandler(createEducation)
 );
+
 router.delete(
   "/employees/:employeeId/education/:id",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "Education",
+    action: "DELETE",
+    getTargetId: (req) => req.params.id,
+  }),
   asyncHandler(deleteEducation)
 );
 
-// Work experience
+/* ===================== Work Experience ===================== */
+
 router.get(
   "/employees/:employeeId/experience",
   requireAuth,
   asyncHandler(listWorkExperience)
 );
+
 router.post(
   "/employees/:employeeId/experience",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "WorkExperience",
+    action: "CREATE",
+    buildPayload: (req) => ({
+      employee: req.params.employeeId,
+      ...req.body,
+    }),
+  }),
   asyncHandler(createWorkExperience)
 );
+
 router.delete(
   "/employees/:employeeId/experience/:id",
   requireAuth,
-  requireRole("ADMIN", "HR"),
+  adminOrRequestChange({
+    module: "PIM",
+    modelName: "WorkExperience",
+    action: "DELETE",
+    getTargetId: (req) => req.params.id,
+  }),
   asyncHandler(deleteWorkExperience)
 );
 
-// ================= PIM Data Import =================
+/* ===================== PIM Data Import ===================== */
 
 // sample CSV
 router.get(
@@ -122,6 +191,5 @@ router.post(
   upload.single("file"),
   asyncHandler(importEmployeesCsv)
 );
-
 
 export default router;

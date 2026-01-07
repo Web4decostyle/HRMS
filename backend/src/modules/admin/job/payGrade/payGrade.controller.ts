@@ -44,10 +44,16 @@ export async function updatePayGrade(req: Request, res: Response, next: NextFunc
       return res.status(400).json({ message: "Name is required" });
     }
 
+    const trimmed = name.trim();
+    const duplicate = await PayGrade.findOne({ name: trimmed, _id: { $ne: id } }).lean();
+    if (duplicate) {
+      return res.status(409).json({ message: "Pay grade name already exists" });
+    }
+
     const grade = await PayGrade.findByIdAndUpdate(
       id,
       {
-        name: name.trim(),
+        name: trimmed,
         currency: currency?.trim() || undefined,
         minSalary: minSalary ?? undefined,
         maxSalary: maxSalary ?? undefined,
