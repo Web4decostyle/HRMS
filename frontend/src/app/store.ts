@@ -23,6 +23,8 @@ import { pimReportsApi } from "../features/pim/pimReportsApi";
 import { dashboardApi } from "../features/dashboard/dashboardApi";
 import { attendanceApi } from "../features/time/attendanceApi";
 import { changeRequestsApi } from "../features/changeRequests/changeRequestsApi";
+import { notificationsApi } from "../features/notifications/notificationsApi";
+
 
 
 
@@ -51,6 +53,7 @@ export const store = configureStore({
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [changeRequestsApi.reducerPath]: changeRequestsApi.reducer,
+    [notificationsApi.reducerPath]: notificationsApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -77,7 +80,8 @@ export const store = configureStore({
       pimReportsApi.middleware,
       attendanceApi.middleware,
       changeRequestsApi.middleware,
-      dashboardApi.middleware
+      dashboardApi.middleware,
+      notificationsApi.middleware
     ),
 });
 

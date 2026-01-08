@@ -32,7 +32,7 @@ const TimesheetEntrySchema = new Schema<ITimesheetEntry>(
 
 const TimesheetSchema = new Schema<ITimesheet>(
   {
-    employee: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
+    employee: { type: Schema.Types.ObjectId, ref: "User", required: true },
     periodStart: { type: Date, required: true },
     periodEnd: { type: Date, required: true },
     status: {

@@ -34,7 +34,7 @@ import employmentStatusRoutes from "./modules/admin/job/employmentStatus/employm
 import jobCategoryRoutes from "./modules/admin/job/jobCategory/jobCategory.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import timeRoutes from "./modules/time/time.routes";
-
+import notificationRoutes from "./modules/notifications/notification.routes";
 import changeRequestRoutes from "./modules/change-requests/changeRequest.routes";
 
 const app = express();
@@ -89,8 +89,9 @@ app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/pim-config", pimConfigRoutes);
 app.use("/api/claim-config", claimConfigRoutes);
 
-// ✅ Change Requests (Approval workflow)
 app.use("/api/change-requests", changeRequestRoutes);
+
+app.use("/api/notifications", notificationRoutes);
 
 app.use(errorHandler);
 

@@ -3,8 +3,9 @@ import { Request, Response } from "express";
 import { Timesheet } from "./timesheet.model";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { ApiError } from "../../utils/ApiError";
+import { notifyRoles, notifyUsers } from "../notifications/notify.utils";
 
-// Helper: ensure we always have start <= end
+// Helper
 function normalizePeriod(start: string, end: string) {
   const s = new Date(start);
   const e = new Date(end);
@@ -17,19 +18,14 @@ function normalizePeriod(start: string, end: string) {
   return { periodStart: s, periodEnd: e };
 }
 
-// POST /api/time/timesheets
-// Employee creates a timesheet (or updates entries)
+// Employee creates timesheet
 export async function createTimesheet(req: AuthRequest, res: Response) {
   if (!req.user?.id) {
     throw ApiError.unauthorized("Not authenticated");
   }
 
   const { periodStart, periodEnd, entries } = req.body;
-
-  const { periodStart: s, periodEnd: e } = normalizePeriod(
-    periodStart,
-    periodEnd
-  );
+  const { periodStart: s, periodEnd: e } = normalizePeriod(periodStart, periodEnd);
 
   const timesheet = await Timesheet.create({
     employee: req.user.id,
@@ -39,10 +35,20 @@ export async function createTimesheet(req: AuthRequest, res: Response) {
     entries: entries || [],
   });
 
+  // 🔔 Notify employee (optional but useful)
+  await notifyUsers({
+    userIds: [req.user.id],
+    title: "Timesheet Created",
+    message: "Your timesheet has been created.",
+    type: "TIME",
+    link: "/time/timesheets/my",
+    meta: { timesheetId: timesheet._id },
+  });
+
   res.status(201).json(timesheet);
 }
 
-// GET /api/time/timesheets/my
+// Employee list
 export async function listMyTimesheets(req: AuthRequest, res: Response) {
   if (!req.user?.id) {
     throw ApiError.unauthorized("Not authenticated");
@@ -55,25 +61,19 @@ export async function listMyTimesheets(req: AuthRequest, res: Response) {
   res.json(items);
 }
 
-// GET /api/time/timesheets/:id
+// Get single timesheet
 export async function getTimesheetById(req: AuthRequest, res: Response) {
   const { id } = req.params;
 
-  const ts = await Timesheet.findById(id)
-    .populate("employee")
-    .lean();
-
+  const ts = await Timesheet.findById(id).populate("employee").lean();
   if (!ts) {
     throw ApiError.notFound("Timesheet not found");
   }
 
-  // Optional: enforce that only owner or managers can view.
-  // For now we just return it.
   res.json(ts);
 }
 
-// GET /api/time/timesheets
-// For ADMIN / HR / SUPERVISOR
+// HR / Admin list
 export async function listAllTimesheets(_req: Request, res: Response) {
   const items = await Timesheet.find()
     .populate("employee")
@@ -83,8 +83,7 @@ export async function listAllTimesheets(_req: Request, res: Response) {
   res.json(items);
 }
 
-// PATCH /api/time/timesheets/:id/status
-// For ADMIN / HR / SUPERVISOR
+// Status update (submit / approve / reject)
 export async function updateTimesheetStatus(req: AuthRequest, res: Response) {
   const { id } = req.params;
   const { status } = req.body;
@@ -100,6 +99,28 @@ export async function updateTimesheetStatus(req: AuthRequest, res: Response) {
 
   ts.status = status;
   await ts.save();
+
+  if (status === "SUBMITTED") {
+    await notifyRoles({
+      roles: ["ADMIN", "HR", "SUPERVISOR"],
+      title: "Timesheet Submitted",
+      message: "A timesheet has been submitted for approval.",
+      type: "TIME",
+      link: "/time/timesheets",
+      meta: { timesheetId: ts._id },
+    });
+  }
+
+  if (status === "APPROVED" || status === "REJECTED") {
+    await notifyUsers({
+      userIds: [ts.employee as any],
+      title: `Timesheet ${status === "APPROVED" ? "Approved" : "Rejected"}`,
+      message: `Your timesheet was ${status.toLowerCase()}.`,
+      type: "TIME",
+      link: "/time/timesheets/my",
+      meta: { timesheetId: ts._id },
+    });
+  }
 
   res.json(ts);
 }

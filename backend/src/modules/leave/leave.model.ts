@@ -30,7 +30,7 @@ const LeaveTypeSchema = new Schema<ILeaveType>(
 
 const LeaveRequestSchema = new Schema<ILeaveRequest>(
   {
-    employee: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
+    employee: { type: Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: Schema.Types.ObjectId, ref: "LeaveType", required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

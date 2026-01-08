@@ -1,9 +1,57 @@
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMeQuery } from "../features/auth/authApi";
+import {
+  useGetUnreadCountQuery,
+  useGetMyNotificationsQuery,
+  useMarkAllReadMutation,
+  useMarkNotificationReadMutation,
+  useDeleteNotificationMutation,
+  AppNotification,
+} from "../features/notifications/notificationsApi";
+import { connectSocket, getSocket } from "../socket";
 
 interface TopbarProps {
   active?: string;
 }
+
+function timeAgo(iso: string) {
+  const d = new Date(iso).getTime();
+  const diff = Date.now() - d;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+}
+
+const typeDot = (type?: string) => {
+  switch (type) {
+    case "ERROR":
+      return "bg-red-500";
+    case "WARNING":
+      return "bg-amber-500";
+    case "SUCCESS":
+      return "bg-emerald-500";
+    case "LEAVE":
+      return "bg-teal-500";
+    case "TIME":
+      return "bg-indigo-500";
+    case "RECRUITMENT":
+      return "bg-pink-500";
+    case "PIM":
+      return "bg-orange-500";
+    case "ORDER":
+      return "bg-blue-500";
+    case "INVOICE":
+      return "bg-lime-500";
+    default:
+      return "bg-slate-400";
+  }
+};
 
 export default function Topbar({ active }: TopbarProps) {
   const { data } = useMeQuery();
@@ -48,12 +96,87 @@ export default function Topbar({ active }: TopbarProps) {
       .map((p: string) => p[0]!.toUpperCase())
       .join("") || "U";
 
+  // ---------------- Notifications ----------------
+  const [open, setOpen] = useState(false);
+  const popRef = useRef<HTMLDivElement | null>(null);
+
+  const { data: unreadData, refetch: refetchUnread } = useGetUnreadCountQuery(undefined, {
+    pollingInterval: 15000,
+    skip: !data?.user,
+  });
+
+  const { data: listData, refetch: refetchList } = useGetMyNotificationsQuery(
+    { limit: 12 },
+    { skip: !data?.user }
+  );
+
+  const unreadCount = unreadData?.count ?? 0;
+  const items = listData?.items ?? [];
+
+  const [markRead] = useMarkNotificationReadMutation();
+  const [markAllRead, { isLoading: isMarkingAll }] = useMarkAllReadMutation();
+  const [deleteOne] = useDeleteNotificationMutation();
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!open) return;
+      const t = e.target as any;
+      if (popRef.current && !popRef.current.contains(t)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  // ✅ Connect socket when user is available
+  useEffect(() => {
+    const uid = user?.id || user?._id;
+    if (!uid) return;
+    connectSocket(String(uid));
+  }, [user?.id, user?._id]);
+
+  // ✅ Listen for real-time notifications
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const onNew = () => {
+      // Instantly refresh bell + list
+      refetchUnread();
+      refetchList();
+    };
+
+    socket.on("notification:new", onNew);
+
+    return () => {
+      socket.off("notification:new", onNew);
+    };
+  }, [refetchUnread, refetchList]);
+
+  async function onOpenBell() {
+    setOpen((s) => !s);
+    if (!open) {
+      refetchUnread();
+      refetchList();
+    }
+  }
+
+  async function handleClickNotification(n: AppNotification) {
+    setOpen(false);
+
+    if (!n.read) {
+      try {
+        await markRead({ id: n._id }).unwrap();
+      } catch {}
+    }
+
+    if (n.link) navigate(n.link);
+  }
+
   return (
     <header className="h-14 px-5 border-b bg-white flex items-center justify-between">
       <div>
-        <h1 className="text-base font-semibold text-slate-800">
-          {getPageTitle()}
-        </h1>
+        <h1 className="text-base font-semibold text-slate-800">{getPageTitle()}</h1>
         <p className="text-[11px] text-slate-400">DecoStyle · {roleLabel}</p>
       </div>
 
@@ -69,10 +192,132 @@ export default function Topbar({ active }: TopbarProps) {
         <button type="button" className="text-lg" title="Help">
           ❓
         </button>
-        <button type="button" className="text-lg" title="Notifications">
-          🔔
-        </button>
 
+        {/* Bell + Dropdown */}
+        <div className="relative" ref={popRef}>
+          <button
+            type="button"
+            onClick={onOpenBell}
+            className="relative text-lg rounded-full w-9 h-9 flex items-center justify-center hover:bg-slate-100"
+            title="Notifications"
+          >
+            🔔
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {open && (
+            <div className="absolute right-0 mt-2 w-[360px] rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden z-50">
+              <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">
+                  Notifications
+                </div>
+                <button
+                  type="button"
+                  disabled={isMarkingAll || items.length === 0}
+                  onClick={async () => {
+                    try {
+                      await markAllRead().unwrap();
+                      refetchUnread();
+                      refetchList();
+                    } catch {}
+                  }}
+                  className="text-[11px] text-green-600 hover:text-green-700 disabled:opacity-50"
+                >
+                  Mark all read
+                </button>
+              </div>
+
+              <div className="max-h-[340px] overflow-auto">
+                {items.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-sm text-slate-500">
+                    No notifications yet.
+                  </div>
+                ) : (
+                  items.map((n) => (
+                    <div
+                      key={n._id}
+                      className={`px-3 py-3 border-b border-slate-100 flex gap-3 cursor-pointer hover:bg-slate-50 ${
+                        n.read ? "opacity-85" : "bg-white"
+                      }`}
+                      onClick={() => handleClickNotification(n)}
+                    >
+                      <div className="pt-1">
+                        <span
+                          className={`inline-block w-2.5 h-2.5 rounded-full ${typeDot(
+                            n.type
+                          )}`}
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-[13px] font-semibold text-slate-800 leading-snug">
+                            {n.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 whitespace-nowrap">
+                            {timeAgo(n.createdAt)}
+                          </div>
+                        </div>
+
+                        {n.message && (
+                          <div className="text-[12px] text-slate-600 mt-0.5 leading-snug">
+                            {n.message}
+                          </div>
+                        )}
+
+                        <div className="mt-2 flex items-center gap-2">
+                          {!n.read && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+                              New
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteOne({ id: n._id });
+                            }}
+                            className="text-[11px] text-slate-400 hover:text-slate-600"
+                            title="Delete"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="px-3 py-2 bg-slate-50 flex items-center justify-between">
+                <button
+                  type="button"
+                  className="text-[11px] text-slate-600 hover:text-slate-800"
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/notifications");
+                  }}
+                >
+                  View all
+                </button>
+
+                <button
+                  type="button"
+                  className="text-[11px] text-slate-600 hover:text-slate-800"
+                  onClick={() => setOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Profile */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
             {initials}
@@ -92,3 +337,4 @@ export default function Topbar({ active }: TopbarProps) {
     </header>
   );
 }
+

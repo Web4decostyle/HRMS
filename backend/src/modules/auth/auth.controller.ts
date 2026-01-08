@@ -16,47 +16,12 @@ function buildUserPayload(user: IUser) {
     username: user.username,
     role: user.role,
     isActive: user.isActive,
+    firstName: (user as any).firstName,
+    lastName: (user as any).lastName,
+    email: (user as any).email,
   };
 }
 
-// POST /api/auth/register
-// export async function register(req: Request, res: Response) {
-//   const { username, email, password, firstName, lastName, role, isActive } =
-//     req.body;
-
-//   if (!username || !password || !firstName || !lastName) {
-//     throw ApiError.badRequest(
-//       "username, password, firstName, lastName are required"
-//     );
-//   }
-
-//   const normalizedUsername = normalizeUsername(username);
-
-//   // ✅ match unique index behavior (case-insensitive)
-//   const existing = await User.findOne({ username: normalizedUsername })
-//     .collation({ locale: "en", strength: 2 })
-//     .exec();
-
-//   if (existing) {
-//     throw new ApiError(409, "User already exists");
-//   }
-
-//   const passwordHash = await bcrypt.hash(password, 10);
-
-//   const user = await User.create({
-//     username: normalizedUsername,
-//     email,
-//     passwordHash,
-//     firstName,
-//     lastName,
-//     role: (role as any) || "ADMIN",
-//     isActive: typeof isActive === "boolean" ? isActive : true,
-//   });
-
-//   res.status(201).json({
-//     user: buildUserPayload(user),
-//   });
-// }
 // POST /api/auth/register
 export async function register(req: Request, res: Response) {
   const { username, email, password, firstName, lastName } = req.body;
