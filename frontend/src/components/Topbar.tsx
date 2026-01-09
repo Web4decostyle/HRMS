@@ -43,7 +43,7 @@ const typeDot = (type?: string) => {
     case "RECRUITMENT":
       return "bg-pink-500";
     case "PIM":
-      return "bg-orange-500";
+      return "bg-green-500";
     case "ORDER":
       return "bg-blue-500";
     case "INVOICE":

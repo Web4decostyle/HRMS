@@ -8,7 +8,7 @@ const MENU_ITEMS: MenuItem[] = [
     label: "Dashboard",
     icon: "home",
     path: "/",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "admin",
@@ -39,28 +39,28 @@ const MENU_ITEMS: MenuItem[] = [
     label: "Leave",
     icon: "calendar",
     path: "/leave",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "time",
     label: "Time",
     icon: "clock",
     path: "/time",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "recruitment",
     label: "Recruitment",
     icon: "briefcase",
     path: "/recruitment",
-    roles: ["ADMIN", "HR"],
+    roles: ["ADMIN", "HR", "SUPERVISOR"],
   },
   {
     key: "myInfo",
     label: "My Info",
     icon: "id",
     path: "/my-info",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "performance",
@@ -74,7 +74,7 @@ const MENU_ITEMS: MenuItem[] = [
     label: "Directory",
     icon: "directory",
     path: "/directory",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "maintenance",
@@ -88,22 +88,19 @@ const MENU_ITEMS: MenuItem[] = [
     label: "Claim",
     icon: "wallet",
     path: "/claim",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
   {
     key: "buzz",
     label: "Buzz",
     icon: "buzz",
     path: "/buzz",
-    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS"],
+    roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
 ];
 
 export async function getMenu(req: AuthRequest, res: Response) {
-  const rawRole = (req.user?.role as string) || "ESS";
-
-  // ✅ ESS_VIEWER sees ESS menu items
-  const role = rawRole === "ESS_VIEWER" ? "ESS" : rawRole;
+  const role = (req.user?.role as string) || "ESS";
 
   const filteredItems = (MENU_ITEMS || []).filter((item: any) => {
     if (!item.roles || item.roles.length === 0) return true;

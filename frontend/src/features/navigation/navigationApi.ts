@@ -1,11 +1,24 @@
 // frontend/src/features/navigation/navigationApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+export type MenuItemRole =
+  | "ADMIN"
+  | "HR"
+  | "SUPERVISOR"
+  | "ESS"
+  | "ESS_VIEWER";
+
 export interface MenuItem {
   key: string;
   label: string;
   icon?: string;
+
+  // backend sends path always, but keep optional to avoid crashing if any old item lacks it
   path?: string;
+
+  // optional fields supported by backend
+  roles?: MenuItemRole[];
+  children?: MenuItem[];
 }
 
 export interface MenuResponse {

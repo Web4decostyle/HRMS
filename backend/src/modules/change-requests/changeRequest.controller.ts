@@ -1,8 +1,10 @@
+// backend/src/modules/change-requests/changeRequest.controller.ts
 import mongoose from "mongoose";
 import { Response } from "express";
 import { ApiError } from "../../utils/ApiError";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { ChangeRequestModel } from "./changeRequest.model";
+import { createNotification } from "../notifications/notification.service";
 
 function requireAdmin(req: AuthRequest) {
   if (req.user?.role !== "ADMIN") throw ApiError.forbidden("Admin only");
@@ -16,7 +18,7 @@ function trimOrUndef(v: any) {
 function sanitizePayload(modelName: string, payload: any) {
   const p = payload || {};
 
-  // PIM models (just pass through; you can tighten later)
+  // PIM models (pass-through; can tighten later)
   if (
     modelName === "EmergencyContact" ||
     modelName === "Dependent" ||
@@ -52,11 +54,11 @@ function sanitizePayload(modelName: string, payload: any) {
     return { name: (p.name || "").toString().trim() };
   }
 
+  // Employee + everything else: pass through
   return p;
 }
 
 async function ensureNoDuplicateOnCreate(modelName: string, payload: any) {
-  // name-unique masters
   if (
     modelName === "JobTitle" ||
     modelName === "PayGrade" ||
@@ -72,7 +74,11 @@ async function ensureNoDuplicateOnCreate(modelName: string, payload: any) {
   }
 }
 
-async function ensureNoDuplicateOnUpdate(modelName: string, targetId: string, payload: any) {
+async function ensureNoDuplicateOnUpdate(
+  modelName: string,
+  targetId: string,
+  payload: any
+) {
   if (
     modelName === "JobTitle" ||
     modelName === "PayGrade" ||
@@ -87,6 +93,21 @@ async function ensureNoDuplicateOnUpdate(modelName: string, targetId: string, pa
     if (exists) throw ApiError.conflict(`${modelName} name already exists`);
   }
 }
+
+// ✅ Whitelist models to avoid security issues
+const ALLOWED_MODELS = new Set([
+  "EmergencyContact",
+  "Dependent",
+  "Education",
+  "WorkExperience",
+  "JobTitle",
+  "PayGrade",
+  "EmploymentStatus",
+  "JobCategory",
+  "Employee",
+]);
+
+/* ========================= LISTING ========================= */
 
 // HR/anyone can see their own requests
 export async function listMyChangeRequests(req: AuthRequest, res: Response) {
@@ -106,6 +127,21 @@ export async function listPendingChangeRequests(req: AuthRequest, res: Response)
   res.json(items);
 }
 
+// ✅ NEW: Admin can see history of approved/rejected (audit log)
+export async function listHistoryChangeRequests(req: AuthRequest, res: Response) {
+  requireAdmin(req);
+  const items = await ChangeRequestModel.find({
+    status: { $in: ["APPROVED", "REJECTED"] },
+  })
+    .sort({ reviewedAt: -1, createdAt: -1 })
+    .limit(500)
+    .lean();
+
+  res.json(items);
+}
+
+/* ========================= ACTIONS ========================= */
+
 export async function approveChangeRequest(req: AuthRequest, res: Response) {
   requireAdmin(req);
 
@@ -114,45 +150,50 @@ export async function approveChangeRequest(req: AuthRequest, res: Response) {
   if (!cr) throw ApiError.notFound("Change request not found");
   if (cr.status !== "PENDING") throw ApiError.badRequest("Request already processed");
 
-  // ✅ whitelist models to avoid security issues
-  const ALLOWED_MODELS = new Set([
-    "EmergencyContact",
-    "Dependent",
-    "Education",
-    "WorkExperience",
-    "JobTitle",
-    "PayGrade",
-    "EmploymentStatus",
-    "JobCategory",
-  ]);
-
   if (!ALLOWED_MODELS.has(cr.modelName)) {
     throw ApiError.badRequest(`Model not allowed: ${cr.modelName}`);
   }
 
   const Model = mongoose.model(cr.modelName);
 
-  // ✅ sanitize payload
-  const payload = sanitizePayload(cr.modelName, cr.payload);
+  // sanitize payload
+  const sanitized = sanitizePayload(cr.modelName, cr.payload);
 
   let result: any = null;
 
   if (cr.action === "CREATE") {
-    await ensureNoDuplicateOnCreate(cr.modelName, payload);
-    result = await Model.create(payload);
+    await ensureNoDuplicateOnCreate(cr.modelName, sanitized);
+    result = await Model.create(sanitized);
   } else if (cr.action === "UPDATE") {
     if (!cr.targetId) throw ApiError.badRequest("targetId required for UPDATE");
-    await ensureNoDuplicateOnUpdate(cr.modelName, cr.targetId, payload);
-    result = await Model.findByIdAndUpdate(cr.targetId, payload, { new: true });
+    await ensureNoDuplicateOnUpdate(cr.modelName, cr.targetId, sanitized);
+    result = await Model.findByIdAndUpdate(cr.targetId, sanitized, { new: true });
   } else if (cr.action === "DELETE") {
     if (!cr.targetId) throw ApiError.badRequest("targetId required for DELETE");
     result = await Model.findByIdAndDelete(cr.targetId);
+  } else {
+    throw ApiError.badRequest("Invalid action");
   }
 
   cr.status = "APPROVED";
   cr.reviewedBy = new mongoose.Types.ObjectId(req.user!.id);
   cr.reviewedAt = new Date();
+
+  // audit snapshots
+  cr.after = sanitized;
+  cr.appliedResult = result;
+
   await cr.save();
+
+  // notify requester
+  await createNotification({
+    userId: String(cr.requestedBy),
+    title: "Change request approved",
+    message: `${cr.module} • ${cr.modelName} • ${cr.action} approved`,
+    type: "SUCCESS",
+    link: "/admin/approvals",
+    meta: { changeRequestId: String(cr._id), status: "APPROVED" },
+  });
 
   res.json({ ok: true, approved: true, appliedResult: result });
 }
@@ -172,6 +213,16 @@ export async function rejectChangeRequest(req: AuthRequest, res: Response) {
   cr.reviewedBy = new mongoose.Types.ObjectId(req.user!.id);
   cr.reviewedAt = new Date();
   await cr.save();
+
+  // notify requester
+  await createNotification({
+    userId: String(cr.requestedBy),
+    title: "Change request rejected",
+    message: `${cr.module} • ${cr.modelName} • ${cr.action} rejected`,
+    type: "WARNING",
+    link: "/admin/approvals",
+    meta: { changeRequestId: String(cr._id), status: "REJECTED" },
+  });
 
   res.json({ ok: true, approved: false });
 }

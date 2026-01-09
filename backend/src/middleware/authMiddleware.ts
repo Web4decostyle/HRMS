@@ -41,11 +41,12 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
       email: payload.email,
     };
 
-    // ✅ HARD BACKEND PROTECTION: view-only roles can only read
-    if (
-      (req.user.role === "ESS_VIEWER" || req.user.role === "SUPERVISOR") &&
-      !READ_ONLY_METHODS.has(req.method)
-    ) {
+    /**
+     * ✅ HARD BACKEND PROTECTION
+     * ESS_VIEWER is view-only: can only read.
+     * NOTE: SUPERVISOR is NOT view-only (supervisors must be able to approve/act).
+     */
+    if (req.user.role === "ESS_VIEWER" && !READ_ONLY_METHODS.has(req.method)) {
       return next(ApiError.forbidden("Read-only role: changes are not allowed"));
     }
 

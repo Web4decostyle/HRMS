@@ -13,14 +13,23 @@ const changeRequestSchema = new Schema(
     },
 
     module: { type: String, required: true, index: true }, // e.g. "PIM"
-    modelName: { type: String, required: true }, // e.g. "EmergencyContact"
+    modelName: { type: String, required: true }, // e.g. "Employee"
     action: { type: String, enum: ["CREATE", "UPDATE", "DELETE"], required: true },
 
     // UPDATE/DELETE target
     targetId: { type: String },
 
+    // ✅ NEW: snapshot BEFORE change (for UPDATE/DELETE)
+    before: { type: Schema.Types.Mixed, default: null },
+
     // CREATE/UPDATE payload
     payload: { type: Schema.Types.Mixed, default: {} },
+
+    // ✅ NEW: sanitized "after" snapshot (what will be applied)
+    after: { type: Schema.Types.Mixed, default: {} },
+
+    // ✅ NEW: applied result snapshot (after admin approves & DB updated)
+    appliedResult: { type: Schema.Types.Mixed, default: null },
 
     reason: { type: String, default: "" },
 

@@ -13,7 +13,12 @@ export interface ChangeRequest {
   action: ChangeAction;
 
   targetId?: string;
+
+  before?: any;        // ✅ NEW
   payload: any;
+  after?: any;         // ✅ NEW
+  appliedResult?: any; // ✅ NEW
+
   reason?: string;
 
   requestedBy: string;
@@ -32,29 +37,24 @@ export const changeRequestsApi = createApi({
   baseQuery: authedBaseQuery,
   tagTypes: ["ChangeRequests"],
   endpoints: (builder) => ({
-    // Admin queue
     getPending: builder.query<ChangeRequest[], void>({
-      query: () => ({
-        url: "change-requests/pending",
-        method: "GET",
-      }),
+      query: () => ({ url: "change-requests/pending", method: "GET" }),
       providesTags: ["ChangeRequests"],
     }),
 
-    // User's own requests (HR can track)
     getMine: builder.query<ChangeRequest[], void>({
-      query: () => ({
-        url: "change-requests/mine",
-        method: "GET",
-      }),
+      query: () => ({ url: "change-requests/mine", method: "GET" }),
+      providesTags: ["ChangeRequests"],
+    }),
+
+    // ✅ NEW: Admin history (approved/rejected)
+    getHistory: builder.query<ChangeRequest[], void>({
+      query: () => ({ url: "change-requests/history", method: "GET" }),
       providesTags: ["ChangeRequests"],
     }),
 
     approve: builder.mutation<{ ok: boolean; approved: boolean }, { id: string }>({
-      query: ({ id }) => ({
-        url: `change-requests/${id}/approve`,
-        method: "POST",
-      }),
+      query: ({ id }) => ({ url: `change-requests/${id}/approve`, method: "POST" }),
       invalidatesTags: ["ChangeRequests"],
     }),
 
@@ -75,6 +75,7 @@ export const changeRequestsApi = createApi({
 export const {
   useGetPendingQuery,
   useGetMineQuery,
+  useGetHistoryQuery,
   useApproveMutation,
   useRejectMutation,
 } = changeRequestsApi;

@@ -1,4 +1,5 @@
-import { Schema, model, Types } from "mongoose";
+// backend/src/modules/notifications/notification.model.ts
+import mongoose, { Schema, InferSchemaType } from "mongoose";
 
 export type NotificationType =
   | "SYSTEM"
@@ -12,28 +13,18 @@ export type NotificationType =
   | "RECRUITMENT"
   | "PIM"
   | "ORDER"
-  | "INVOICE";
+  | "INVOICE"
+  | "APPROVAL"; // ✅ ADD
 
-export interface INotification {
-  userId: Types.ObjectId;
-  title: string;
-  message?: string;
-  type: NotificationType;
-  read: boolean;
-  link?: string; // frontend route like "/leave/requests"
-  meta?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const notificationSchema = new Schema<INotification>(
+const notificationSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    title: { type: String, required: true, trim: true },
-    message: { type: String, trim: true },
+
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+
     type: {
       type: String,
-      default: "INFO",
       enum: [
         "SYSTEM",
         "INFO",
@@ -47,15 +38,21 @@ const notificationSchema = new Schema<INotification>(
         "PIM",
         "ORDER",
         "INVOICE",
+        "APPROVAL", // ✅ ADD
       ],
+      default: "INFO",
+      index: true,
     },
-    read: { type: Boolean, default: false, index: true },
-    link: { type: String, trim: true },
-    meta: { type: Schema.Types.Mixed },
+
+    link: { type: String, default: "" },
+    meta: { type: Schema.Types.Mixed, default: {} },
+
+    isRead: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
 
-notificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
+export type Notification = InferSchemaType<typeof notificationSchema>;
 
-export const Notification = model<INotification>("Notification", notificationSchema);
+export const NotificationModel =
+  mongoose.models.Notification || mongoose.model("Notification", notificationSchema);

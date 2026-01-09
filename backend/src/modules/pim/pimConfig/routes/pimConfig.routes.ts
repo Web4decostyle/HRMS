@@ -14,7 +14,8 @@ import {
 } from "../controllers/pimConfig.controller";
 
 import { requireAuth } from "../../../../middleware/authMiddleware";
-import { requireRole } from "../../../../middleware/roleMiddleware";
+import { requireRole } from "../../../../middleware/requireRole";
+
 
 // 🔥 Import the Termination Reasons Router (YOU MISSED THIS)
 import terminationReasonRoutes from "./terminationReasonRoutes";

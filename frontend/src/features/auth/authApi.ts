@@ -1,5 +1,5 @@
-// frontend/src/features/auth/authApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { clearAuth, setCredentials, setUser, type AuthUser as SliceAuthUser } from "./authSlice";
 
 export interface AuthUser {
   id: string;
@@ -61,6 +61,14 @@ export const authApi = createApi({
         method: "POST",
         body,
       }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(setCredentials({ token: data.token, user: data.user as SliceAuthUser }));
+        } catch {
+          // ignore
+        }
+      },
     }),
     register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (body) => ({
@@ -74,6 +82,14 @@ export const authApi = createApi({
         url: "auth/me",
         method: "GET",
       }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) dispatch(setUser(data.user as SliceAuthUser));
+        } catch {
+          dispatch(clearAuth());
+        }
+      },
     }),
   }),
 });
@@ -81,5 +97,5 @@ export const authApi = createApi({
 export const {
   useLoginMutation,
   useRegisterMutation,
-  useMeQuery,  
+  useMeQuery,
 } = authApi;

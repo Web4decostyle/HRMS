@@ -1,13 +1,9 @@
 import { RootState } from "../../app/store";
+import type { Role } from "./authSlice";
 
-export const selectAuthUser = (s: RootState) => (s as any).auth?.user;
+export const selectAuth = (s: RootState) => s.auth;
+export const selectAuthUser = (s: RootState) => s.auth.user;
+export const selectAuthToken = (s: RootState) => s.auth.token;
 
-export const selectAuthRole = (s: RootState) =>
-  ((s as any).auth?.user?.role as
-    | "ADMIN"
-    | "HR"
-    | "ESS"
-    | "ESS_VIEWER"
-    | undefined);
-
+export const selectAuthRole = (s: RootState) => s.auth.user?.role as Role | undefined;
 export const selectIsViewOnly = (s: RootState) => selectAuthRole(s) === "ESS_VIEWER";

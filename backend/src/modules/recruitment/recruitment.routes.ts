@@ -67,9 +67,11 @@ router.use("/vacancies", vacancyRoutes);
 router.post(
   "/candidates",
   requireAuth,
+  requireRole("ADMIN", "HR"),
   uploadResume.single("resume"),
   asyncHandler(createCandidate)
 );
+
 
 router.get(
   "/candidates",

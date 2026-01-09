@@ -1,11 +1,6 @@
-// frontend/src/pages/auth/LoginPage.tsx
 import { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  useLoginMutation,
-  LoginResponse,
-  LoginRequest,
-} from "../../features/auth/authApi";
+import { useLoginMutation, LoginRequest } from "../../features/auth/authApi";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -22,11 +17,8 @@ export default function LoginPage() {
     const payload: LoginRequest = { username, password };
 
     try {
-      const res: LoginResponse = await login(payload).unwrap();
-
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
-
+      await login(payload).unwrap();
+      // token + user are stored by authApi -> authSlice
       navigate("/");
     } catch (err: any) {
       const msg =
@@ -67,11 +59,7 @@ export default function LoginPage() {
           />
         </label>
 
-        {error && (
-          <p className="text-sm text-red-600 mb-3">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
         <button
           type="submit"

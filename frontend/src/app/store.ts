@@ -1,5 +1,8 @@
 // frontend/src/app/store.ts
 import { configureStore } from "@reduxjs/toolkit";
+
+import authReducer from "../features/auth/authSlice";
+
 import { authApi } from "../features/auth/authApi";
 import { navigationApi } from "../features/navigation/navigationApi";
 import { timeApi } from "../features/time/timeApi";
@@ -8,7 +11,7 @@ import { performanceApi } from "../features/performance/performanceApi";
 import { directoryApi } from "../features/directory/directoryApi";
 import { buzzApi } from "../features/buzz/buzzApi";
 import { adminApi } from "../features/admin/adminApi";
-import { claimConfigApi  } from "../features/claim/claimConfigApi";
+import { claimConfigApi } from "../features/claim/claimConfigApi";
 import { claimApi } from "../features/claim/claimApi";
 import { maintenanceApi } from "../features/maintenance/maintenanceApi";
 import { helpApi } from "../features/help/helpApi";
@@ -25,11 +28,12 @@ import { attendanceApi } from "../features/time/attendanceApi";
 import { changeRequestsApi } from "../features/changeRequests/changeRequestsApi";
 import { notificationsApi } from "../features/notifications/notificationsApi";
 
-
-
-
 export const store = configureStore({
-  reducer: { 
+  reducer: {
+    // ✅ ADD THIS LINE (THIS IS WHAT FIXES "Property 'auth' does not exist")
+    auth: authReducer,
+
+    // RTK Query APIs
     [authApi.reducerPath]: authApi.reducer,
     [navigationApi.reducerPath]: navigationApi.reducer,
     [timeApi.reducerPath]: timeApi.reducer,
@@ -46,7 +50,7 @@ export const store = configureStore({
     [employeesApi.reducerPath]: employeesApi.reducer,
     [pimApi.reducerPath]: pimApi.reducer,
     [myInfoApi.reducerPath]: myInfoApi.reducer,
-    [configApi.reducerPath]: configApi.reducer, 
+    [configApi.reducerPath]: configApi.reducer,
     [qualificationApiSlice.reducerPath]: qualificationApiSlice.reducer,
     [pimConfigApi.reducerPath]: pimConfigApi.reducer,
     [pimReportsApi.reducerPath]: pimReportsApi.reducer,
@@ -54,8 +58,8 @@ export const store = configureStore({
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [changeRequestsApi.reducerPath]: changeRequestsApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
-
   },
+
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       authApi.middleware,
@@ -67,20 +71,20 @@ export const store = configureStore({
       buzzApi.middleware,
       adminApi.middleware,
       claimApi.middleware,
-      claimConfigApi .middleware,
+      claimConfigApi.middleware,
       maintenanceApi.middleware,
       helpApi.middleware,
       leaveApi.middleware,
       employeesApi.middleware,
       pimApi.middleware,
-      configApi.middleware, 
       myInfoApi.middleware,
+      configApi.middleware,
       qualificationApiSlice.middleware,
       pimConfigApi.middleware,
       pimReportsApi.middleware,
+      dashboardApi.middleware,
       attendanceApi.middleware,
       changeRequestsApi.middleware,
-      dashboardApi.middleware,
       notificationsApi.middleware
     ),
 });

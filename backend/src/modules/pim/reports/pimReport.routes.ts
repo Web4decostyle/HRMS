@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../../../middleware/authMiddleware";
-import { requireRole } from "../../../middleware/roleMiddleware";
+import { requireRole } from "../../../middleware/requireRole";
 import {
   listPimReports,
   getPimReport,
