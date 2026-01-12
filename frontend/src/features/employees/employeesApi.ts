@@ -38,7 +38,6 @@ export interface Employee {
   department?: string; // used as Sub Unit
   status: EmployeeStatus;
 
-  // attachments may be populated on certain endpoints
   attachments?: Attachment[];
 }
 
@@ -68,6 +67,22 @@ export interface EmployeeFilters {
   subUnit?: string;
   status?: EmployeeStatus | "";
   include?: "current" | "past" | "all";
+}
+
+/** ✅ When HR submits change, backend returns 202 response */
+export type ApprovalSubmittedResponse = {
+  ok: true;
+  message: string;
+  changeRequestId: string;
+};
+
+/** ✅ Update can return Employee (Admin) OR ApprovalSubmittedResponse (HR) */
+export type UpdateEmployeeResponse = Employee | ApprovalSubmittedResponse;
+
+export function isApprovalSubmittedResponse(
+  x: any
+): x is ApprovalSubmittedResponse {
+  return !!x && typeof x === "object" && typeof x.changeRequestId === "string";
 }
 
 export const employeesApi = createApi({
@@ -104,15 +119,12 @@ export const employeesApi = createApi({
           : [{ type: "Employee" as const, id: "LIST" }],
     }),
 
-    // *** NEW: lightweight list for dropdowns (Claim assign, etc.) ***
+    // Lightweight list for dropdowns
     getEmployeesSimple: builder.query<SimpleEmployee[], void>({
       query: () => ({
         url: "employees",
         method: "GET",
-        // you can tweak params if you want only current employees:
-        // params: { include: "current" }
       }),
-      // map full Employee -> SimpleEmployee
       transformResponse: (employees: Employee[]): SimpleEmployee[] =>
         employees.map((e) => ({
           _id: e._id,
@@ -143,16 +155,20 @@ export const employeesApi = createApi({
       providesTags: (_r, _e, id) => [{ type: "Employee", id }],
     }),
 
-    // 🔹 My Info – current user's employee record
+    // My Info – current user's employee record
     getMyEmployee: builder.query<Employee, void>({
       query: () => "employees/me",
       providesTags: (result) =>
         result ? [{ type: "Employee", id: result._id }] : [],
     }),
 
-    // 🔹 Generic update (used by Personal & Contact tabs)
+    /**
+     * ✅ IMPORTANT CHANGE:
+     * HR updates return 202 { ok, message, changeRequestId }
+     * Admin updates return Employee
+     */
     updateEmployee: builder.mutation<
-      Employee,
+      UpdateEmployeeResponse,
       { id: string; data: Partial<Employee> }
     >({
       query: ({ id, data }) => ({
@@ -160,15 +176,21 @@ export const employeesApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (_res, _err, arg) => [
-        { type: "Employee", id: arg.id },
-        { type: "Employee", id: "LIST" },
-      ],
+      invalidatesTags: (res, _err, arg) => {
+        // If HR submitted approval request: employee didn't change yet
+        if (isApprovalSubmittedResponse(res)) {
+          return [{ type: "Employee" as const, id: "LIST" }];
+        }
+        // Admin update: invalidate employee + list
+        return [
+          { type: "Employee" as const, id: arg.id },
+          { type: "Employee" as const, id: "LIST" },
+        ];
+      },
     }),
 
     /* ------------------ Attachments endpoints ------------------ */
 
-    // GET attachments for a given employee
     getEmployeeAttachments: builder.query<Attachment[], string>({
       query: (employeeId) => `employees/${employeeId}/attachments`,
       providesTags: (result, _error, employeeId) =>
@@ -183,7 +205,6 @@ export const employeesApi = createApi({
           : [{ type: "Employee" as const, id: employeeId }],
     }),
 
-    // POST upload attachment for employee
     uploadEmployeeAttachment: builder.mutation<
       { success: boolean; attachment: Attachment },
       { employeeId: string; formData: FormData }
@@ -198,7 +219,6 @@ export const employeesApi = createApi({
       ],
     }),
 
-    // DELETE attachment
     deleteEmployeeAttachment: builder.mutation<
       { success: boolean },
       { employeeId: string; id: string }
@@ -216,12 +236,11 @@ export const employeesApi = createApi({
 
 export const {
   useGetEmployeesQuery,
-  useGetEmployeesSimpleQuery, // ✅ NEW HOOK
+  useGetEmployeesSimpleQuery,
   useCreateEmployeeMutation,
   useGetEmployeeByIdQuery,
   useGetMyEmployeeQuery,
   useUpdateEmployeeMutation,
-  // attachments hooks
   useGetEmployeeAttachmentsQuery,
   useUploadEmployeeAttachmentMutation,
   useDeleteEmployeeAttachmentMutation,

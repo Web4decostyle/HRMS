@@ -1,12 +1,15 @@
 // frontend/src/pages/my-info/MyInfoPage.tsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   useGetMyEmployeeQuery,
   useGetEmployeeByIdQuery,
   useUpdateEmployeeMutation,
+  isApprovalSubmittedResponse,
 } from "../../features/employees/employeesApi";
 
-// TAB COMPONENTS (all live in this same folder)
+import { useGetMineQuery } from "../../features/changeRequests/changeRequestsApi";
+
+// TAB COMPONENTS
 import PersonalDetailsTab from "./PersonalDetailsTab";
 import ContactDetailsTab from "./ContactDetailsTab";
 import EmergencyContactsTab from "./EmergencyContactsTab";
@@ -41,16 +44,15 @@ const tabs: { key: TabKey; label: string }[] = [
 ];
 
 type MyInfoPageProps = {
-  /** If provided, page works like PIM employee profile (Admin edits any employee) */
-  employeeId?: string;
+  employeeId?: string; // PIM mode
 };
 
 const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
   const [active, setActive] = useState<TabKey>("personal");
+  const [flashMsg, setFlashMsg] = useState<string>("");
 
   const isPimMode = !!employeeId;
 
-  // If opened from PIM, fetch by id; otherwise fetch current user's employee
   const myQ = useGetMyEmployeeQuery(undefined, { skip: isPimMode });
   const byIdQ = useGetEmployeeByIdQuery(employeeId!, { skip: !isPimMode });
 
@@ -60,6 +62,26 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
 
   const [updateEmployee, { isLoading: isSavingEmployee }] =
     useUpdateEmployeeMutation();
+
+  // ✅ Track own change requests so we can show "Request pending"
+  const mineQ = useGetMineQuery(undefined, {
+    skip: !employee?._id,
+    pollingInterval: 4000,
+  });
+
+  const pendingForThisEmployee = useMemo(() => {
+    const items = (mineQ.data as any[]) || [];
+    if (!employee?._id) return null;
+
+    return (
+      items.find(
+        (r) =>
+          r.status === "PENDING" &&
+          r.modelName === "Employee" &&
+          String(r.targetId) === String(employee._id)
+      ) || null
+    );
+  }, [mineQ.data, employee?._id]);
 
   if (isLoading) {
     return (
@@ -81,7 +103,20 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
     employee.lastName ? " " + employee.lastName : ""
   }`;
 
-  const save = (data: any) => updateEmployee({ id: employee._id, data }).unwrap();
+  const save = async (data: any) => {
+    const res = await updateEmployee({ id: employee._id, data }).unwrap();
+
+    // ✅ HR flow: request created
+    if (isApprovalSubmittedResponse(res)) {
+      setFlashMsg(res.message || "Request has been sent to Admin for approval.");
+      mineQ.refetch?.();
+      return res;
+    }
+
+    // ✅ Admin flow: updated directly
+    setFlashMsg("Employee updated successfully.");
+    return res;
+  };
 
   return (
     <div className="flex h-full bg-[#f5f6fa]">
@@ -98,7 +133,9 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
             </p>
           ) : null}
           {isPimMode ? (
-            <p className="text-[10px] text-slate-400 mt-1">PIM · Employee Profile</p>
+            <p className="text-[10px] text-slate-400 mt-1">
+              PIM · Employee Profile
+            </p>
           ) : null}
         </div>
 
@@ -121,7 +158,35 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
 
       {/* RIGHT CONTENT */}
       <div className="flex-1 px-6 py-5 overflow-y-auto">
-        <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm min-h-[76vh] flex flex-col">
+        <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm min-h-[76vh] flex flex-col overflow-hidden">
+          {/* ✅ TOP STATUS BANNERS */}
+          {(flashMsg || pendingForThisEmployee) && (
+            <div className="px-6 pt-5">
+              {flashMsg && (
+                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex items-start justify-between gap-3">
+                  <div className="text-sm text-green-800">{flashMsg}</div>
+                  <button
+                    className="text-xs text-green-700 underline"
+                    onClick={() => setFlashMsg("")}
+                  >
+                    dismiss
+                  </button>
+                </div>
+              )}
+
+              {pendingForThisEmployee && (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div className="text-sm font-semibold text-amber-900">
+                    Request pending
+                  </div>
+                  <div className="text-xs text-amber-800 mt-1">
+                    Your changes are waiting for Admin approval.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* PERSONAL DETAILS */}
           {active === "personal" && (
             <PersonalDetailsTab

@@ -1,10 +1,8 @@
+// frontend/src/components/Sidebar.tsx
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
-import {
-  useGetMenuQuery,
-  MenuItem,
-} from "../features/navigation/navigationApi";
+import { useGetMenuQuery, MenuItem } from "../features/navigation/navigationApi";
 import { selectAuthRole } from "../features/auth/selectors";
 
 export default function Sidebar() {
@@ -13,19 +11,48 @@ export default function Sidebar() {
   const role = useSelector(selectAuthRole);
   const isViewOnly = role === "ESS_VIEWER";
 
+  // ✅ Notifications menu item (routes to NotificationsPage)
+  const notifItem: MenuItem = {
+    key: "notifications",
+    label: "Notifications",
+    icon: "bell",
+    path: "/notifications",
+  };
+
+  // ✅ Merge menu, inserting Notifications BELOW My Info
+  const merged: MenuItem[] = (() => {
+    const fromApi = data?.items ?? [];
+
+    // if backend already sends notifications, don't add again
+    const hasNotif = fromApi.some(
+      (x) => x.key === "notifications" || x.path === "/notifications"
+    );
+    if (hasNotif) return fromApi;
+
+    // find My Info index
+    const idx = fromApi.findIndex(
+      (x) => x.key === "myInfo" || x.path === "/my-info" || x.label === "My Info"
+    );
+
+    // if My Info exists, insert after it; else append at end
+    if (idx >= 0) {
+      return [...fromApi.slice(0, idx + 1), notifItem, ...fromApi.slice(idx + 1)];
+    }
+    return [...fromApi, notifItem];
+  })();
+
   // 🔒 ROLE-BASED FILTER (NO UI CHANGE)
-    const items: MenuItem[] = (data?.items ?? []).filter((item) => {
+  const items: MenuItem[] = merged.filter((item) => {
     if (!isViewOnly) return true;
 
-    // Section headers (no path) should still appear
     if (!item.path) return true;
 
-    const path = item.path; // ✅ TS narrowing happens here
+    const path = item.path;
 
-    
     const allowedPaths = [
       "/", // Dashboard
       "/my-info",
+      "/notifications", // ✅ allow notifications for ESS_VIEWER too
       "/leave",
       "/time",
       "/directory",
@@ -33,11 +60,8 @@ export default function Sidebar() {
       "/buzz",
     ];
 
-    return allowedPaths.some(
-      (p) => path === p || path.startsWith(p + "/")
-    );
+    return allowedPaths.some((p) => path === p || path.startsWith(p + "/"));
   });
-
 
   const baseItemClasses =
     "flex items-center gap-3 px-4 py-2.5 text-sm rounded-r-full transition-colors";
@@ -46,6 +70,8 @@ export default function Sidebar() {
     switch (icon) {
       case "home":
         return "🏠";
+      case "bell":
+        return "🔔";
       case "shield":
         return "🛡";
       case "users":
@@ -169,9 +195,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="h-10 px-4 flex items-center border-t border-slate-200 text-[11px] text-slate-400 bg-slate-50">
-        <span className="truncate">
-          © {new Date().getFullYear()} DecoStyle
-        </span>
+        <span className="truncate">© {new Date().getFullYear()} DecoStyle</span>
       </div>
     </motion.aside>
   );

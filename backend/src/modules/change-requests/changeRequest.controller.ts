@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { ChangeRequestModel } from "./changeRequest.model";
 import { createNotification } from "../notifications/notification.service";
+import { createAuditLog } from "../audit/audit.service";
 
 function requireAdmin(req: AuthRequest) {
   if (req.user?.role !== "ADMIN") throw ApiError.forbidden("Admin only");
@@ -148,7 +149,8 @@ export async function approveChangeRequest(req: AuthRequest, res: Response) {
   const { id } = req.params;
   const cr = await ChangeRequestModel.findById(id);
   if (!cr) throw ApiError.notFound("Change request not found");
-  if (cr.status !== "PENDING") throw ApiError.badRequest("Request already processed");
+  if (cr.status !== "PENDING")
+    throw ApiError.badRequest("Request already processed");
 
   if (!ALLOWED_MODELS.has(cr.modelName)) {
     throw ApiError.badRequest(`Model not allowed: ${cr.modelName}`);
@@ -165,11 +167,13 @@ export async function approveChangeRequest(req: AuthRequest, res: Response) {
     await ensureNoDuplicateOnCreate(cr.modelName, sanitized);
     result = await Model.create(sanitized);
   } else if (cr.action === "UPDATE") {
-    if (!cr.targetId) throw ApiError.badRequest("targetId required for UPDATE");
+    if (!cr.targetId)
+      throw ApiError.badRequest("targetId required for UPDATE");
     await ensureNoDuplicateOnUpdate(cr.modelName, cr.targetId, sanitized);
     result = await Model.findByIdAndUpdate(cr.targetId, sanitized, { new: true });
   } else if (cr.action === "DELETE") {
-    if (!cr.targetId) throw ApiError.badRequest("targetId required for DELETE");
+    if (!cr.targetId)
+      throw ApiError.badRequest("targetId required for DELETE");
     result = await Model.findByIdAndDelete(cr.targetId);
   } else {
     throw ApiError.badRequest("Invalid action");
@@ -184,6 +188,24 @@ export async function approveChangeRequest(req: AuthRequest, res: Response) {
   cr.appliedResult = result;
 
   await cr.save();
+
+  // ✅ audit log: admin approved + applied
+  void createAuditLog({
+    req,
+    action: "CHANGE_REQUEST_APPROVED",
+    module: cr.module,
+    modelName: cr.modelName,
+    actionType: cr.action,
+    targetId: cr.targetId || null,
+    changeRequestId: String(cr._id),
+    before: cr.before,
+    after: cr.after,
+    appliedResult: cr.appliedResult,
+    approvedAt: cr.reviewedAt || new Date(),
+    approvedBy: req.user?.id || null,
+    decisionReason: cr.decisionReason || "",
+    meta: { requestedBy: String(cr.requestedBy), requestedByRole: cr.requestedByRole },
+  });
 
   // notify requester
   await createNotification({
@@ -206,13 +228,31 @@ export async function rejectChangeRequest(req: AuthRequest, res: Response) {
 
   const cr = await ChangeRequestModel.findById(id);
   if (!cr) throw ApiError.notFound("Change request not found");
-  if (cr.status !== "PENDING") throw ApiError.badRequest("Request already processed");
+  if (cr.status !== "PENDING")
+    throw ApiError.badRequest("Request already processed");
 
   cr.status = "REJECTED";
   cr.decisionReason = decisionReason || "";
   cr.reviewedBy = new mongoose.Types.ObjectId(req.user!.id);
   cr.reviewedAt = new Date();
   await cr.save();
+
+  // ✅ audit log: admin rejected
+  void createAuditLog({
+    req,
+    action: "CHANGE_REQUEST_REJECTED",
+    module: cr.module,
+    modelName: cr.modelName,
+    actionType: cr.action,
+    targetId: cr.targetId || null,
+    changeRequestId: String(cr._id),
+    before: cr.before,
+    after: cr.after,
+    approvedAt: cr.reviewedAt || new Date(),
+    approvedBy: req.user?.id || null,
+    decisionReason: cr.decisionReason || "",
+    meta: { requestedBy: String(cr.requestedBy), requestedByRole: cr.requestedByRole },
+  });
 
   // notify requester
   await createNotification({

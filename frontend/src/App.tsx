@@ -113,6 +113,9 @@ import TerminationReasonsPage from "./pages/pim/config/TerminationReasonsPage";
 import RequireRole from "./components/RequireRole";
 import AdminApprovalsPage from "./pages/admin/approvals/AdminApprovalsPage";
 
+// ✅ Notifications page
+import NotificationsPage from "./pages/notifications/NotificationsPage";
+
 export default function App() {
   return (
     <Routes>
@@ -127,6 +130,18 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <DashboardPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* ✅ Notifications (TOP LEVEL - NOT inside /admin/*) */}
+      <Route
+        path="/notifications"
+        element={
+          <RequireAuth>
+            <Layout>
+              <NotificationsPage />
             </Layout>
           </RequireAuth>
         }
@@ -303,7 +318,6 @@ export default function App() {
         <Route index element={<SystemUsersPage />} />
         <Route path="user-management" element={<SystemUsersPage />} />
 
-        {/* ✅ Approvals (Admin only) */}
         <Route
           path="approvals"
           element={
