@@ -27,6 +27,8 @@ import { dashboardApi } from "../features/dashboard/dashboardApi";
 import { attendanceApi } from "../features/time/attendanceApi";
 import { changeRequestsApi } from "../features/changeRequests/changeRequestsApi";
 import { notificationsApi } from "../features/notifications/notificationsApi";
+import { auditApi } from "../features/audit/auditApi";
+
 
 export const store = configureStore({
   reducer: {
@@ -58,6 +60,8 @@ export const store = configureStore({
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [changeRequestsApi.reducerPath]: changeRequestsApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
+    [auditApi.reducerPath]: auditApi.reducer,
+
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -85,7 +89,8 @@ export const store = configureStore({
       dashboardApi.middleware,
       attendanceApi.middleware,
       changeRequestsApi.middleware,
-      notificationsApi.middleware
+      notificationsApi.middleware,
+      auditApi.middleware
     ),
 });
 

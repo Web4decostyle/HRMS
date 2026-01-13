@@ -12,6 +12,10 @@ const auditLogSchema = new Schema(
     actorId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     actorRole: { type: String, required: true, index: true },
 
+    // ✅ NEW (for frontend display)
+    actorUsername: { type: String, default: "", index: true },
+    actorName: { type: String, default: "" },
+
     module: { type: String, required: true, index: true },
     modelName: { type: String, required: true, index: true },
     actionType: { type: String, required: true },
@@ -25,10 +29,17 @@ const auditLogSchema = new Schema(
 
     approvedAt: { type: Date },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+
+    // ✅ NEW
+    approvedByUsername: { type: String, default: "", index: true },
+    approvedByName: { type: String, default: "" },
+
     decisionReason: { type: String, default: "" },
 
     ip: { type: String, default: "" },
     userAgent: { type: String, default: "" },
+
+    // meta already exists; we’ll also store requester username here
     meta: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
@@ -40,4 +51,6 @@ auditLogSchema.index({ module: 1, modelName: 1, createdAt: -1 });
 export type AuditLog = InferSchemaType<typeof auditLogSchema>;
 
 export const AuditLogModel =
-  mongoose.models.AuditLog || mongoose.model("AuditLog", auditLogSchema);
+  (mongoose.models.AdminAuditLog as any) ||
+  mongoose.model("AdminAuditLog", auditLogSchema);
+

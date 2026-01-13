@@ -5,6 +5,13 @@ import { useMeQuery } from "../../features/auth/authApi";
 
 const mainTabs = [
   { name: "User Management", path: "/admin/user-management" },
+
+  // ✅ (Optional) Approvals tab - since you already have it
+  { name: "Approvals", path: "/admin/approvals" },
+
+  // ✅ History tab
+  { name: "History", path: "/admin/history" },
+
   {
     name: "Job",
     dropdown: [

@@ -115,6 +115,7 @@ import AdminApprovalsPage from "./pages/admin/approvals/AdminApprovalsPage";
 
 // ✅ Notifications page
 import NotificationsPage from "./pages/notifications/NotificationsPage";
+import AdminAuditHistoryPage from "./pages/admin/AdminAuditHistoryPage";
 
 export default function App() {
   return (
@@ -253,58 +254,410 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route path="/performance/configure/kpis" element={<RequireAuth><ConfigureKpisPage /></RequireAuth>} />
-      <Route path="/performance/configure/trackers" element={<RequireAuth><ConfigureTrackersPage /></RequireAuth>} />
-      <Route path="/performance/manage/reviews" element={<RequireAuth><ManageReviewsPage /></RequireAuth>} />
-      <Route path="/performance/manage/add" element={<RequireAuth><AddReviewPage /></RequireAuth>} />
-      <Route path="/performance/manage/reviews/:id" element={<RequireAuth><ViewReviewPage /></RequireAuth>} />
-      <Route path="/performance/manage/reviews/:id/edit" element={<RequireAuth><EditReviewPage /></RequireAuth>} />
-      <Route path="/performance/my-reviews" element={<RequireAuth><MyReviewsPage /></RequireAuth>} />
-      <Route path="/performance/employee-reviews" element={<RequireAuth><EmployeeReviewsPage /></RequireAuth>} />
-      <Route path="/performance/my-trackers" element={<RequireAuth><MyTrackersPage /></RequireAuth>} />
-      <Route path="/performance/employee-trackers" element={<RequireAuth><EmployeeTrackersPage /></RequireAuth>} />
+      <Route
+        path="/performance/configure/kpis"
+        element={
+          <RequireAuth>
+            <ConfigureKpisPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/configure/trackers"
+        element={
+          <RequireAuth>
+            <ConfigureTrackersPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/reviews"
+        element={
+          <RequireAuth>
+            <ManageReviewsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/add"
+        element={
+          <RequireAuth>
+            <AddReviewPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/reviews/:id"
+        element={
+          <RequireAuth>
+            <ViewReviewPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/manage/reviews/:id/edit"
+        element={
+          <RequireAuth>
+            <EditReviewPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/my-reviews"
+        element={
+          <RequireAuth>
+            <MyReviewsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/employee-reviews"
+        element={
+          <RequireAuth>
+            <EmployeeReviewsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/my-trackers"
+        element={
+          <RequireAuth>
+            <MyTrackersPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/performance/employee-trackers"
+        element={
+          <RequireAuth>
+            <EmployeeTrackersPage />
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== DIRECTORY / CLAIM / BUZZ ===================== */}
-      <Route path="/directory" element={<RequireAuth><Layout><DirectoryPage /></Layout></RequireAuth>} />
-      <Route path="/claim" element={<RequireAuth><Layout><ClaimPage /></Layout></RequireAuth>} />
-      <Route path="/buzz" element={<RequireAuth><Layout><BuzzPage /></Layout></RequireAuth>} />
+      <Route
+        path="/directory"
+        element={
+          <RequireAuth>
+            <Layout>
+              <DirectoryPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/claim"
+        element={
+          <RequireAuth>
+            <Layout>
+              <ClaimPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/buzz"
+        element={
+          <RequireAuth>
+            <Layout>
+              <BuzzPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== MAINTENANCE ===================== */}
-      <Route path="/maintenance" element={<RequireAuth><MaintenanceEntryPage /></RequireAuth>} />
-      <Route path="/maintenance/auth" element={<RequireAuth><MaintenanceAuthPage /></RequireAuth>} />
-      <Route path="/maintenance/system-info" element={<RequireAuth><Layout><SystemInfoPage /></Layout></RequireAuth>} />
-      <Route path="/maintenance/purge-records" element={<RequireAuth><Layout><PurgeRecordsPage /></Layout></RequireAuth>} />
-      <Route path="/maintenance/purge-candidate-records" element={<RequireAuth><Layout><PurgeCandidateRecordsPage /></Layout></RequireAuth>} />
-      <Route path="/maintenance/access-records" element={<RequireAuth><Layout><AccessRecordsPage /></Layout></RequireAuth>} />
+      <Route
+        path="/maintenance"
+        element={
+          <RequireAuth>
+            <MaintenanceEntryPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/maintenance/auth"
+        element={
+          <RequireAuth>
+            <MaintenanceAuthPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/maintenance/system-info"
+        element={
+          <RequireAuth>
+            <Layout>
+              <SystemInfoPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/maintenance/purge-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PurgeRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/maintenance/purge-candidate-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PurgeCandidateRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/maintenance/access-records"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AccessRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== PIM ===================== */}
-      <Route path="/pim" element={<RequireAuth><Layout><EmployeesPage /></Layout></RequireAuth>} />
-      <Route path="/employees/add" element={<RequireAuth><Layout><AddEmployeePage /></Layout></RequireAuth>} />
-      <Route path="/pim/employee/:id" element={<RequireAuth><PimEmployeeMyInfoPage /></RequireAuth>} />
-      <Route path="/pim/reports" element={<RequireAuth><Layout><PimReportsPage /></Layout></RequireAuth>} />
-      <Route path="/pim/reports/add" element={<RequireAuth><Layout><AddPimReportPage /></Layout></RequireAuth>} />
+      <Route
+        path="/pim"
+        element={
+          <RequireAuth>
+            <Layout>
+              <EmployeesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/employees/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddEmployeePage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/employee/:id"
+        element={
+          <RequireAuth>
+            <PimEmployeeMyInfoPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/reports"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PimReportsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/reports/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddPimReportPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== LEAVE ===================== */}
-      <Route path="/leave" element={<RequireAuth><Layout><LeaveListPage /></Layout></RequireAuth>} />
-      <Route path="/leave/entitlements/add" element={<RequireAuth><Layout><AddLeaveEntitlementPage /></Layout></RequireAuth>} />
-      <Route path="/leave/entitlements/employee" element={<RequireAuth><Layout><EmployeeEntitlementsPage /></Layout></RequireAuth>} />
-      <Route path="/leave/entitlements/my" element={<RequireAuth><Layout><MyEntitlementsPage /></Layout></RequireAuth>} />
-      <Route path="/leave/apply" element={<RequireAuth><Layout><ApplyLeavePage /></Layout></RequireAuth>} />
-      <Route path="/leave/my-leave" element={<RequireAuth><Layout><MyLeavePage /></Layout></RequireAuth>} />
-      <Route path="/leave/assign" element={<RequireAuth><Layout><AssignLeavePage /></Layout></RequireAuth>} />
-      <Route path="/leave/config/period" element={<RequireAuth><Layout><LeavePeriodPage /></Layout></RequireAuth>} />
-      <Route path="/leave/config/types" element={<RequireAuth><Layout><LeaveTypesPage /></Layout></RequireAuth>} />
-      <Route path="/leave/config/work-week" element={<RequireAuth><Layout><WorkWeekPage /></Layout></RequireAuth>} />
-      <Route path="/leave/config/holidays" element={<RequireAuth><Layout><HolidaysPage /></Layout></RequireAuth>} />
+      <Route
+        path="/leave"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LeaveListPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/entitlements/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddLeaveEntitlementPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/entitlements/employee"
+        element={
+          <RequireAuth>
+            <Layout>
+              <EmployeeEntitlementsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/entitlements/my"
+        element={
+          <RequireAuth>
+            <Layout>
+              <MyEntitlementsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/apply"
+        element={
+          <RequireAuth>
+            <Layout>
+              <ApplyLeavePage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/my-leave"
+        element={
+          <RequireAuth>
+            <Layout>
+              <MyLeavePage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/assign"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AssignLeavePage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/config/period"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LeavePeriodPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/config/types"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LeaveTypesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/config/work-week"
+        element={
+          <RequireAuth>
+            <Layout>
+              <WorkWeekPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/leave/config/holidays"
+        element={
+          <RequireAuth>
+            <Layout>
+              <HolidaysPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== PIM CONFIG ===================== */}
-      <Route path="/pim/config/optional-fields" element={<RequireAuth><Layout><OptionalFieldsPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/custom-fields" element={<RequireAuth><Layout><CustomFieldsListPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/custom-fields/add" element={<RequireAuth><Layout><AddCustomFieldPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/data-import" element={<RequireAuth><Layout><DataImportPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/reporting-methods" element={<RequireAuth><Layout><ReportingMethodsPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/reporting-methods/add" element={<RequireAuth><Layout><AddReportingMethodPage /></Layout></RequireAuth>} />
-      <Route path="/pim/config/termination-reasons" element={<RequireAuth><Layout><TerminationReasonsPage /></Layout></RequireAuth>} />
+      <Route
+        path="/pim/config/optional-fields"
+        element={
+          <RequireAuth>
+            <Layout>
+              <OptionalFieldsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/custom-fields"
+        element={
+          <RequireAuth>
+            <Layout>
+              <CustomFieldsListPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/custom-fields/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddCustomFieldPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/data-import"
+        element={
+          <RequireAuth>
+            <Layout>
+              <DataImportPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/reporting-methods"
+        element={
+          <RequireAuth>
+            <Layout>
+              <ReportingMethodsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/reporting-methods/add"
+        element={
+          <RequireAuth>
+            <Layout>
+              <AddReportingMethodPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/pim/config/termination-reasons"
+        element={
+          <RequireAuth>
+            <Layout>
+              <TerminationReasonsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
 
       {/* ===================== ADMIN (NESTED) ===================== */}
       <Route
@@ -327,12 +680,27 @@ export default function App() {
           }
         />
 
+        <Route
+          path="history"
+          element={
+            <RequireRole allowed={["ADMIN"]}>
+              <AdminAuditHistoryPage />
+            </RequireRole>
+          }
+        />
+
         {/* Job */}
         <Route path="job/job-titles" element={<JobTitlesPage />} />
         <Route path="job/job-titles/add" element={<AddJobTitlePage />} />
         <Route path="job/pay-grades" element={<PayGradesPage />} />
-        <Route path="job/employment-status" element={<EmploymentStatusPage />} />
-        <Route path="job/employment-status/add" element={<AddEmploymentStatusPage />} />
+        <Route
+          path="job/employment-status"
+          element={<EmploymentStatusPage />}
+        />
+        <Route
+          path="job/employment-status/add"
+          element={<AddEmploymentStatusPage />}
+        />
         <Route path="job/job-categories" element={<JobCategoriesPage />} />
         <Route path="job/job-categories/add" element={<AddJobCategoryPage />} />
         <Route path="job/work-shifts" element={<WorkShiftsPage />} />
@@ -351,7 +719,10 @@ export default function App() {
 
         {/* Nationalities + Config */}
         <Route path="nationalities" element={<NationalitiesPage />} />
-        <Route path="configuration/email-config" element={<EmailConfigPage />} />
+        <Route
+          path="configuration/email-config"
+          element={<EmailConfigPage />}
+        />
       </Route>
 
       {/* ===================== FALLBACK ===================== */}

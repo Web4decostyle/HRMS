@@ -1,41 +1,51 @@
-import { Response } from "express";
-import { AuthRequest } from "../../middleware/authMiddleware";
+import type { Request, Response } from "express";
 import { AuditLogModel } from "./audit.model";
 
-export async function listAuditLogs(req: AuthRequest, res: Response) {
+export async function getAuditHistory(req: Request, res: Response) {
   const {
     module,
     modelName,
-    actorId,
     action,
     actionType,
-    from,
-    to,
-    page = "1",
-    limit = "50",
-  } = (req.query || {}) as Record<string, string>;
+    q,
+    limit,
+    page,
+  } = req.query as Record<string, string>;
 
-  const q: any = {};
-  if (module) q.module = module;
-  if (modelName) q.modelName = modelName;
-  if (actorId) q.actorId = actorId;
-  if (action) q.action = action;
-  if (actionType) q.actionType = actionType;
+  const filter: any = {};
 
-  if (from || to) {
-    q.createdAt = {};
-    if (from) q.createdAt.$gte = new Date(from);
-    if (to) q.createdAt.$lte = new Date(to);
+  if (module) filter.module = module;
+  if (modelName) filter.modelName = modelName;
+  if (action) filter.action = action;
+  if (actionType) filter.actionType = actionType;
+
+  // quick text search
+  if (q) {
+    const rx = new RegExp(q, "i");
+    filter.$or = [
+      { module: rx },
+      { modelName: rx },
+      { action: rx },
+      { actionType: rx },
+      { targetId: rx },
+      { decisionReason: rx },
+      { ip: rx },
+      { userAgent: rx },
+    ];
   }
 
-  const p = Math.max(1, parseInt(page, 10) || 1);
-  const l = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
-  const skip = (p - 1) * l;
+  const lim = Math.min(Number(limit || 200), 1000);
+  const pg = Math.max(Number(page || 1), 1);
+  const skip = (pg - 1) * lim;
 
   const [items, total] = await Promise.all([
-    AuditLogModel.find(q).sort({ createdAt: -1 }).skip(skip).limit(l).lean(),
-    AuditLogModel.countDocuments(q),
+    AuditLogModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(lim)
+      .lean(),
+    AuditLogModel.countDocuments(filter),
   ]);
 
-  res.json({ items, total, page: p, limit: l });
+  res.json({ items, total, page: pg, limit: lim });
 }
