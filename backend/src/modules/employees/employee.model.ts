@@ -5,8 +5,10 @@ export interface IEmployee extends Document {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   jobTitle?: string;
   department?: string;
+  location?: string;
   status: "ACTIVE" | "INACTIVE";
 }
 
@@ -16,9 +18,14 @@ const EmployeeSchema = new Schema<IEmployee>(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true },
+
+    // ✅ Added to match Directory filters
+    phone: { type: String },
+    location: { type: String },
+
     jobTitle: String,
     department: String,
-    status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" }
+    status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
   },
   { timestamps: true }
 );

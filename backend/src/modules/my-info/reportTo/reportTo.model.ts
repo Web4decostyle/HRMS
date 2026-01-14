@@ -24,11 +24,15 @@ const SupervisorSchema = new Schema<ISupervisor>(
       type: Schema.Types.ObjectId,
       ref: "Employee",
       required: true,
+      index: true,
     },
     reportingMethod: { type: String, default: "Direct" },
   },
   { timestamps: true }
 );
+
+// ✅ Prevent duplicate supervisor relation
+SupervisorSchema.index({ employeeId: 1, supervisorId: 1 }, { unique: true });
 
 const SubordinateSchema = new Schema<ISubordinate>(
   {
@@ -42,11 +46,15 @@ const SubordinateSchema = new Schema<ISubordinate>(
       type: Schema.Types.ObjectId,
       ref: "Employee",
       required: true,
+      index: true,
     },
     reportingMethod: { type: String, default: "Direct" },
   },
   { timestamps: true }
 );
+
+// ✅ Prevent duplicate subordinate relation
+SubordinateSchema.index({ employeeId: 1, subordinateId: 1 }, { unique: true });
 
 export const Supervisor = mongoose.model<ISupervisor>(
   "Supervisor",

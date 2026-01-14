@@ -1,12 +1,22 @@
-// backend/src/modules/directory/directory.routes.ts
 import { Router } from "express";
-import { searchDirectory } from "./directory.controller";
 import { requireAuth } from "../../middleware/authMiddleware";
 import { asyncHandler } from "../../utils/asyncHandler";
+import {
+  searchDirectory,
+  getEmployeeHierarchy,
+  getDepartmentsSummary,
+} from "./directory.controller";
 
 const router = Router();
 
-// GET /api/directory/employees
 router.get("/employees", requireAuth, asyncHandler(searchDirectory));
+router.get("/hierarchy/:employeeId", requireAuth, asyncHandler(getEmployeeHierarchy));
+
+// ✅ NEW
+router.get(
+  "/departments-summary",
+  requireAuth,
+  asyncHandler(getDepartmentsSummary)
+);
 
 export default router;
