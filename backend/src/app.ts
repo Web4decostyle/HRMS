@@ -37,6 +37,7 @@ import timeRoutes from "./modules/time/time.routes";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import changeRequestRoutes from "./modules/change-requests/changeRequest.routes";
 import auditRoutes from "./modules/audit/audit.routes";
+import approvalRoutes from "./modules/approvals/approval.routes";
 
 const app = express();
 
@@ -96,6 +97,8 @@ app.use("/api/change-requests", changeRequestRoutes);
 app.use("/api/audit", auditRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+
+app.use("/api/approvals", approvalRoutes);
 
 app.use(errorHandler);
 
