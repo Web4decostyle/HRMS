@@ -6,8 +6,6 @@ import {
   useAddLeaveEntitlementMutation,
 } from "../../features/leave/leaveApi";
 import { useGetEmployeesQuery } from "../../features/employees/employeesApi";
-import Topbar from "../../components/Topbar";
-import Sidebar from "../../components/Sidebar";
 
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
@@ -122,22 +120,9 @@ export default function AddLeaveEntitlementPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f5f6fa]">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Right side: Topbar + content */}
-      <div className="flex flex-1 flex-col">
-        <Topbar />
-
-        <main className="flex-1 px-6 py-4 overflow-y-auto">
-          {/* Page title */}
-          <div className="mb-4">
-            <h1 className="text-2xl font-semibold text-slate-800">Leave</h1>
-          </div>
-
-          {/* Leave module tabs */}
-          <div className="flex items-center gap-2 mb-4">
+    <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
+      {/* Leave module tabs */}
+      <div className="flex items-center gap-2 mb-4">
             {TABS.map((tab) => {
               const isActive = tab.key === activeTabKey;
               const isMenuTab = "isMenu" in tab && tab.isMenu;
@@ -191,8 +176,8 @@ export default function AddLeaveEntitlementPage() {
             })}
           </div>
 
-          {/* Card */}
-          <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-8">
+      {/* Card */}
+      <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-8">
             <div className="px-7 py-4 border-b border-[#edf0f7]">
               <h2 className="text-[13px] font-semibold text-slate-800">
                 Add Leave Entitlement
@@ -313,8 +298,6 @@ export default function AddLeaveEntitlementPage() {
 
               <p className="text-[10px] text-slate-400 mt-1">* Required</p>
             </div>
-          </div>
-        </main>
       </div>
     </div>
   );

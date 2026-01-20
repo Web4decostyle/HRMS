@@ -23,6 +23,7 @@ import PimEmployeeMyInfoPage from "./pages/pim/PimEmployeeMyInfoPage";
 import MyInfoPage from "./pages/my-info/MyInfoPage";
 
 // Leave
+import LeaveIndexPage from "./pages/leave/LeaveIndexPage";
 import LeaveListPage from "./pages/leave/LeaveListPage";
 import AddLeaveEntitlementPage from "./pages/leave/AddLeaveEntitlementPage";
 import EmployeeEntitlementsPage from "./pages/leave/EmployeeEntitlementsPage";
@@ -481,7 +482,21 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <LeaveListPage />
+              <LeaveIndexPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* Approver list (Supervisor -> HR approvals) */}
+      <Route
+        path="/leave/list"
+        element={
+          <RequireAuth>
+            <Layout>
+              <RequireRole allowed={["ADMIN", "HR", "SUPERVISOR"]}>
+                <LeaveListPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -491,7 +506,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <AddLeaveEntitlementPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <AddLeaveEntitlementPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -501,7 +518,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <EmployeeEntitlementsPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <EmployeeEntitlementsPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -541,7 +560,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <AssignLeavePage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <AssignLeavePage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -551,7 +572,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <LeavePeriodPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <LeavePeriodPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -561,7 +584,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <LeaveTypesPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <LeaveTypesPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -571,7 +596,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <WorkWeekPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <WorkWeekPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }
@@ -581,7 +608,9 @@ export default function App() {
         element={
           <RequireAuth>
             <Layout>
-              <HolidaysPage />
+              <RequireRole allowed={["ADMIN", "HR"]}>
+                <HolidaysPage />
+              </RequireRole>
             </Layout>
           </RequireAuth>
         }

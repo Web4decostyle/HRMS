@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   useGetLeaveTypesQuery,
   useGetMyLeavesQuery,
   LeaveStatus,
 } from "../../features/leave/leaveApi";
+import { selectAuthRole } from "../../features/auth/selectors";
 
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
@@ -15,11 +17,7 @@ const selectCls = inputCls;
 type MenuKey = "entitlements" | "reports" | "configure" | null;
 
 // Status filter type: backend statuses + UI-only Scheduled/Taken
-type MyStatusFilter =
-  | ""
-  | LeaveStatus
-  | "SCHEDULED"
-  | "TAKEN";
+type MyStatusFilter = "" | LeaveStatus | "SCHEDULED" | "TAKEN";
 
 const STATUS_CHIPS: { value: MyStatusFilter; label: string }[] = [
   { value: "REJECTED", label: "Rejected" },
@@ -29,13 +27,24 @@ const STATUS_CHIPS: { value: MyStatusFilter; label: string }[] = [
   { value: "TAKEN", label: "Taken" },
 ];
 
-const TABS = [
+// ---- FIX: Don’t use "as const" tuple typing for this.
+// Define a safe union type so filtering doesn't break TS.
+type LeaveTab =
+  | { key: "apply" | "my-leave" | "leave-list" | "assign-leave"; label: string; path: string }
+  | {
+      key: "entitlements" | "reports" | "configure";
+      label: string;
+      isMenu: true;
+      menu: { label: string; path: string }[];
+    };
+
+const TABS: readonly LeaveTab[] = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
   {
     key: "entitlements",
     label: "Entitlements",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Add Entitlements", path: "/leave/entitlements/add" },
       { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
@@ -45,7 +54,7 @@ const TABS = [
   {
     key: "reports",
     label: "Reports",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       {
         label: "Leave Entitlements and Usage Report",
@@ -60,7 +69,7 @@ const TABS = [
   {
     key: "configure",
     label: "Configure",
-    isMenu: true as const,
+    isMenu: true,
     menu: [
       { label: "Leave Period", path: "/leave/config/period" },
       { label: "Leave Types", path: "/leave/config/types" },
@@ -70,13 +79,22 @@ const TABS = [
   },
   { key: "leave-list", label: "Leave List", path: "/leave" },
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
-] as const;
+];
 
 const activeTabKey = "my-leave";
 
 export default function MyLeavePage() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
+
+  // ---- FIX: only declared once
+  const role = useSelector(selectAuthRole) ?? "ESS";
+  const isApprover = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
+
+  // ---- FIX: filtering works because TABS is readonly LeaveTab[]
+  const visibleTabs = isApprover
+    ? TABS
+    : TABS.filter((t) => t.key === "apply" || t.key === "my-leave");
 
   const today = new Date();
   const defaultFrom = today.toISOString().slice(0, 10);
@@ -99,25 +117,20 @@ export default function MyLeavePage() {
   });
 
   const { data: leaveTypes = [] } = useGetLeaveTypesQuery();
-  const {
-    data: leaves = [],
-    isLoading,
-  } = useGetMyLeavesQuery();
+  const { data: leaves = [], isLoading } = useGetMyLeavesQuery();
 
   const filteredLeaves = useMemo(() => {
     const startFilter = appliedFilters.fromDate
       ? new Date(appliedFilters.fromDate)
       : null;
-    const endFilter = appliedFilters.toDate
-      ? new Date(appliedFilters.toDate)
-      : null;
+    const endFilter = appliedFilters.toDate ? new Date(appliedFilters.toDate) : null;
     if (startFilter) startFilter.setHours(0, 0, 0, 0);
     if (endFilter) endFilter.setHours(23, 59, 59, 999);
 
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
 
-    return leaves.filter((l) => {
+    return leaves.filter((l: any) => {
       const from = new Date(l.fromDate);
       const to = new Date(l.toDate);
       from.setHours(0, 0, 0, 0);
@@ -182,7 +195,7 @@ export default function MyLeavePage() {
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
       {/* Top nav */}
       <div className="flex items-center gap-2 mb-4">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = tab.key === activeTabKey;
           const isMenuTab = "isMenu" in tab && tab.isMenu;
           const menuItems = isMenuTab ? tab.menu : undefined;
@@ -193,9 +206,7 @@ export default function MyLeavePage() {
                 type="button"
                 onClick={() => {
                   if (isMenuTab && menuItems) {
-                    setOpenMenu((prev) =>
-                      prev === tab.key ? null : (tab.key as MenuKey)
-                    );
+                    setOpenMenu((prev) => (prev === tab.key ? null : (tab.key as MenuKey)));
                   } else if ("path" in tab) {
                     navigate(tab.path);
                   }
@@ -208,9 +219,7 @@ export default function MyLeavePage() {
                 ].join(" ")}
               >
                 <span>{tab.label}</span>
-                {isMenuTab && (
-                  <span className="ml-1 text-[10px] align-middle">▼</span>
-                )}
+                {isMenuTab && <span className="ml-1 text-[10px] align-middle">▼</span>}
               </button>
 
               {isMenuTab && openMenu === tab.key && menuItems && (
@@ -238,13 +247,10 @@ export default function MyLeavePage() {
       {/* Search card */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-5">
         <div className="px-7 py-4 border-b border-[#edf0f7]">
-          <h2 className="text-[13px] font-semibold text-slate-800">
-            My Leave List
-          </h2>
+          <h2 className="text-[13px] font-semibold text-slate-800">My Leave List</h2>
         </div>
 
         <div className="px-7 pt-5 pb-4 text-[12px]">
-          {/* Row 1 */}
           <div className="grid grid-cols-4 gap-6 mb-4">
             <div>
               <label className={labelCls}>From Date</label>
@@ -271,9 +277,7 @@ export default function MyLeavePage() {
               <select
                 className={selectCls}
                 value={status}
-                onChange={(e) =>
-                  setStatus(e.target.value as MyStatusFilter)
-                }
+                onChange={(e) => setStatus(e.target.value as MyStatusFilter)}
               >
                 <option value="">-- Select --</option>
                 <option value="REJECTED">Rejected</option>
@@ -291,11 +295,7 @@ export default function MyLeavePage() {
                     <button
                       key={chip.label}
                       type="button"
-                      onClick={() =>
-                        setStatus((prev) =>
-                          prev === chip.value ? "" : chip.value
-                        )
-                      }
+                      onClick={() => setStatus((prev) => (prev === chip.value ? "" : chip.value))}
                       className={[
                         "inline-flex items-center px-2 h-6 rounded-full border text-[11px]",
                         active
@@ -318,7 +318,7 @@ export default function MyLeavePage() {
                 onChange={(e) => setLeaveTypeId(e.target.value)}
               >
                 <option value="">-- Select --</option>
-                {leaveTypes.map((t) => (
+                {leaveTypes.map((t: any) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
                   </option>
@@ -327,9 +327,7 @@ export default function MyLeavePage() {
             </div>
           </div>
 
-          <p className="text-[10px] text-slate-400 mt-2 mb-3">
-            * Required
-          </p>
+          <p className="text-[10px] text-slate-400 mt-2 mb-3">* Required</p>
 
           <div className="mt-2 flex justify-end gap-3">
             <button
@@ -368,45 +366,25 @@ export default function MyLeavePage() {
                   <th className="px-3 py-2 w-8">
                     <input type="checkbox" disabled />
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Date
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Leave Type
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Leave Balance (Days)
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Number of Days
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Status
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Comments
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Actions
-                  </th>
+                  <th className="px-3 py-2 text-left font-semibold">Date</th>
+                  <th className="px-3 py-2 text-left font-semibold">Leave Type</th>
+                  <th className="px-3 py-2 text-left font-semibold">Leave Balance (Days)</th>
+                  <th className="px-3 py-2 text-left font-semibold">Number of Days</th>
+                  <th className="px-3 py-2 text-left font-semibold">Status</th>
+                  <th className="px-3 py-2 text-left font-semibold">Comments</th>
+                  <th className="px-3 py-2 text-left font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredLeaves.map((l) => {
+                {filteredLeaves.map((l: any) => {
                   const typeName =
-                    typeof l.type === "string"
-                      ? l.type
-                      : l.type?.name ?? "";
-                  const dateText = `${l.fromDate.slice(
-                    0,
-                    10
-                  )} - ${l.toDate.slice(0, 10)}`;
+                    typeof l.type === "string" ? l.type : l.type?.name ?? "";
+                  const dateText = `${String(l.fromDate).slice(0, 10)} - ${String(
+                    l.toDate
+                  ).slice(0, 10)}`;
 
                   return (
-                    <tr
-                      key={l._id}
-                      className="border-t border-[#f0f1f7]"
-                    >
+                    <tr key={l._id} className="border-t border-[#f0f1f7]">
                       <td className="px-3 py-2">
                         <input type="checkbox" />
                       </td>
@@ -427,16 +405,14 @@ export default function MyLeavePage() {
                               : "bg-amber-100 text-amber-700",
                           ].join(" ")}
                         >
-                          {l.status}
+                          {l.status === "PENDING" && l.pendingWith
+                            ? `PENDING (${l.pendingWith})`
+                            : l.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 max-w-xs truncate">
-                        {l.reason || "--"}
-                      </td>
+                      <td className="px-3 py-2 max-w-xs truncate">{l.reason || "--"}</td>
                       <td className="px-3 py-2">
-                        <span className="text-[#f7941d] cursor-pointer">
-                          View
-                        </span>
+                        <span className="text-[#f7941d] cursor-pointer">View</span>
                       </td>
                     </tr>
                   );
@@ -444,10 +420,7 @@ export default function MyLeavePage() {
 
                 {filteredLeaves.length === 0 && !isLoading && (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-3 py-6 text-center text-slate-400"
-                    >
+                    <td colSpan={8} className="px-3 py-6 text-center text-slate-400">
                       No Records Found
                     </td>
                   </tr>

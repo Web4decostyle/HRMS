@@ -8,7 +8,7 @@ import { selectAuthRole } from "../features/auth/selectors";
 export default function Sidebar() {
   const { data, isLoading } = useGetMenuQuery();
   const location = useLocation();
-  const role = useSelector(selectAuthRole);
+  const role = useSelector(selectAuthRole) ?? "ESS";
   const isViewOnly = role === "ESS_VIEWER";
 
   // ✅ Notifications menu item (routes to NotificationsPage)
@@ -41,8 +41,31 @@ export default function Sidebar() {
     return [...fromApi, notifItem];
   })();
 
+  // ✅ Defensive RBAC filter (in case backend returns unfiltered items)
+  const filterByRole = (list: MenuItem[]): MenuItem[] => {
+    return list
+      .filter((item) => {
+        // If the item doesn't declare roles, keep it.
+        if (!item.roles || item.roles.length === 0) return true;
+        return item.roles.includes(role as any);
+      })
+      .map((item) => {
+        if (!item.children || item.children.length === 0) return item;
+        const children = filterByRole(item.children);
+        return { ...item, children };
+      })
+      // If a parent ends up with no children and no path, drop it
+      .filter((item) => {
+        if (item.path) return true;
+        if (item.children && item.children.length > 0) return true;
+        return false;
+      });
+  };
+
+  const roleFiltered = filterByRole(merged);
+
   // 🔒 ROLE-BASED FILTER (NO UI CHANGE)
-  const items: MenuItem[] = merged.filter((item) => {
+  const items: MenuItem[] = roleFiltered.filter((item) => {
     if (!isViewOnly) return true;
 
     if (!item.path) return true;

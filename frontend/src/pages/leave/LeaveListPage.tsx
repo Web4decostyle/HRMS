@@ -1,12 +1,15 @@
 // frontend/src/pages/leave/LeaveListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   useGetLeaveTypesQuery,
   useGetAllLeavesQuery,
+  useUpdateLeaveStatusMutation,
   LeaveFilters,
   LeaveStatus,
 } from "../../features/leave/leaveApi";
+import { selectAuthRole } from "../../features/auth/selectors";
 
 /* ------------------------------------------------------------------
    Small style helpers (kept same as your version)
@@ -80,6 +83,12 @@ const STATUS_CHIPS: { value: LeaveStatusFilter; label: string }[] = [
 export default function LeaveListPage() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
+  const role = useSelector(selectAuthRole) ?? "ESS";
+
+  const [updateLeaveStatus, { isLoading: updatingStatus }] =
+    useUpdateLeaveStatusMutation();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Filter form state
   const today = new Date();
@@ -127,6 +136,23 @@ export default function LeaveListPage() {
       // employeeId: ...
       includePastEmployees,
     });
+  }
+
+  async function handleDecision(leaveId: string, nextStatus: "APPROVED" | "REJECTED") {
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      const updated = await updateLeaveStatus({ id: leaveId, status: nextStatus }).unwrap();
+
+      if (nextStatus === "APPROVED" && (updated as any).status === "PENDING") {
+        // Supervisor approved -> routed to HR
+        setActionSuccess("Supervisor approval recorded. Routed to HR for final approval.");
+      } else {
+        setActionSuccess(`Leave ${nextStatus.toLowerCase()} successfully.`);
+      }
+    } catch (e: any) {
+      setActionError(e?.data?.message || "Failed to update leave status.");
+    }
   }
 
   const activeTabKey = "leave-list"; // this page
@@ -191,6 +217,17 @@ export default function LeaveListPage() {
           );
         })}
       </div>
+
+      {(actionError || actionSuccess) && (
+        <div className="mb-4">
+          {actionError && (
+            <p className="text-[11px] text-rose-600">{actionError}</p>
+          )}
+          {actionSuccess && (
+            <p className="text-[11px] text-emerald-600">{actionSuccess}</p>
+          )}
+        </div>
+      )}
 
       {/* Search card */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-5">
@@ -413,6 +450,7 @@ export default function LeaveListPage() {
                     typeof l.type === "string"
                       ? l.type
                       : l.type?.name ?? "";
+                  const pendingWith = l.pendingWith;
                   const fullName =
                     l.employee && typeof l.employee === "object"
                       ? `${l.employee.firstName ?? ""} ${
@@ -423,6 +461,20 @@ export default function LeaveListPage() {
                     0,
                     10
                   )} - ${l.toDate.slice(0, 10)}`;
+
+                  const canSupervisorAct =
+                    l.status === "PENDING" &&
+                    pendingWith === "SUPERVISOR" &&
+                    (role === "SUPERVISOR" || role === "ADMIN");
+                  const canHrAct =
+                    l.status === "PENDING" &&
+                    pendingWith === "HR" &&
+                    (role === "HR" || role === "ADMIN");
+                  const canAct = canSupervisorAct || canHrAct;
+                  const statusLabel =
+                    l.status === "PENDING" && pendingWith
+                      ? `PENDING (${pendingWith})`
+                      : l.status;
 
                   return (
                     <tr
@@ -452,16 +504,39 @@ export default function LeaveListPage() {
                               : "bg-amber-100 text-amber-700",
                           ].join(" ")}
                         >
-                          {l.status}
+                          {statusLabel}
                         </span>
                       </td>
                       <td className="px-3 py-2 max-w-xs truncate">
                         {l.reason || "--"}
                       </td>
                       <td className="px-3 py-2">
-                        <span className="text-[#f7941d] cursor-pointer">
-                          View
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {canAct && (
+                            <>
+                              <button
+                                type="button"
+                                disabled={updatingStatus}
+                                onClick={() => handleDecision(l._id, "APPROVED")}
+                                className="px-3 h-7 rounded-full bg-[#8bc34a] text-white text-[11px] font-semibold hover:bg-[#7cb342] disabled:opacity-60"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                disabled={updatingStatus}
+                                onClick={() => handleDecision(l._id, "REJECTED")}
+                                className="px-3 h-7 rounded-full border border-rose-400 text-rose-600 bg-white text-[11px] font-semibold hover:bg-rose-50 disabled:opacity-60"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+
+                          <span className="text-[#f7941d] cursor-pointer">
+                            View
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );

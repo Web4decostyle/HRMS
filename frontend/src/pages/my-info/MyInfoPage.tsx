@@ -19,6 +19,7 @@ import JobTab from "./JobTab";
 import SalaryTab from "./SalaryTab";
 import TaxExemptionsTab from "./TaxExemptionsTab";
 import ReportToTab from "./ReportToTab";
+import LeaveTab from "../leave/LeaveTab";
 
 type TabKey =
   | "personal"
@@ -29,7 +30,8 @@ type TabKey =
   | "job"
   | "salary"
   | "tax"
-  | "report";
+  | "report"
+  | "leave";
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: "personal", label: "Personal Details" },
@@ -41,6 +43,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "salary", label: "Salary" },
   { key: "tax", label: "Tax Exemptions" },
   { key: "report", label: "Report-to" },
+  { key: "leave", label: "Leave" },
 ];
 
 type MyInfoPageProps = {
@@ -223,6 +226,9 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
           {active === "salary" && <SalaryTab employeeId={employee._id} />}
           {active === "tax" && <TaxExemptionsTab employeeId={employee._id} />}
           {active === "report" && <ReportToTab employeeId={employee._id} />}
+          {active === "leave" && (
+            <LeaveTab employeeId={isPimMode ? employee._id : undefined} />
+          )}
         </div>
       </div>
     </div>

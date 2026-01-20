@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   useGetLeaveTypesQuery,
   useGetMyLeaveEntitlementsQuery,
 } from "../../features/leave/leaveApi";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
+import { selectAuthRole } from "../../features/auth/selectors";
 
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
@@ -62,6 +62,21 @@ const activeTabKey = "entitlements";
 export default function MyEntitlementsPage() {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
+  const role = useSelector(selectAuthRole) ?? "ESS";
+  const isApprover = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
+
+  const visibleTabs = isApprover
+    ? TABS
+    : ([
+        { key: "apply", label: "Apply", path: "/leave/apply" },
+        { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
+        {
+          key: "entitlements",
+          label: "Entitlements",
+          isMenu: true as const,
+          menu: [{ label: "My Entitlements", path: "/leave/entitlements/my" }],
+        },
+      ] as const);
 
   const today = new Date();
   const nextYear = new Date(today);
@@ -89,12 +104,10 @@ export default function MyEntitlementsPage() {
   const totalDays = filtered.reduce((sum, e) => sum + e.days, 0);
 
   return (
-    
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-    <Topbar/>
-      {/* Top nav */}
+      {/* Leave module topbar */}
       <div className="flex items-center gap-2 mb-4">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = tab.key === activeTabKey;
           const isMenuTab = "isMenu" in tab && tab.isMenu;
           const menuItems = isMenuTab ? tab.menu : undefined;

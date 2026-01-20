@@ -21,6 +21,12 @@ export interface LeaveRequest {
   days: number;
   reason?: string;
   status: LeaveStatus;
+  /**
+   * Backend-derived hint for multi-step approvals.
+   * - SUPERVISOR: waiting for the requester’s supervisor
+   * - HR: supervisor approved, waiting for HR
+   */
+  pendingWith?: "SUPERVISOR" | "HR";
   createdAt?: string;
 }
 
