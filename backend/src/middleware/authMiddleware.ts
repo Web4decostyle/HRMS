@@ -1,3 +1,4 @@
+// backend/src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/jwt";
@@ -16,12 +17,9 @@ export type AuthUser = {
 
 export type AuthRequest = Request & { user?: AuthUser };
 
-function parseRole(input: unknown): Role {
+function normalizeRole(input: unknown): Role {
   const r = String(input || "").toUpperCase();
-  if (r === "ADMIN") return "ADMIN";
-  if (r === "HR") return "HR";
-  if (r === "SUPERVISOR") return "SUPERVISOR";
-  if (r === "ESS_VIEWER") return "ESS_VIEWER";
+  if (r === "ADMIN" || r === "HR" || r === "SUPERVISOR" || r === "ESS_VIEWER") return r;
   return "ESS";
 }
 
@@ -38,30 +36,24 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
   const header = req.headers.authorization;
   const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : null;
 
-  if (!token) {
-    return next(ApiError.unauthorized("Missing auth token"));
-  }
+  if (!token) return next(ApiError.unauthorized("Missing auth token"));
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as any;
 
     const userId = payload.sub || payload.id || payload.userId;
-    const role = parseRole(payload.role);
-
-    if (!userId) {
-      return next(ApiError.unauthorized("Invalid auth token payload"));
-    }
+    if (!userId) return next(ApiError.unauthorized("Invalid auth token payload"));
 
     req.user = {
       id: String(userId),
-      role,
+      role: normalizeRole(payload.role),
       username: payload.username,
       email: payload.email,
     };
 
     assertAuthed(req);
 
-    // ESS_VIEWER = read-only
+    // 🔒 ESS_VIEWER = read-only
     if (req.user.role === "ESS_VIEWER" && !READ_ONLY_METHODS.has(req.method)) {
       return next(ApiError.forbidden("Read-only role: changes are not allowed"));
     }

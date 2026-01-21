@@ -1,15 +1,16 @@
+// backend/src/modules/leave/leave.config.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
-export type WorkDayKind = "FULL" | "HALF" | "NONE";
+export type WorkDayConfig = "FULL" | "HALF" | "NONE";
 
 export interface IWorkWeekConfig extends Document {
-  monday: WorkDayKind;
-  tuesday: WorkDayKind;
-  wednesday: WorkDayKind;
-  thursday: WorkDayKind;
-  friday: WorkDayKind;
-  saturday: WorkDayKind;
-  sunday: WorkDayKind;
+  monday: WorkDayConfig;
+  tuesday: WorkDayConfig;
+  wednesday: WorkDayConfig;
+  thursday: WorkDayConfig;
+  friday: WorkDayConfig;
+  saturday: WorkDayConfig;
+  sunday: WorkDayConfig;
 }
 
 const WorkWeekConfigSchema = new Schema<IWorkWeekConfig>(
@@ -25,14 +26,16 @@ const WorkWeekConfigSchema = new Schema<IWorkWeekConfig>(
   { timestamps: true }
 );
 
-export const WorkWeekConfig =
-  mongoose.models.WorkWeekConfig ||
-  mongoose.model<IWorkWeekConfig>("WorkWeekConfig", WorkWeekConfigSchema);
+export const WorkWeekConfig = mongoose.model<IWorkWeekConfig>(
+  "WorkWeekConfig",
+  WorkWeekConfigSchema
+);
 
 export interface IHoliday extends Document {
   name: string;
   date: Date;
   isHalfDay: boolean;
+  repeatsAnnually: boolean;
 }
 
 const HolidaySchema = new Schema<IHoliday>(
@@ -40,12 +43,11 @@ const HolidaySchema = new Schema<IHoliday>(
     name: { type: String, required: true },
     date: { type: Date, required: true },
     isHalfDay: { type: Boolean, default: false },
+    repeatsAnnually: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 HolidaySchema.index({ date: 1 });
 
-export const Holiday =
-  mongoose.models.Holiday ||
-  mongoose.model<IHoliday>("Holiday", HolidaySchema);
+export const Holiday = mongoose.model<IHoliday>("Holiday", HolidaySchema);

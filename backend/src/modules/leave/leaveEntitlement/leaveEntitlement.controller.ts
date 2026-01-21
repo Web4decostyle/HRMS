@@ -1,136 +1,84 @@
-// backend/src/modules/leave/leaveEntitlement/leaveEntitlement.controller.ts
 import { Request, Response } from "express";
 import { LeaveEntitlement } from "../leaveEntitlement/LeaveEntitlement.model";
+import { AuthRequest } from "../../../middleware/authMiddleware";
+import { ApiError } from "../../../utils/ApiError";
+import { User } from "../../auth/auth.model";
+import { Employee } from "../../employees/employee.model";
 
-interface AuthRequest extends Request {
-  user?: any;
+async function getEmployeeForUser(userId: string) {
+  const u = await User.findById(userId).select("email username").lean();
+  if (!u) return null;
+
+  const email = (u.email || "").trim();
+  const username = (u.username || "").trim();
+
+  const employee =
+    (email && (await Employee.findOne({ email }).exec())) ||
+    (username && (await Employee.findOne({ email: username }).exec()));
+
+  return employee;
 }
 
-/**
- * POST /api/leave-entitlements
- * body: { employeeId, leaveTypeId, periodStart, periodEnd, days }
- * (for now only Individual employee – Multiple can be added later)
- */
-export const createLeaveEntitlement = async (
-  req: Request,
-  res: Response
-) => {
+export const createLeaveEntitlement = async (req: Request, res: Response) => {
   try {
-    const { employeeId, leaveTypeId, periodStart, periodEnd, days } = req.body;
-
-    if (!employeeId) {
-      return res.status(400).json({ message: "Employee is required" });
-    }
-    if (!leaveTypeId) {
-      return res.status(400).json({ message: "Leave type is required" });
-    }
-    if (!periodStart || !periodEnd) {
-      return res.status(400).json({ message: "Leave period is required" });
-    }
-    if (days == null || Number.isNaN(Number(days))) {
-      return res
-        .status(400)
-        .json({ message: "Entitlement days are required" });
-    }
-
-    // Create the document
-    const entitlement = await LeaveEntitlement.create({
-      employee: employeeId,
-      leaveType: leaveTypeId,
-      periodStart,
-      periodEnd,
-      days: Number(days),
-    });
-
-    // Populate on the created document (each populate returns a Promise)
-    await entitlement.populate("employee", "employeeId firstName lastName");
-    await entitlement.populate("leaveType", "name");
-
+    const entitlement = new LeaveEntitlement(req.body);
+    await entitlement.save();
     res.status(201).json(entitlement);
-  } catch (err) {
-    console.error("createLeaveEntitlement error:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    res.status(500).json({ message: "Error creating leave entitlement", error });
   }
 };
 
-export const getLeaveEntitlements = async (
-  req: Request,
-  res: Response
-) => {
+export const getLeaveEntitlements = async (_req: Request, res: Response) => {
   try {
-    const { employeeId, leaveTypeId, periodStart, periodEnd } = req.query as {
-      employeeId?: string;
-      leaveTypeId?: string;
-      periodStart?: string;
-      periodEnd?: string;
-    };
+    const entitlements = await LeaveEntitlement.find()
+      .populate("employee")
+      .populate("leaveType");
+    res.json(entitlements);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching leave entitlements", error });
+  }
+};
 
-    const filter: Record<string, any> = {};
+export const getMyLeaveEntitlements = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    if (employeeId) filter.employee = employeeId;
-    if (leaveTypeId) filter.leaveType = leaveTypeId;
+    const employee = await getEmployeeForUser(userId);
+    if (!employee) throw ApiError.notFound("Employee record not found for this user");
 
-    if (periodStart || periodEnd) {
-      filter.periodStart = {};
-      filter.periodEnd = {};
-      if (periodStart) filter.periodStart.$gte = new Date(periodStart);
-      if (periodEnd) filter.periodEnd.$lte = new Date(periodEnd);
-    }
-
-    const entitlements = await LeaveEntitlement.find(filter)
-      .sort({ periodStart: 1 })
-      .populate("employee", "employeeId firstName lastName")
-      .populate("leaveType", "name");
+    const entitlements = await LeaveEntitlement.find({ employee: employee._id })
+      .populate("leaveType")
+      .populate("employee");
 
     res.json(entitlements);
-  } catch (err) {
-    console.error("getLeaveEntitlements error:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error: any) {
+    res.status(error?.statusCode || 500).json({
+      message: error?.message || "Error fetching employee leave entitlements",
+      error,
+    });
   }
 };
 
-/**
- * GET /api/leave-entitlements/my
- */
-export const getMyLeaveEntitlements = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const userId = req.user?._id || req.user?.id || req.user;
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const entitlements = await LeaveEntitlement.find({ employee: userId })
-      .sort({ periodStart: 1 })
-      .populate("employee", "employeeId firstName lastName")
-      .populate("leaveType", "name");
-
-    res.json(entitlements);
-  } catch (err) {
-    console.error("getMyLeaveEntitlements error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/**
- * DELETE /api/leave-entitlements/:id
- */
-export const deleteLeaveEntitlement = async (
-  req: Request,
-  res: Response
-) => {
+export const updateLeaveEntitlement = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const existing = await LeaveEntitlement.findById(id);
-    if (!existing) {
-      return res.status(404).json({ message: "Entitlement not found" });
-    }
-    await existing.deleteOne();
-    res.json({ message: "Entitlement deleted" });
-  } catch (err) {
-    console.error("deleteLeaveEntitlement error:", err);
-    res.status(500).json({ message: "Server error" });
+    const updated = await LeaveEntitlement.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating leave entitlement", error });
+  }
+};
+
+export const deleteLeaveEntitlement = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await LeaveEntitlement.findByIdAndDelete(id);
+    res.json({ message: "Leave entitlement deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting leave entitlement", error });
   }
 };

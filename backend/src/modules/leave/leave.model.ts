@@ -2,7 +2,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
-export type LeaveApprovalAction = "PENDING" | "APPROVED" | "REJECTED";
 
 export interface ILeaveType extends Document {
   name: string;
@@ -10,34 +9,34 @@ export interface ILeaveType extends Document {
   isActive: boolean;
 }
 
+export type LeaveHistoryAction = "CREATED" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
+
+export interface ILeaveHistoryItem {
+  action: LeaveHistoryAction;
+  byUser: mongoose.Types.ObjectId; // User _id
+  byRole: string;
+  at: Date;
+  remarks?: string;
+}
+
+export interface ILeaveApproval {
+  supervisorEmployee?: mongoose.Types.ObjectId; // Employee _id (assigned supervisor)
+  supervisorAction?: "PENDING" | "APPROVED" | "REJECTED";
+  supervisorActedBy?: mongoose.Types.ObjectId; // User _id (supervisor user)
+  supervisorActedAt?: Date;
+  supervisorRemarks?: string;
+}
+
 export interface ILeaveRequest extends Document {
-  /** Employee record (NOT auth user) */
-  employee: mongoose.Types.ObjectId;
-  type: mongoose.Types.ObjectId;
+  employee: mongoose.Types.ObjectId; // Employee _id
+  type: mongoose.Types.ObjectId; // LeaveType _id
   startDate: Date;
   endDate: Date;
   reason?: string;
   status: LeaveStatus;
   days: number;
-
-  /**
-   * Multi-step approval
-   * step=1 => waiting supervisor
-   * step=2 => waiting HR
-   * step=3 => completed (APPROVED/REJECTED/CANCELLED)
-   */
-  approval: {
-    step: number;
-    supervisorEmployee?: mongoose.Types.ObjectId;
-    supervisorAction: LeaveApprovalAction;
-    supervisorActedBy?: mongoose.Types.ObjectId;
-    supervisorActedAt?: Date;
-    supervisorRemarks?: string;
-    hrAction: LeaveApprovalAction;
-    hrActedBy?: mongoose.Types.ObjectId;
-    hrActedAt?: Date;
-    hrRemarks?: string;
-  };
+  approval?: ILeaveApproval;
+  history: ILeaveHistoryItem[];
 }
 
 const LeaveTypeSchema = new Schema<ILeaveType>(
@@ -49,9 +48,30 @@ const LeaveTypeSchema = new Schema<ILeaveType>(
   { timestamps: true }
 );
 
+const LeaveHistorySchema = new Schema<ILeaveHistoryItem>(
+  {
+    action: { type: String, required: true },
+    byUser: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    byRole: { type: String, required: true },
+    at: { type: Date, required: true },
+    remarks: { type: String },
+  },
+  { _id: false }
+);
+
+const LeaveApprovalSchema = new Schema<ILeaveApproval>(
+  {
+    supervisorEmployee: { type: Schema.Types.ObjectId, ref: "Employee" },
+    supervisorAction: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "PENDING" },
+    supervisorActedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    supervisorActedAt: { type: Date },
+    supervisorRemarks: { type: String },
+  },
+  { _id: false }
+);
+
 const LeaveRequestSchema = new Schema<ILeaveRequest>(
   {
-    // IMPORTANT: keep this consistent with LeaveEntitlement (Employee ref)
     employee: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
     type: { type: Schema.Types.ObjectId, ref: "LeaveType", required: true },
     startDate: { type: Date, required: true },
@@ -63,39 +83,11 @@ const LeaveRequestSchema = new Schema<ILeaveRequest>(
       default: "PENDING",
     },
     days: { type: Number, default: 0 },
-
-    approval: {
-      step: { type: Number, default: 1 },
-
-      supervisorEmployee: { type: Schema.Types.ObjectId, ref: "Employee" },
-      supervisorAction: {
-        type: String,
-        enum: ["PENDING", "APPROVED", "REJECTED"],
-        default: "PENDING",
-      },
-      supervisorActedBy: { type: Schema.Types.ObjectId, ref: "User" },
-      supervisorActedAt: { type: Date },
-      supervisorRemarks: { type: String },
-
-      hrAction: {
-        type: String,
-        enum: ["PENDING", "APPROVED", "REJECTED"],
-        default: "PENDING",
-      },
-      hrActedBy: { type: Schema.Types.ObjectId, ref: "User" },
-      hrActedAt: { type: Date },
-      hrRemarks: { type: String },
-    },
+    approval: { type: LeaveApprovalSchema, default: undefined },
+    history: { type: [LeaveHistorySchema], default: [] },
   },
   { timestamps: true }
 );
 
-export const LeaveType = mongoose.model<ILeaveType>(
-  "LeaveType",
-  LeaveTypeSchema
-);
-
-export const LeaveRequest = mongoose.model<ILeaveRequest>(
-  "LeaveRequest",
-  LeaveRequestSchema
-);
+export const LeaveType = mongoose.model<ILeaveType>("LeaveType", LeaveTypeSchema);
+export const LeaveRequest = mongoose.model<ILeaveRequest>("LeaveRequest", LeaveRequestSchema);

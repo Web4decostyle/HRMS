@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import {
   useGetLeaveTypesQuery,
   useGetMyLeavesQuery,
   LeaveStatus,
 } from "../../features/leave/leaveApi";
-import { selectAuthRole } from "../../features/auth/selectors";
+
+import LeaveModuleTabs from "./LeaveModuleTabs";
 
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
@@ -14,9 +13,6 @@ const inputCls =
   "w-full h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
 const selectCls = inputCls;
 
-type MenuKey = "entitlements" | "reports" | "configure" | null;
-
-// Status filter type: backend statuses + UI-only Scheduled/Taken
 type MyStatusFilter = "" | LeaveStatus | "SCHEDULED" | "TAKEN";
 
 const STATUS_CHIPS: { value: MyStatusFilter; label: string }[] = [
@@ -27,88 +23,18 @@ const STATUS_CHIPS: { value: MyStatusFilter; label: string }[] = [
   { value: "TAKEN", label: "Taken" },
 ];
 
-// ---- FIX: Don’t use "as const" tuple typing for this.
-// Define a safe union type so filtering doesn't break TS.
-type LeaveTab =
-  | { key: "apply" | "my-leave" | "leave-list" | "assign-leave"; label: string; path: string }
-  | {
-      key: "entitlements" | "reports" | "configure";
-      label: string;
-      isMenu: true;
-      menu: { label: string; path: string }[];
-    };
-
-const TABS: readonly LeaveTab[] = [
-  { key: "apply", label: "Apply", path: "/leave/apply" },
-  { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
-  {
-    key: "entitlements",
-    label: "Entitlements",
-    isMenu: true,
-    menu: [
-      { label: "Add Entitlements", path: "/leave/entitlements/add" },
-      { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
-      { label: "My Entitlements", path: "/leave/entitlements/my" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    isMenu: true,
-    menu: [
-      {
-        label: "Leave Entitlements and Usage Report",
-        path: "/leave/reports/entitlements-usage",
-      },
-      {
-        label: "My Leave Entitlements and Usage Report",
-        path: "/leave/reports/my-entitlements-usage",
-      },
-    ],
-  },
-  {
-    key: "configure",
-    label: "Configure",
-    isMenu: true,
-    menu: [
-      { label: "Leave Period", path: "/leave/config/period" },
-      { label: "Leave Types", path: "/leave/config/types" },
-      { label: "Work Week", path: "/leave/config/work-week" },
-      { label: "Holidays", path: "/leave/config/holidays" },
-    ],
-  },
-  { key: "leave-list", label: "Leave List", path: "/leave" },
-  { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
-];
-
-const activeTabKey = "my-leave";
-
 export default function MyLeavePage() {
-  const navigate = useNavigate();
-  const [openMenu, setOpenMenu] = useState<MenuKey>(null);
-
-  // ---- FIX: only declared once
-  const role = useSelector(selectAuthRole) ?? "ESS";
-  const isApprover = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
-
-  // ---- FIX: filtering works because TABS is readonly LeaveTab[]
-  const visibleTabs = isApprover
-    ? TABS
-    : TABS.filter((t) => t.key === "apply" || t.key === "my-leave");
-
   const today = new Date();
   const defaultFrom = today.toISOString().slice(0, 10);
   const nextYear = new Date(today);
   nextYear.setFullYear(today.getFullYear() + 1);
   const defaultTo = nextYear.toISOString().slice(0, 10);
 
-  // form state
   const [fromDate, setFromDate] = useState(defaultFrom);
   const [toDate, setToDate] = useState(defaultTo);
   const [status, setStatus] = useState<MyStatusFilter>("");
   const [leaveTypeId, setLeaveTypeId] = useState("");
 
-  // applied filters (when Search is clicked)
   const [appliedFilters, setAppliedFilters] = useState({
     fromDate: defaultFrom,
     toDate: defaultTo,
@@ -123,24 +49,24 @@ export default function MyLeavePage() {
     const startFilter = appliedFilters.fromDate
       ? new Date(appliedFilters.fromDate)
       : null;
-    const endFilter = appliedFilters.toDate ? new Date(appliedFilters.toDate) : null;
+    const endFilter = appliedFilters.toDate
+      ? new Date(appliedFilters.toDate)
+      : null;
     if (startFilter) startFilter.setHours(0, 0, 0, 0);
     if (endFilter) endFilter.setHours(23, 59, 59, 999);
 
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
 
-    return leaves.filter((l: any) => {
+    return leaves.filter((l) => {
       const from = new Date(l.fromDate);
       const to = new Date(l.toDate);
       from.setHours(0, 0, 0, 0);
       to.setHours(0, 0, 0, 0);
 
-      // date range
       if (startFilter && from < startFilter) return false;
       if (endFilter && to > endFilter) return false;
 
-      // leave type
       if (appliedFilters.leaveTypeId) {
         const t = l.type;
         if (typeof t === "string") {
@@ -150,7 +76,6 @@ export default function MyLeavePage() {
         }
       }
 
-      // status
       switch (appliedFilters.status) {
         case "":
           return true;
@@ -193,61 +118,14 @@ export default function MyLeavePage() {
 
   return (
     <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-      {/* Top nav */}
-      <div className="flex items-center gap-2 mb-4">
-        {visibleTabs.map((tab) => {
-          const isActive = tab.key === activeTabKey;
-          const isMenuTab = "isMenu" in tab && tab.isMenu;
-          const menuItems = isMenuTab ? tab.menu : undefined;
-
-          return (
-            <div key={tab.key} className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isMenuTab && menuItems) {
-                    setOpenMenu((prev) => (prev === tab.key ? null : (tab.key as MenuKey)));
-                  } else if ("path" in tab) {
-                    navigate(tab.path);
-                  }
-                }}
-                className={[
-                  "px-5 h-9 rounded-full text-[12px] border transition flex items-center",
-                  isActive
-                    ? "bg-[#fef4ea] border-[#f7941d] text-[#f7941d] font-semibold"
-                    : "bg-white border-[#e5e7f0] text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                <span>{tab.label}</span>
-                {isMenuTab && <span className="ml-1 text-[10px] align-middle">▼</span>}
-              </button>
-
-              {isMenuTab && openMenu === tab.key && menuItems && (
-                <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white border border-[#e5e7f0] shadow-lg z-20 text-[12px]">
-                  {menuItems.map((item) => (
-                    <button
-                      key={item.path}
-                      type="button"
-                      onClick={() => {
-                        navigate(item.path);
-                        setOpenMenu(null);
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-[#fef4ea] hover:text-[#f7941d]"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <LeaveModuleTabs activeKey="my-leave" />
 
       {/* Search card */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-5">
         <div className="px-7 py-4 border-b border-[#edf0f7]">
-          <h2 className="text-[13px] font-semibold text-slate-800">My Leave List</h2>
+          <h2 className="text-[13px] font-semibold text-slate-800">
+            My Leave List
+          </h2>
         </div>
 
         <div className="px-7 pt-5 pb-4 text-[12px]">
@@ -295,7 +173,9 @@ export default function MyLeavePage() {
                     <button
                       key={chip.label}
                       type="button"
-                      onClick={() => setStatus((prev) => (prev === chip.value ? "" : chip.value))}
+                      onClick={() =>
+                        setStatus((prev) => (prev === chip.value ? "" : chip.value))
+                      }
                       className={[
                         "inline-flex items-center px-2 h-6 rounded-full border text-[11px]",
                         active
@@ -318,7 +198,7 @@ export default function MyLeavePage() {
                 onChange={(e) => setLeaveTypeId(e.target.value)}
               >
                 <option value="">-- Select --</option>
-                {leaveTypes.map((t: any) => (
+                {leaveTypes.map((t) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
                   </option>
@@ -348,7 +228,7 @@ export default function MyLeavePage() {
         </div>
       </div>
 
-      {/* Results card */}
+      {/* Results */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-8">
         <div className="px-7 py-4 border-b border-[#edf0f7]">
           {isLoading ? (
@@ -368,7 +248,9 @@ export default function MyLeavePage() {
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">Date</th>
                   <th className="px-3 py-2 text-left font-semibold">Leave Type</th>
-                  <th className="px-3 py-2 text-left font-semibold">Leave Balance (Days)</th>
+                  <th className="px-3 py-2 text-left font-semibold">
+                    Leave Balance (Days)
+                  </th>
                   <th className="px-3 py-2 text-left font-semibold">Number of Days</th>
                   <th className="px-3 py-2 text-left font-semibold">Status</th>
                   <th className="px-3 py-2 text-left font-semibold">Comments</th>
@@ -376,12 +258,13 @@ export default function MyLeavePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLeaves.map((l: any) => {
+                {filteredLeaves.map((l) => {
                   const typeName =
                     typeof l.type === "string" ? l.type : l.type?.name ?? "";
-                  const dateText = `${String(l.fromDate).slice(0, 10)} - ${String(
-                    l.toDate
-                  ).slice(0, 10)}`;
+                  const dateText = `${l.fromDate.slice(0, 10)} - ${l.toDate.slice(
+                    0,
+                    10
+                  )}`;
 
                   return (
                     <tr key={l._id} className="border-t border-[#f0f1f7]">
@@ -405,9 +288,7 @@ export default function MyLeavePage() {
                               : "bg-amber-100 text-amber-700",
                           ].join(" ")}
                         >
-                          {l.status === "PENDING" && l.pendingWith
-                            ? `PENDING (${l.pendingWith})`
-                            : l.status}
+                          {l.status}
                         </span>
                       </td>
                       <td className="px-3 py-2 max-w-xs truncate">{l.reason || "--"}</td>
