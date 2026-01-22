@@ -25,6 +25,12 @@ export interface ILeaveApproval {
   supervisorActedBy?: mongoose.Types.ObjectId; // User _id (supervisor user)
   supervisorActedAt?: Date;
   supervisorRemarks?: string;
+
+  // ✅ NEW: Admin can also approve/reject. Only ONE approval is required (Supervisor OR Admin).
+  adminAction?: "PENDING" | "APPROVED" | "REJECTED";
+  adminActedBy?: mongoose.Types.ObjectId; // User _id (admin user)
+  adminActedAt?: Date;
+  adminRemarks?: string;
 }
 
 export interface ILeaveRequest extends Document {
@@ -66,6 +72,12 @@ const LeaveApprovalSchema = new Schema<ILeaveApproval>(
     supervisorActedBy: { type: Schema.Types.ObjectId, ref: "User" },
     supervisorActedAt: { type: Date },
     supervisorRemarks: { type: String },
+
+    // ✅ Admin decision tracking
+    adminAction: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "PENDING" },
+    adminActedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    adminActedAt: { type: Date },
+    adminRemarks: { type: String },
   },
   { _id: false }
 );

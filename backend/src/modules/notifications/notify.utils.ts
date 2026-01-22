@@ -13,9 +13,9 @@ export async function notifyUsers(input: {
 }) {
   const tasks = input.userIds.map((id) =>
     createNotification({
-      userId: id,
+      userId: String(id),
       title: input.title,
-      message: input.message,
+      message: input.message || "",
       type: input.type,
       link: input.link,
       meta: input.meta,

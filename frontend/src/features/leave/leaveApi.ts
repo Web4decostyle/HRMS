@@ -21,13 +21,15 @@ export interface LeaveRequest {
   days: number;
   reason?: string;
   status: LeaveStatus;
-  /**
-   * Backend-derived hint for multi-step approvals.
-   * - SUPERVISOR: waiting for the requester’s supervisor
-   * - HR: supervisor approved, waiting for HR
-   */
   pendingWith?: "SUPERVISOR" | "HR";
   createdAt?: string;
+  approval?: any;
+  history?: Array<{
+    action: string;
+    byRole?: string;
+    at?: string;
+    remarks?: string;
+  }>;
 }
 
 // Filters for Leave List
@@ -107,12 +109,23 @@ export const leaveApi = createApi({
   reducerPath: "leaveApi",
   baseQuery: authorizedBaseQuery,
   // 🔥 add LeaveEntitlement here
-  tagTypes: ["LeaveType", "LeaveRequest", "LeaveEntitlement", "WorkWeek", "Holiday"],
+  tagTypes: [
+    "LeaveType",
+    "LeaveRequest",
+    "LeaveEntitlement",
+    "WorkWeek",
+    "Holiday",
+  ],
   endpoints: (builder) => ({
     // GET /api/leave/types
     getLeaveTypes: builder.query<LeaveType[], void>({
       query: () => "leave/types",
       providesTags: ["LeaveType"],
+    }),
+
+    getLeaveById: builder.query<LeaveRequest, string>({
+      query: (id) => `leave/${id}`,
+      providesTags: ["LeaveRequest"],
     }),
 
     // POST /api/leave
@@ -154,12 +167,15 @@ export const leaveApi = createApi({
     // PATCH /api/leave/:id/status (admin / HR)
     updateLeaveStatus: builder.mutation<
       LeaveRequest,
-      { id: string; status: LeaveStatus }
+      { id: string; status: LeaveStatus; remarks?: string }
     >({
-      query: ({ id, status }) => ({
+      query: ({ id, status, remarks }) => ({
         url: `leave/${id}/status`,
         method: "PATCH",
-        body: { status },
+        body: {
+          status,
+          ...(remarks && remarks.trim() ? { remarks: remarks.trim() } : {}),
+        },
       }),
       invalidatesTags: ["LeaveRequest"],
     }),
@@ -182,7 +198,7 @@ export const leaveApi = createApi({
       invalidatesTags: ["LeaveRequest"],
     }),
 
-        // --- Leave Types: CRUD for Configure -> Leave Types ------------
+    // --- Leave Types: CRUD for Configure -> Leave Types ------------
 
     createLeaveType: builder.mutation<
       LeaveType,
@@ -235,7 +251,12 @@ export const leaveApi = createApi({
 
     createHoliday: builder.mutation<
       Holiday,
-      { name: string; date: string; isHalfDay: boolean; repeatsAnnually: boolean }
+      {
+        name: string;
+        date: string;
+        isHalfDay: boolean;
+        repeatsAnnually: boolean;
+      }
     >({
       query: (body) => ({
         url: "leave/holidays",
@@ -317,4 +338,5 @@ export const {
   useGetHolidaysQuery,
   useCreateHolidayMutation,
   useDeleteHolidayMutation,
+  useGetLeaveByIdQuery,
 } = leaveApi;

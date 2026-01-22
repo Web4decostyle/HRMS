@@ -3,7 +3,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export type AuditAction =
   | "CHANGE_REQUEST_CREATED"
   | "CHANGE_REQUEST_APPROVED"
-  | "CHANGE_REQUEST_REJECTED";
+  | "CHANGE_REQUEST_REJECTED"
+  // ✅ Leave
+  | "LEAVE_REQUEST_CREATED"
+  | "LEAVE_REQUEST_APPROVED"
+  | "LEAVE_REQUEST_REJECTED"
+  | "LEAVE_REQUEST_CANCELLED"
+  | "LEAVE_ASSIGNED";
 
 export interface AuditLog {
   _id: string;

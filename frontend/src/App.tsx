@@ -117,6 +117,7 @@ import AdminApprovalsPage from "./pages/admin/approvals/AdminApprovalsPage";
 // ✅ Notifications page
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import AdminAuditHistoryPage from "./pages/admin/AdminAuditHistoryPage";
+import LeaveRequestViewPage from "./pages/leave/LeaveRequestViewPage";
 
 export default function App() {
   return (
@@ -501,6 +502,20 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      <Route
+        path="/leave/list/:id"
+        element={
+          <RequireAuth>
+            <Layout>
+              <RequireRole allowed={["ADMIN", "HR", "SUPERVISOR"]}>
+                <LeaveRequestViewPage />
+              </RequireRole>
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
       <Route
         path="/leave/entitlements/add"
         element={

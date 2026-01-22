@@ -3,7 +3,13 @@ import mongoose, { Schema, InferSchemaType } from "mongoose";
 export type AuditAction =
   | "CHANGE_REQUEST_CREATED"
   | "CHANGE_REQUEST_APPROVED"
-  | "CHANGE_REQUEST_REJECTED";
+  | "CHANGE_REQUEST_REJECTED"
+  // ✅ Leave
+  | "LEAVE_REQUEST_CREATED"
+  | "LEAVE_REQUEST_APPROVED"
+  | "LEAVE_REQUEST_REJECTED"
+  | "LEAVE_REQUEST_CANCELLED"
+  | "LEAVE_ASSIGNED";
 
 const auditLogSchema = new Schema(
   {
@@ -53,4 +59,3 @@ export type AuditLog = InferSchemaType<typeof auditLogSchema>;
 export const AuditLogModel =
   (mongoose.models.AdminAuditLog as any) ||
   mongoose.model("AdminAuditLog", auditLogSchema);
-

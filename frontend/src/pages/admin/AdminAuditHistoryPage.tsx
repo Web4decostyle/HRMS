@@ -115,6 +115,13 @@ function ActionPill({ action }: { action: string }) {
     CHANGE_REQUEST_CREATED: "bg-yellow-50 border-yellow-200 text-yellow-700",
     CHANGE_REQUEST_APPROVED: "bg-green-50 border-green-200 text-green-700",
     CHANGE_REQUEST_REJECTED: "bg-red-50 border-red-200 text-red-700",
+
+    // ✅ Leave
+    LEAVE_REQUEST_CREATED: "bg-sky-50 border-sky-200 text-sky-700",
+    LEAVE_REQUEST_APPROVED: "bg-green-50 border-green-200 text-green-700",
+    LEAVE_REQUEST_REJECTED: "bg-red-50 border-red-200 text-red-700",
+    LEAVE_REQUEST_CANCELLED: "bg-slate-100 border-slate-200 text-slate-700",
+    LEAVE_ASSIGNED: "bg-violet-50 border-violet-200 text-violet-700",
   };
   return (
     <span
@@ -345,7 +352,7 @@ export default function AdminAuditHistoryPage() {
   return (
     <div className="p-4 md:p-6">
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl border border-slate-200 bg-white"
       >

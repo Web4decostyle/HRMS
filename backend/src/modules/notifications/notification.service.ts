@@ -1,6 +1,7 @@
 // backend/src/modules/notifications/notification.service.ts
 import mongoose from "mongoose";
 import { NotificationModel, type NotificationType } from "./notification.model";
+import { getIO } from "../../socket";
 
 export async function createNotification(input: {
   userId: string;
@@ -20,15 +21,19 @@ export async function createNotification(input: {
     isRead: false,
   });
 
-  /**
-   * ✅ IMPORTANT:
-   * Your project socket.ts does NOT export `emitToUser`.
-   * So we don't push realtime here.
-   * Notifications still work via DB fetch (/notifications endpoints).
-   *
-   * If you want realtime popups later, share `backend/src/socket.ts`
-   * and I will wire it to your existing socket server correctly.
-   */
+  // ✅ Real-time push (frontend listens to `notification:new`)
+  // - Socket rooms are joined via `socket.emit('join', userId)`
+  // - If socket server isn't initialized yet, we silently ignore.
+  try {
+    const io = getIO();
+    io.to(String(input.userId)).emit("notification:new", {
+      id: String(doc._id),
+      type: doc.type,
+      title: doc.title,
+    });
+  } catch {
+    // ignore
+  }
 
   return doc;
 }
