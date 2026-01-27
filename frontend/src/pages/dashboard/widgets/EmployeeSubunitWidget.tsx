@@ -44,7 +44,7 @@ export default function EmployeeSubunitWidget() {
         <div className="flex flex-col items-center">
           <Donut percent={total ? pct : 100} />
           <div className="text-[11px] text-slate-500 flex items-center gap-2 -mt-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
             <span>{top?.label || "Unassigned"}</span>
           </div>
         </div>

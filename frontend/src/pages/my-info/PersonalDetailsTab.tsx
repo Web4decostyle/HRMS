@@ -416,7 +416,7 @@ export default function PersonalDetailsTab({
                     <label className={labelCls}>
                       {field.fieldName}
                       {field.required && (
-                        <span className="text-red-500">*</span>
+                        <span className="text-green-500">*</span>
                       )}
                     </label>
 

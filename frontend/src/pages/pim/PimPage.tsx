@@ -98,7 +98,7 @@ export default function EmployeesPage() {
               onClick={() => setConfigOpen((open) => !open)}
               className={`${tabBase} ${
                 configOpen
-                  ? "bg-red-100 text-red-600 border border-red-200"
+                  ? "bg-green-100 text-green-600 border border-green-200"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
@@ -114,7 +114,7 @@ export default function EmployeesPage() {
                     setConfigOpen(false);
                     navigate("/pim/config/optional-fields");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Optional Fields
                 </button>
@@ -124,7 +124,7 @@ export default function EmployeesPage() {
                     setConfigOpen(false);
                     navigate("/pim/config/custom-fields");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Custom Fields
                 </button>
@@ -134,7 +134,7 @@ export default function EmployeesPage() {
                     setConfigOpen(false);
                     navigate("/pim/config/data-import");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Data Import
                 </button>
@@ -144,7 +144,7 @@ export default function EmployeesPage() {
                     setConfigOpen(false);
                     navigate("/pim/config/reporting-methods");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50"
                 >
                   Reporting Methods
                 </button>
@@ -154,7 +154,7 @@ export default function EmployeesPage() {
                     setConfigOpen(false);
                     navigate("/pim/config/termination-reasons");
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50 rounded-b-xl"
+                  className="w-full text-left px-4 py-2 hover:bg-green-50 rounded-b-xl"
                 >
                   Termination Reasons
                 </button>
@@ -165,7 +165,7 @@ export default function EmployeesPage() {
           {/* Employee List (active tab) */}
           <button
             type="button"
-            className={`${tabBase} bg-red-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
             onClick={() => navigate("/pim")}
           >
             Employee List
@@ -211,7 +211,7 @@ export default function EmployeesPage() {
                 value={searchForm.name}
                 onChange={handleFieldChange}
                 placeholder="Type for hints..."
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
@@ -225,7 +225,7 @@ export default function EmployeesPage() {
                 name="employeeId"
                 value={searchForm.employeeId}
                 onChange={handleFieldChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
@@ -238,7 +238,7 @@ export default function EmployeesPage() {
                 name="status"
                 value={searchForm.status}
                 onChange={handleFieldChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="">-- Select --</option>
                 <option value="ACTIVE">Active</option>
@@ -255,7 +255,7 @@ export default function EmployeesPage() {
                 name="include"
                 value={searchForm.include}
                 onChange={handleFieldChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="current">Current Employees Only</option>
                 <option value="past">Past Employees Only</option>
@@ -292,7 +292,7 @@ export default function EmployeesPage() {
                 name="jobTitle"
                 value={searchForm.jobTitle}
                 onChange={handleFieldChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
@@ -306,7 +306,7 @@ export default function EmployeesPage() {
                 name="subUnit"
                 value={searchForm.subUnit}
                 onChange={handleFieldChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </div>
@@ -382,7 +382,7 @@ export default function EmployeesPage() {
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-6 py-8 text-center text-red-500 text-sm"
+                    className="px-6 py-8 text-center text-green-500 text-sm"
                   >
                     Failed to load employees. Please try again.
                   </td>
@@ -426,8 +426,8 @@ export default function EmployeesPage() {
                       {emp.department || "-"}
                     </td>
                     <td className="px-6 py-3 text-slate-700">-</td>
-                    <td className="px-6 py-3 text-center text-xs text-red-600">
-                      <button className="px-3 py-1 rounded-full border border-red-200 bg-red-50 hover:bg-red-100"
+                    <td className="px-6 py-3 text-center text-xs text-green-600">
+                      <button className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100"
                         onClick={() => navigate(`/pim/employee/${emp._id}`)}>
                         Edit
                       </button>

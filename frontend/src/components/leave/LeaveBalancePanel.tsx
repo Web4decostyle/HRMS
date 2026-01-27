@@ -34,7 +34,7 @@ export default function LeaveBalancePanel({ isLoading, isError, items }: Props) 
         {isLoading ? (
           <div className="mt-3 text-sm text-slate-500">Loading balances…</div>
         ) : isError ? (
-          <div className="mt-3 text-sm text-red-600">
+          <div className="mt-3 text-sm text-green-600">
             Failed to load leave balance.
           </div>
         ) : !items?.length ? (

@@ -35,7 +35,7 @@ export default function ReportingMethodsPage() {
           {/* Configuration (active) */}
           <button
             type="button"
-            className={`${tabBase} bg-red-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -149,7 +149,7 @@ export default function ReportingMethodsPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(m._id)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-red-100 bg-red-50 text-red-500 hover:bg-red-100"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-green-100 bg-green-50 text-green-500 hover:bg-green-100"
                           title="Delete"
                         >
                           <Trash2 size={14} />

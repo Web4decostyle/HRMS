@@ -116,7 +116,7 @@ function Chip({
   const map: Record<string, string> = {
     slate: "bg-slate-50 text-slate-700 border-slate-200",
     green: "bg-green-50 text-green-700 border-green-200",
-    red: "bg-red-50 text-red-700 border-red-200",
+    red: "bg-green-50 text-green-700 border-green-200",
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     blue: "bg-sky-50 text-sky-700 border-sky-200",
   };
@@ -153,7 +153,7 @@ function SoftButton({
       "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:bg-slate-100",
     green:
       "bg-green-600 border-green-600 text-white hover:bg-green-700 active:bg-green-800",
-    red: "bg-red-600 border-red-600 text-white hover:bg-red-700 active:bg-red-800",
+    red: "bg-green-600 border-green-600 text-white hover:bg-green-700 active:bg-green-800",
   };
   return (
     <button
@@ -542,7 +542,7 @@ export default function AdminApprovalsPage() {
                             </div>
 
                             <div className="col-span-4 px-4 py-3 border-l border-slate-200">
-                              <span className="inline-flex items-center rounded-xl bg-red-50 text-red-700 border border-red-100 px-2 py-1 text-xs font-semibold">
+                              <span className="inline-flex items-center rounded-xl bg-green-50 text-green-700 border border-green-100 px-2 py-1 text-xs font-semibold">
                                 {formatValue(row.from)}
                               </span>
                             </div>

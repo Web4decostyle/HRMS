@@ -41,12 +41,12 @@ export default function AddSkillPage() {
           {/* Name */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">
-              Name<span className="text-red-500 ml-0.5">*</span>
+              Name<span className="text-green-500 ml-0.5">*</span>
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-400 focus:border-red-400"
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
             />
           </div>
 
@@ -60,14 +60,14 @@ export default function AddSkillPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Type description here"
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-400 focus:border-red-400"
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
             />
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-slate-400">
-              <span className="text-red-500 mr-0.5">*</span>Required
+              <span className="text-green-500 mr-0.5">*</span>Required
             </span>
 
             <div className="flex items-center gap-3">

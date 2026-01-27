@@ -36,7 +36,7 @@ export default function EmployeeAttendanceWidget() {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-4">
         <div className="text-sm font-semibold text-slate-800">Attendance</div>
-        <div className="text-xs text-red-500 mt-2">Failed to load</div>
+        <div className="text-xs text-green-500 mt-2">Failed to load</div>
       </div>
     );
   }

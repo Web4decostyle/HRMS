@@ -32,7 +32,7 @@ function timeAgo(iso: string) {
 const typeDot = (type?: string) => {
   switch (type) {
     case "ERROR":
-      return "bg-red-500";
+      return "bg-green-500";
     case "WARNING":
       return "bg-amber-500";
     case "SUCCESS":
@@ -44,9 +44,9 @@ const typeDot = (type?: string) => {
     case "RECRUITMENT":
       return "bg-pink-500";
     case "PIM":
-      return "bg-red-500";
+      return "bg-green-500";
     case "ORDER":
-      return "bg-blue-500";
+      return "bg-green-500";
     case "INVOICE":
       return "bg-lime-500";
     case "INFO":
@@ -247,7 +247,7 @@ export default function Topbar({ active }: TopbarProps) {
           >
             🔔
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-green-500 text-white text-[10px] font-semibold flex items-center justify-center">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
@@ -269,7 +269,7 @@ export default function Topbar({ active }: TopbarProps) {
                       refetchList();
                     } catch {}
                   }}
-                  className="text-[11px] text-red-600 hover:text-red-700 disabled:opacity-50"
+                  className="text-[11px] text-green-600 hover:text-green-700 disabled:opacity-50"
                 >
                   Mark all read
                 </button>
@@ -315,7 +315,7 @@ export default function Topbar({ active }: TopbarProps) {
 
                         <div className="mt-2 flex items-center gap-2">
                           {!isRead(n) && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                               New
                             </span>
                           )}
@@ -365,7 +365,7 @@ export default function Topbar({ active }: TopbarProps) {
 
         {/* Profile */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
             {initials}
           </div>
           <div className="leading-tight">
@@ -373,7 +373,7 @@ export default function Topbar({ active }: TopbarProps) {
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[11px] text-red-600 hover:text-red-700"
+              className="text-[11px] text-green-600 hover:text-green-700"
             >
               Logout
             </button>

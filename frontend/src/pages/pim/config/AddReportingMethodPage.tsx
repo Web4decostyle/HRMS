@@ -35,7 +35,7 @@ export default function AddReportingMethodPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className={`${tabBase} bg-red-500 text-white shadow-sm`}
+            className={`${tabBase} bg-green-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -77,7 +77,7 @@ export default function AddReportingMethodPage() {
         <div className="px-6 py-6 space-y-6">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-2">
-              Name<span className="text-red-500">*</span>
+              Name<span className="text-green-500">*</span>
             </label>
             <input
               type="text"

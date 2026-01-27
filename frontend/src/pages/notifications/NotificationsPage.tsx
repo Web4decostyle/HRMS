@@ -37,7 +37,7 @@ const dotByType = (type?: string) => {
     case "WARNING":
       return "bg-amber-500";
     case "ERROR":
-      return "bg-red-500";
+      return "bg-green-500";
     default:
       return "bg-slate-400";
   }
@@ -56,7 +56,7 @@ const badgeByType = (type?: string) => {
     case "WARNING":
       return "bg-amber-50 text-amber-700 border-amber-100";
     case "ERROR":
-      return "bg-red-50 text-red-700 border-red-100";
+      return "bg-green-50 text-green-700 border-green-100";
     default:
       return "bg-slate-50 text-slate-700 border-slate-100";
   }
@@ -88,7 +88,7 @@ function PillButton({
     "h-10 px-4 rounded-full border text-sm transition-all duration-150 whitespace-nowrap";
   const activeCls =
     tone === "red"
-      ? "bg-red-600 text-white border-red-600 shadow-sm"
+      ? "bg-green-600 text-white border-green-600 shadow-sm"
       : "bg-slate-900 text-white border-slate-900 shadow-sm";
   const idleCls =
     "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300";
@@ -114,7 +114,7 @@ function SoftButton({
     "h-10 px-4 rounded-xl text-sm border transition-all duration-150 flex items-center gap-2";
   const cls =
     tone === "primary"
-      ? "bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700 disabled:opacity-50"
+      ? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700 disabled:opacity-50"
       : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50";
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${cls}`}>
@@ -204,7 +204,7 @@ export default function NotificationsPage() {
                 >
                   Unread
                   {unreadCount > 0 ? (
-                    <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">
+                    <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                       {unreadCount}
                     </span>
                   ) : null}
@@ -323,7 +323,7 @@ export default function NotificationsPage() {
                           className={`inline-block w-3 h-3 rounded-full ${dotByType(n.type)}`}
                         />
                         {unread ? (
-                          <span className="absolute -right-1 -top-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+                          <span className="absolute -right-1 -top-1 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white" />
                         ) : null}
                       </div>
                     </div>
@@ -338,7 +338,7 @@ export default function NotificationsPage() {
                             </div>
 
                             {unread ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
                                 New
                               </span>
                             ) : (

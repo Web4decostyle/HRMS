@@ -182,7 +182,7 @@ export default function ImmigrationTab({
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-3 py-6 text-center text-red-500"
+                    className="px-3 py-6 text-center text-green-500"
                   >
                     Failed to load attachments.
                   </td>
@@ -217,7 +217,7 @@ export default function ImmigrationTab({
                         type="button"
                         disabled={isDeleting}
                         onClick={() => handleDelete(a._id)}
-                        className="text-[11px] text-red-500 hover:underline disabled:opacity-60"
+                        className="text-[11px] text-green-500 hover:underline disabled:opacity-60"
                       >
                         Delete
                       </button>

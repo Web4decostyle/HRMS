@@ -98,7 +98,7 @@ export default function DirectoryPage() {
                 value={ui.name}
                 onChange={(e) => setUi((s) => ({ ...s, name: e.target.value }))}
                 placeholder="Type for hints..."
-                className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-red-100 focus:border-red-200"
+                className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
               />
             </div>
 
@@ -108,7 +108,7 @@ export default function DirectoryPage() {
                 <select
                   value={ui.jobTitle}
                   onChange={(e) => setUi((s) => ({ ...s, jobTitle: e.target.value }))}
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-red-100 focus:border-red-200"
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                 >
                   <option value="">-- Select --</option>
                   <option value="Manager">Manager</option>
@@ -127,7 +127,7 @@ export default function DirectoryPage() {
                 <select
                   value={ui.location}
                   onChange={(e) => setUi((s) => ({ ...s, location: e.target.value }))}
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-red-100 focus:border-red-200"
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                 >
                   <option value="">-- Select --</option>
                   <option value="Indore">Indore</option>
@@ -147,7 +147,7 @@ export default function DirectoryPage() {
                 <select
                   value={ui.department}
                   onChange={(e) => setUi((s) => ({ ...s, department: e.target.value }))}
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-red-100 focus:border-red-200"
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                 >
                   <option value="">-- Select --</option>
                   <option value="HR">HR</option>
@@ -210,7 +210,7 @@ export default function DirectoryPage() {
                     setUi((s) => ({ ...s, department: d.department }));
                     setApplied((s) => ({ ...s, department: d.department }));
                   }}
-                  className="rounded-xl border border-slate-100 bg-[#f7f9ff] p-3 text-left hover:ring-2 hover:ring-red-100"
+                  className="rounded-xl border border-slate-100 bg-[#f7f9ff] p-3 text-left hover:ring-2 hover:ring-green-100"
                 >
                   <div className="text-[11px] text-slate-500">Department</div>
                   <div className="text-xs font-semibold text-slate-800">
@@ -240,7 +240,7 @@ export default function DirectoryPage() {
                   type="button"
                   key={emp._id}
                   onClick={() => setActiveEmployeeId(emp._id)}
-                  className="text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center hover:ring-2 hover:ring-red-100"
+                  className="text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center hover:ring-2 hover:ring-green-100"
                 >
                   <div className="text-sm font-semibold text-slate-700 capitalize mb-2">
                     {(emp.firstName || "") + " " + (emp.lastName || "")}

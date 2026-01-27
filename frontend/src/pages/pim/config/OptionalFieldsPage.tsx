@@ -86,7 +86,7 @@ export default function OptionalFieldsPage() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded shadow"
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow"
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
@@ -108,7 +108,7 @@ function FieldToggle(props: {
       <div
         onClick={onChange}
         className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition ${
-          checked ? "bg-red-600" : "bg-gray-300"
+          checked ? "bg-green-600" : "bg-gray-300"
         }`}
       >
         <div

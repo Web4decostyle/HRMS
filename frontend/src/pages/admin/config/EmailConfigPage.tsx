@@ -194,7 +194,7 @@ export default function EmailConfigPage() {
         <button
           type="button"
           onClick={handleTest}
-          className="px-4 py-2 rounded bg-blue-500 text-white text-sm"
+          className="px-4 py-2 rounded bg-green-500 text-white text-sm"
         >
           Send Test Mail
         </button>

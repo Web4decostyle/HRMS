@@ -60,7 +60,7 @@ export default function JobTitlesPage() {
           <div className="flex flex-col gap-1">
             <label className="font-medium text-slate-700">Job Title *</label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Sales Executive"
@@ -69,7 +69,7 @@ export default function JobTitlesPage() {
           <div className="flex flex-col gap-1">
             <label className="font-medium text-slate-700">Job Code</label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
@@ -79,7 +79,7 @@ export default function JobTitlesPage() {
               Job Description
             </label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -93,7 +93,7 @@ export default function JobTitlesPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="text-left px-4 py-2 w-10">
-                    <input type="checkbox" className="accent-red-500" />
+                    <input type="checkbox" className="accent-green-500" />
                   </th>
                   <th className="text-left px-4 py-2 font-semibold">
                     Job Title
@@ -126,7 +126,7 @@ export default function JobTitlesPage() {
                       className="odd:bg-white even:bg-slate-50/50"
                     >
                       <td className="px-4 py-2">
-                        <input type="checkbox" className="accent-red-500" />
+                        <input type="checkbox" className="accent-green-500" />
                       </td>
                       <td className="px-4 py-2 text-slate-800">{t.name}</td>
                       <td className="px-4 py-2 text-slate-500">

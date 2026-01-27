@@ -74,7 +74,7 @@ export default function ClaimPage() {
                   }}
                   className={`px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
                     isActive
-                      ? "bg-red-500 text-white shadow"
+                      ? "bg-green-500 text-white shadow"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
@@ -128,7 +128,7 @@ export default function ClaimPage() {
               }}
               className={`px-5 py-2 rounded-full text-sm font-medium ${
                 isActive
-                  ? "bg-red-500 text-white shadow"
+                  ? "bg-green-500 text-white shadow"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -268,7 +268,7 @@ function ClaimEventsConfigSection() {
               placeholder="Type for hints..."
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
 
@@ -279,7 +279,7 @@ function ClaimEventsConfigSection() {
               onChange={(e) =>
                 setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")
               }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="ACTIVE">Active</option>
@@ -300,7 +300,7 @@ function ClaimEventsConfigSection() {
           </button>
           <button
             type="button"
-            className="px-6 py-2 rounded-full bg-red-600 text-white text-xs hover:bg-red-700"
+            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs hover:bg-green-700"
           >
             Search
           </button>
@@ -312,7 +312,7 @@ function ClaimEventsConfigSection() {
         <button
           type="button"
           onClick={openAdd}
-          className="mb-4 px-4 py-2 rounded-full bg-red-600 text-white text-sm hover:bg-red-700"
+          className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700"
         >
           + Add
         </button>
@@ -321,7 +321,7 @@ function ClaimEventsConfigSection() {
           <div className="text-xs text-slate-500 mb-3">Loading…</div>
         )}
         {isError && (
-          <div className="text-xs text-red-500 mb-3">
+          <div className="text-xs text-green-500 mb-3">
             Failed to load events.{" "}
             <button
               type="button"
@@ -366,7 +366,7 @@ function ClaimEventsConfigSection() {
                     <button
                       type="button"
                       onClick={() => handleDelete(ev._id)}
-                      className="text-[11px] text-red-500"
+                      className="text-[11px] text-green-500"
                     >
                       Delete
                     </button>
@@ -398,12 +398,12 @@ function ClaimEventsConfigSection() {
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
                 <label className="block mb-1 text-slate-600">
-                  Event Name<span className="text-red-500">*</span>
+                  Event Name<span className="text-green-500">*</span>
                 </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 />
               </div>
               <div>
@@ -413,14 +413,14 @@ function ClaimEventsConfigSection() {
                   onChange={(e) =>
                     setStatus(e.target.value as "ACTIVE" | "INACTIVE")
                   }
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
                 </select>
               </div>
               {errorMsg && (
-                <p className="text-xs text-red-500 mt-1">{errorMsg}</p>
+                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
               )}
 
               <div className="mt-4 flex justify-end gap-3">
@@ -434,7 +434,7 @@ function ClaimEventsConfigSection() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-full text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-60"
+                  className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
                   {editing
@@ -532,7 +532,7 @@ function ExpenseTypesConfigSection() {
         <button
           type="button"
           onClick={openAdd}
-          className="mb-4 px-4 py-2 rounded-full bg-red-600 text-white text-sm hover:bg-red-700"
+          className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700"
         >
           + Add
         </button>
@@ -541,7 +541,7 @@ function ExpenseTypesConfigSection() {
           <div className="text-xs text-slate-500 mb-3">Loading…</div>
         )}
         {isError && (
-          <div className="text-xs text-red-500 mb-3">
+          <div className="text-xs text-green-500 mb-3">
             Failed to load expense types.{" "}
             <button
               type="button"
@@ -582,7 +582,7 @@ function ExpenseTypesConfigSection() {
                     <button
                       type="button"
                       onClick={() => handleDelete(it._id)}
-                      className="text-[11px] text-red-500"
+                      className="text-[11px] text-green-500"
                     >
                       Delete
                     </button>
@@ -614,16 +614,16 @@ function ExpenseTypesConfigSection() {
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
                 <label className="block mb-1 text-slate-600">
-                  Name<span className="text-red-500">*</span>
+                  Name<span className="text-green-500">*</span>
                 </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 />
               </div>
               {errorMsg && (
-                <p className="text-xs text-red-500 mt-1">{errorMsg}</p>
+                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
               )}
 
               <div className="mt-4 flex justify-end gap-3">
@@ -637,7 +637,7 @@ function ExpenseTypesConfigSection() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-full text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-60"
+                  className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
                   {editing
@@ -711,12 +711,12 @@ function SubmitClaimSection() {
           {/* Event */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
-              Event<span className="text-red-500">*</span>
+              Event<span className="text-green-500">*</span>
             </label>
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -730,12 +730,12 @@ function SubmitClaimSection() {
           {/* Currency */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
-              Currency<span className="text-red-500">*</span>
+              Currency<span className="text-green-500">*</span>
             </label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {CURRENCIES.map((c) => (
@@ -754,17 +754,17 @@ function SubmitClaimSection() {
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={4}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
           />
         </div>
 
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
         {errorMsg && (
-          <p className="text-xs text-red-500 mt-1">{errorMsg}</p>
+          <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
         )}
         {successMsg && (
-          <p className="text-xs text-red-600 mt-1">{successMsg}</p>
+          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
         )}
 
         <div className="mt-4 flex justify-end gap-3">
@@ -784,7 +784,7 @@ function SubmitClaimSection() {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60"
+            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
           >
             {isLoading ? "Creating..." : "Create"}
           </button>
@@ -842,7 +842,7 @@ function MyClaimsSection() {
               placeholder="Type for hints..."
               value={filters.referenceId}
               onChange={(e) => handleChange("referenceId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
 
@@ -851,7 +851,7 @@ function MyClaimsSection() {
             <select
               value={filters.typeId}
               onChange={(e) => handleChange("typeId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -867,7 +867,7 @@ function MyClaimsSection() {
             <select
               value={filters.status}
               onChange={(e) => handleChange("status", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="PENDING">Pending</option>
@@ -886,7 +886,7 @@ function MyClaimsSection() {
               type="date"
               value={filters.fromDate}
               onChange={(e) => handleChange("fromDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -895,7 +895,7 @@ function MyClaimsSection() {
               type="date"
               value={filters.toDate}
               onChange={(e) => handleChange("toDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div />
@@ -913,7 +913,7 @@ function MyClaimsSection() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="px-6 py-2 rounded-full bg-red-600 text-white text-xs hover:bg-red-700"
+            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs hover:bg-green-700"
           >
             Search
           </button>
@@ -922,7 +922,7 @@ function MyClaimsSection() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <button className="mb-4 px-4 py-2 rounded-full bg-red-600 text-white text-sm hover:bg-red-700">
+        <button className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700">
           + Submit Claim
         </button>
 
@@ -930,7 +930,7 @@ function MyClaimsSection() {
           <div className="text-xs text-slate-500 mb-3">Loading…</div>
         )}
         {isError && (
-          <div className="text-xs text-red-500 mb-3">
+          <div className="text-xs text-green-500 mb-3">
             Failed to load claims.{" "}
             <button
               type="button"
@@ -1053,7 +1053,7 @@ function EmployeeClaimsSection() {
               placeholder="Type for hints..."
               value={filters.employeeName}
               onChange={(e) => handleChange("employeeName", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -1062,7 +1062,7 @@ function EmployeeClaimsSection() {
               placeholder="Type for hints..."
               value={filters.referenceId}
               onChange={(e) => handleChange("referenceId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -1070,7 +1070,7 @@ function EmployeeClaimsSection() {
             <select
               value={filters.typeId}
               onChange={(e) => handleChange("typeId", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -1085,7 +1085,7 @@ function EmployeeClaimsSection() {
             <select
               value={filters.status}
               onChange={(e) => handleChange("status", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               <option value="PENDING">Pending</option>
@@ -1100,7 +1100,7 @@ function EmployeeClaimsSection() {
               onChange={(e) =>
                 handleChange("include", e.target.value as "CURRENT" | "ALL")
               }
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="CURRENT">Current Employees Only</option>
               <option value="ALL">All Employees</option>
@@ -1115,7 +1115,7 @@ function EmployeeClaimsSection() {
               type="date"
               value={filters.fromDate}
               onChange={(e) => handleChange("fromDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div className="space-y-1">
@@ -1124,7 +1124,7 @@ function EmployeeClaimsSection() {
               type="date"
               value={filters.toDate}
               onChange={(e) => handleChange("toDate", e.target.value)}
-              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             />
           </div>
           <div />
@@ -1142,7 +1142,7 @@ function EmployeeClaimsSection() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="px-6 py-2 rounded-full bg-red-600 text-white text-xs hover:bg-red-700"
+            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs hover:bg-green-700"
           >
             Search
           </button>
@@ -1151,7 +1151,7 @@ function EmployeeClaimsSection() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <button className="mb-4 px-4 py-2 rounded-full bg-red-600 text-white text-sm hover:bg-red-700">
+        <button className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700">
           + Assign Claim
         </button>
 
@@ -1159,7 +1159,7 @@ function EmployeeClaimsSection() {
           <div className="text-xs text-slate-500 mb-3">Loading…</div>
         )}
         {isError && (
-          <div className="text-xs text-red-500 mb-3">
+          <div className="text-xs text-green-500 mb-3">
             Failed to load employee claims.{" "}
             <button
               type="button"
@@ -1292,12 +1292,12 @@ function AssignClaimSection() {
           {/* Employee */}
           <div className="space-y-1 md:col-span-1">
             <label className="text-xs text-slate-600">
-              Employee Name<span className="text-red-500">*</span>
+              Employee Name<span className="text-green-500">*</span>
             </label>
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">Type for hints...</option>
               {employees.map((emp) => (
@@ -1311,12 +1311,12 @@ function AssignClaimSection() {
           {/* Event */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
-              Event<span className="text-red-500">*</span>
+              Event<span className="text-green-500">*</span>
             </label>
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {events.map((ev) => (
@@ -1330,12 +1330,12 @@ function AssignClaimSection() {
           {/* Currency */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
-              Currency<span className="text-red-500">*</span>
+              Currency<span className="text-green-500">*</span>
             </label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
               {CURRENCIES.map((c) => (
@@ -1354,17 +1354,17 @@ function AssignClaimSection() {
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={4}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-red-400 focus:ring-1 focus:ring-red-300"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none text-xs focus:border-green-400 focus:ring-1 focus:ring-green-300"
           />
         </div>
 
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
         {errorMsg && (
-          <p className="text-xs text-red-500 mt-1">{errorMsg}</p>
+          <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
         )}
         {successMsg && (
-          <p className="text-xs text-red-600 mt-1">{successMsg}</p>
+          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
         )}
 
         <div className="mt-4 flex justify-end gap-3">
@@ -1385,7 +1385,7 @@ function AssignClaimSection() {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60"
+            className="px-6 py-2 rounded-full bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
           >
             {isLoading ? "Creating..." : "Create"}
           </button>

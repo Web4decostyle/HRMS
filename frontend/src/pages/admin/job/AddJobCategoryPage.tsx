@@ -37,10 +37,10 @@ export default function AddJobCategoryPage() {
         <form onSubmit={handleSubmit} className="space-y-5 text-xs max-w-3xl">
           <div className="space-y-1">
             <label className="block text-slate-700 font-medium">
-              Name <span className="text-red-500">*</span>
+              Name <span className="text-green-500">*</span>
             </label>
             <input
-              className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400"
               placeholder="e.g. Technical, Management"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -65,7 +65,7 @@ export default function AddJobCategoryPage() {
           </div>
 
           <p className="text-[11px] text-slate-400 mt-2">
-            <span className="text-red-500">*</span> Required
+            <span className="text-green-500">*</span> Required
           </p>
         </form>
       </div>

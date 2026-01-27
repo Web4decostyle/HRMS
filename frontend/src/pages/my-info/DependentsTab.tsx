@@ -81,7 +81,7 @@ export default function DependentsTab({
                           window.confirm("Delete?") &&
                           deleteDep({ employeeId, id: d._id })
                         }
-                        className="text-[11px] text-red-500 hover:underline"
+                        className="text-[11px] text-green-500 hover:underline"
                       >
                         Delete
                       </button>

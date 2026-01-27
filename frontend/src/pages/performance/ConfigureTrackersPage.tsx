@@ -21,7 +21,7 @@ const PerformanceTopTabs = () => {
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-red-600 shadow-sm`
+      ? `${pill} bg-white text-green-600 shadow-sm`
       : `${pill} text-slate-600 hover:bg-white/60`;
 
   return (
@@ -50,8 +50,8 @@ const ConfigureSubTabs = () => {
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-red-500 text-white shadow-sm`
-      : `${pill} bg-white text-slate-600 hover:bg-red-50`;
+      ? `${pill} bg-green-500 text-white shadow-sm`
+      : `${pill} bg-white text-slate-600 hover:bg-green-50`;
 
   return (
     <div className="flex gap-2">
@@ -373,7 +373,7 @@ export default function ConfigureTrackersPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-full bg-red-500 text-white text-xs font-semibold hover:bg-red-600"
+                  className="px-4 py-1.5 rounded-full bg-green-500 text-white text-xs font-semibold hover:bg-green-600"
                 >
                   Save
                 </button>

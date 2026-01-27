@@ -27,7 +27,7 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
         {isLoading ? (
           <p className="text-[11px] text-slate-400 mb-3">Loading...</p>
         ) : error ? (
-          <p className="text-[11px] text-red-500 mb-3">
+          <p className="text-[11px] text-green-500 mb-3">
             Failed to load salary components.
           </p>
         ) : showNoRecords ? (

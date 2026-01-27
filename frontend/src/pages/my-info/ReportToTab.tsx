@@ -141,7 +141,7 @@ export default function ReportToTab({ employeeId }: { employeeId: string }) {
                           onClick={() =>
                             deleteSupervisor({ employeeId, id: s._id })
                           }
-                          className="text-[11px] text-red-500 hover:underline"
+                          className="text-[11px] text-green-500 hover:underline"
                         >
                           Delete
                         </button>
@@ -216,7 +216,7 @@ export default function ReportToTab({ employeeId }: { employeeId: string }) {
                           onClick={() =>
                             deleteSubordinate({ employeeId, id: s._id })
                           }
-                          className="text-[11px] text-red-500 hover:underline"
+                          className="text-[11px] text-green-500 hover:underline"
                         >
                           Delete
                         </button>

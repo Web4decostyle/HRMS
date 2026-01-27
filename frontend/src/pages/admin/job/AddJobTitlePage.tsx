@@ -51,10 +51,10 @@ export default function AddJobTitlePage() {
           {/* Job Title */}
           <div className="space-y-1">
             <label className="block text-slate-700 font-medium">
-              Job Title <span className="text-red-500">*</span>
+              Job Title <span className="text-green-500">*</span>
             </label>
             <input
-              className="w-full border border-slate-200 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="w-full border border-slate-200 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-400"
               placeholder="Type job title here"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -67,7 +67,7 @@ export default function AddJobTitlePage() {
               Job Description
             </label>
             <textarea
-              className="w-full min-h-[80px] border border-slate-200 rounded-md px-3 py-2 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="w-full min-h-[80px] border border-slate-200 rounded-md px-3 py-2 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-green-400"
               placeholder="Type description here"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -105,7 +105,7 @@ export default function AddJobTitlePage() {
           <div className="space-y-1">
             <label className="block text-slate-700 font-medium">Note</label>
             <textarea
-              className="w-full min-h-[80px] border border-slate-200 rounded-md px-3 py-2 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-red-400"
+              className="w-full min-h-[80px] border border-slate-200 rounded-md px-3 py-2 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-green-400"
               placeholder="Add note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -131,7 +131,7 @@ export default function AddJobTitlePage() {
           </div>
 
           <p className="text-[10px] text-slate-400 mt-2">
-            <span className="text-red-500">*</span> Required
+            <span className="text-green-500">*</span> Required
           </p>
         </form>
       </div>

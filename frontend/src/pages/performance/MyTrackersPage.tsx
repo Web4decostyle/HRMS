@@ -17,8 +17,8 @@ const PerformanceTopTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-white text-red-600 shadow-sm border-white hover:bg-red-50";
-  const normal = "text-slate-700 bg-white hover:bg-red-50 border-white";
+    "bg-white text-green-600 shadow-sm border-white hover:bg-green-50";
+  const normal = "text-slate-700 bg-white hover:bg-green-50 border-white";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -128,7 +128,7 @@ export default function MyTrackersPage() {
 
                         {/* Status */}
                         <td className="px-4 py-2">
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-600">
                             {t.status || "ACTIVE"}
                           </span>
                         </td>

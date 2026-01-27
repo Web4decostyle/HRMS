@@ -16,7 +16,7 @@ const RecruitmentTopTabs: React.FC = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-red-600 shadow-sm`
+      ? `${pill} bg-white text-green-600 shadow-sm`
       : `${pill} text-slate-600 hover:bg-white/70`;
 
   return (
@@ -166,7 +166,7 @@ export default function RecruitmentPage() {
                 <select
                   value={jobId}
                   onChange={(e) => setJobId(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
                 >
                   <option value="">-- Select --</option>
                   {jobs?.map((j: any) => (
@@ -188,7 +188,7 @@ export default function RecruitmentPage() {
                 <select
                   value={vacancyId}
                   onChange={(e) => setVacancyId(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
                 >
                   <option value="">-- Select --</option>
                   {/* hook up real vacancies later */}
@@ -206,7 +206,7 @@ export default function RecruitmentPage() {
                 <select
                   value={hiringManager}
                   onChange={(e) => setHiringManager(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
                 >
                   <option value="">-- Select --</option>
                   {/* fill with managers from API later */}
@@ -224,7 +224,7 @@ export default function RecruitmentPage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
                 >
                   <option value="">-- Select --</option>
                   <option value="APPLIED">Applied</option>
@@ -246,7 +246,7 @@ export default function RecruitmentPage() {
                 value={candidateName}
                 onChange={(e) => setCandidateName(e.target.value)}
                 placeholder="Type for hints..."
-                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
+                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
               />
             </div>
 
@@ -259,7 +259,7 @@ export default function RecruitmentPage() {
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
                 placeholder="Enter comma separated words..."
-                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
+                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
               />
             </div>
 
@@ -273,7 +273,7 @@ export default function RecruitmentPage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
                 />
                 <FiCalendar className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
@@ -289,7 +289,7 @@ export default function RecruitmentPage() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
                 />
                 <FiCalendar className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
@@ -304,7 +304,7 @@ export default function RecruitmentPage() {
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
                 >
                   <option value="">-- Select --</option>
                   <option value="ONLINE">Online</option>
@@ -400,7 +400,7 @@ export default function RecruitmentPage() {
                         <td className="px-3 py-2 align-top text-[11px] text-slate-700">
                           {c.status || "-"}
                         </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-red-600">
+                        <td className="px-3 py-2 align-top text-[11px] text-green-600">
                           {/* placeholder for action buttons */}
                           View
                         </td>

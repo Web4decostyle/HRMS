@@ -27,7 +27,7 @@ function toInputTime12h(d: Date) {
 const pillBase =
   "px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1";
 const pillInactive = "bg-slate-100 text-slate-500 hover:bg-slate-200/60";
-const pillActive = "bg-red-100 text-red-600";
+const pillActive = "bg-green-100 text-green-600";
 
 export default function PunchInPage() {
   const now = useMemo(() => new Date(), []);
@@ -95,7 +95,7 @@ export default function PunchInPage() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-[#f6f6fb]">
       {/* red gradient strip + breadcrumb */}
-      <div className="w-full bg-gradient-to-r from-red-500 via-red-600 to-red-500">
+      <div className="w-full bg-gradient-to-r from-green-500 via-green-600 to-green-500">
         <div className="px-6 md:px-8 py-4">
           <div className="text-white/90 text-sm font-medium">
             Attendance / Attendance
@@ -134,7 +134,7 @@ export default function PunchInPage() {
                 <span
                   className={`px-3 py-1 rounded-full border ${
                     isCurrentlyIn
-                      ? "bg-red-50 text-red-700 border-red-200"
+                      ? "bg-green-50 text-green-700 border-green-200"
                       : "bg-slate-50 text-slate-600 border-slate-200"
                   }`}
                 >
@@ -146,7 +146,7 @@ export default function PunchInPage() {
             <div className="mt-4 border-t border-slate-100" />
 
             {!!todayError && (
-              <div className="mt-4 text-sm text-red-600">
+              <div className="mt-4 text-sm text-green-600">
                 Failed to load today status. Please login again or check API.
               </div>
             )}
@@ -157,7 +157,7 @@ export default function PunchInPage() {
                 {/* Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    Date<span className="text-red-500">*</span>
+                    Date<span className="text-green-500">*</span>
                   </label>
 
                   <div className="mt-2 relative">
@@ -168,7 +168,7 @@ export default function PunchInPage() {
                       className="
                         w-full h-11 rounded-xl border border-slate-200 bg-[#f4f5ff]
                         px-4 pr-12 text-sm text-slate-700 outline-none
-                        focus:ring-2 focus:ring-red-200 focus:border-red-300
+                        focus:ring-2 focus:ring-green-200 focus:border-green-300
                       "
                       required
                       disabled={isBusy}
@@ -182,7 +182,7 @@ export default function PunchInPage() {
                 {/* Time */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    Time<span className="text-red-500">*</span>
+                    Time<span className="text-green-500">*</span>
                   </label>
 
                   <div className="mt-2 relative">
@@ -194,7 +194,7 @@ export default function PunchInPage() {
                       className="
                         w-full h-11 rounded-xl border border-slate-200 bg-[#f4f5ff]
                         px-4 pr-12 text-sm text-slate-700 outline-none
-                        focus:ring-2 focus:ring-red-200 focus:border-red-300
+                        focus:ring-2 focus:ring-green-200 focus:border-green-300
                       "
                       required
                       disabled={isBusy}
@@ -222,7 +222,7 @@ export default function PunchInPage() {
                   className="
                     mt-2 w-full min-h-[120px] rounded-xl border border-slate-200
                     bg-white px-4 py-3 text-sm text-slate-700 outline-none resize-none
-                    focus:ring-2 focus:ring-red-200 focus:border-red-300
+                    focus:ring-2 focus:ring-green-200 focus:border-green-300
                   "
                   disabled={isBusy}
                 />

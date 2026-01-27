@@ -21,8 +21,8 @@ const PerformanceTopTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-white text-red-600 shadow-sm border-white hover:bg-red-50";
-  const normal = "text-slate-700 bg-white hover:bg-red-50 border-white";
+    "bg-white text-green-600 shadow-sm border-white hover:bg-green-50";
+  const normal = "text-slate-700 bg-white hover:bg-green-50 border-white";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -54,8 +54,8 @@ const ManageReviewSubtabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-red-500 text-white shadow-sm border-red-500 hover:bg-red-600";
-  const normal = "text-slate-700 bg-white hover:bg-red-50";
+    "bg-green-500 text-white shadow-sm border-green-500 hover:bg-green-600";
+  const normal = "text-slate-700 bg-white hover:bg-green-50";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -292,7 +292,7 @@ export default function AddReviewPage() {
                       value={form.employeeId}
                       onChange={handleChange}
                       required
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                       placeholder="employee _id"
                     />
                   </div>
@@ -306,7 +306,7 @@ export default function AddReviewPage() {
                       value={form.reviewerId}
                       onChange={handleChange}
                       required
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                       placeholder="reviewer _id"
                     />
                   </div>
@@ -319,7 +319,7 @@ export default function AddReviewPage() {
                       name="additionalReviewerIds"
                       value={form.additionalReviewerIds}
                       onChange={handleChange}
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                       placeholder="id1,id2,id3 (optional)"
                     />
                   </div>
@@ -336,7 +336,7 @@ export default function AddReviewPage() {
                       value={form.jobTitle}
                       onChange={handleChange}
                       required
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                       placeholder="e.g. Sales Executive"
                     />
                   </div>
@@ -349,7 +349,7 @@ export default function AddReviewPage() {
                       name="subUnit"
                       value={form.subUnit}
                       onChange={handleChange}
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                       placeholder="e.g. Marketing"
                     />
                   </div>
@@ -362,7 +362,7 @@ export default function AddReviewPage() {
                       name="status"
                       value={form.status}
                       onChange={handleChange}
-                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                      className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                     >
                       <option value="NOT_STARTED">Not Started</option>
                       <option value="ACTIVATED">Activated</option>
@@ -386,7 +386,7 @@ export default function AddReviewPage() {
                     value={form.periodFrom}
                     onChange={handleChange}
                     required
-                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                 </div>
 
@@ -400,7 +400,7 @@ export default function AddReviewPage() {
                     value={form.periodTo}
                     onChange={handleChange}
                     required
-                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                 </div>
 
@@ -414,7 +414,7 @@ export default function AddReviewPage() {
                     value={form.dueDate}
                     onChange={handleChange}
                     required
-                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                 </div>
               </div>
@@ -471,7 +471,7 @@ export default function AddReviewPage() {
                                     e.target.value
                                   )
                                 }
-                                className="w-20 rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                className="w-20 rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
                                 placeholder="-"
                               />
                             </td>
@@ -486,7 +486,7 @@ export default function AddReviewPage() {
                                   )
                                 }
                                 rows={2}
-                                className="w-full rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500 resize-none"
+                                className="w-full rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500 resize-none"
                                 placeholder="Add comment (optional)"
                               />
                             </td>
@@ -511,7 +511,7 @@ export default function AddReviewPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500 text-white text-xs font-semibold hover:bg-green-600 disabled:opacity-60"
                 >
                   <FiSave className="text-xs" />
                   {isSaving ? "Saving..." : "Save Review"}

@@ -49,7 +49,7 @@ export default function BuzzMediaPicker({ onUploaded, upload, resetSignal }: Pro
         className="text-xs"
       />
 
-      {error && <div className="text-xs text-red-500">{error}</div>}
+      {error && <div className="text-xs text-green-500">{error}</div>}
 
       {preview.length > 0 && (
         <div className="flex gap-2 flex-wrap">

@@ -18,7 +18,7 @@ export default function HelpPage() {
                 href={t.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-red-600 hover:underline"
+                className="text-green-600 hover:underline"
               >
                 {t.title}
               </a>

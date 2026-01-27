@@ -53,7 +53,7 @@ export default function BuzzComments({ postId }: { postId: string }) {
                   <button
                     type="button"
                     onClick={() => saveEdit(c._id)}
-                    className="px-3 rounded-full bg-red-600 text-white"
+                    className="px-3 rounded-full bg-green-600 text-white"
                   >
                     Save
                   </button>
@@ -88,7 +88,7 @@ export default function BuzzComments({ postId }: { postId: string }) {
                 </button>
                 <button
                   type="button"
-                  className="text-red-500 hover:text-red-700"
+                  className="text-green-500 hover:text-green-700"
                   onClick={() => deleteComment({ postId, commentId: c._id }).unwrap()}
                 >
                   Delete
@@ -110,7 +110,7 @@ export default function BuzzComments({ postId }: { postId: string }) {
         <button
           type="button"
           onClick={submit}
-          className="px-4 rounded-full bg-red-600 text-white text-xs font-semibold"
+          className="px-4 rounded-full bg-green-600 text-white text-xs font-semibold"
         >
           Send
         </button>

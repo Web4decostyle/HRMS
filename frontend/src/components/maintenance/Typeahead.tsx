@@ -45,7 +45,7 @@ export default function Typeahead({
     <div ref={wrapRef} className="relative">
       <label className="block text-xs font-semibold text-slate-600 mb-1">
         {label}
-        {required ? <span className="text-red-500">*</span> : null}
+        {required ? <span className="text-green-500">*</span> : null}
       </label>
 
       <input
@@ -56,7 +56,7 @@ export default function Typeahead({
         }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder || "Type for hints..."}
-        className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200"
+        className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-200"
       />
 
       {show ? (

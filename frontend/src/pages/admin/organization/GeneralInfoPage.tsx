@@ -212,7 +212,7 @@ export default function GeneralInfoPage() {
                     disabled={!isEditing}
                     className={`w-full rounded-md px-3 py-3 text-sm ${
                       isEditing
-                        ? "border border-slate-200 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                        ? "border border-slate-200 focus:ring-1 focus:ring-green-400 focus:outline-none"
                         : "bg-slate-50/60 text-slate-700 border border-transparent"
                     }`}
                   />

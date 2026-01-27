@@ -83,7 +83,7 @@ export default function BuzzPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="What's on your mind?"
-                  className="flex-1 h-10 rounded-full border border-slate-200 px-4 text-xs bg-white outline-none focus:ring-2 focus:ring-red-100"
+                  className="flex-1 h-10 rounded-full border border-slate-200 px-4 text-xs bg-white outline-none focus:ring-2 focus:ring-green-100"
                 />
 
                 <button
@@ -211,7 +211,7 @@ export default function BuzzPage() {
                         </button>
                         <button
                           type="button"
-                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
+                          className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-slate-50"
                           onClick={async () => {
                             setOpenMenu(null);
                             await deletePost(p._id).unwrap();
@@ -246,7 +246,7 @@ export default function BuzzPage() {
                     <button
                       type="button"
                       onClick={() => saveEdit(p._id)}
-                      className="px-4 rounded-full bg-red-600 text-white text-xs font-semibold"
+                      className="px-4 rounded-full bg-green-600 text-white text-xs font-semibold"
                     >
                       Save
                     </button>
@@ -318,7 +318,7 @@ export default function BuzzPage() {
                   </div>
 
                   <div className="text-xs text-slate-500 text-right">
-                    <div className="text-red-500 font-semibold">
+                    <div className="text-green-500 font-semibold">
                       ❤️ {p.likes?.length || 0} Likes
                     </div>
                     <div>

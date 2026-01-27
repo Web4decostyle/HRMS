@@ -108,7 +108,7 @@ const TerminationReasonsPage: React.FC = () => {
               {/* Configuration (active) */}
               <button
                 type="button"
-                className={`${tabBase} bg-red-500 text-white shadow-sm`}
+                className={`${tabBase} bg-green-500 text-white shadow-sm`}
               >
                 Configuration
               </button>
@@ -167,7 +167,7 @@ const TerminationReasonsPage: React.FC = () => {
             <div className="px-8 pb-4">
               <div className="flex items-center rounded-full bg-[#f3f5fa] h-10 px-5 text-[11px] font-semibold text-slate-500">
                 <div className="w-10 flex justify-center">
-                  <input type="checkbox" className="accent-red-500" />
+                  <input type="checkbox" className="accent-green-500" />
                 </div>
                 <div className="flex-1">Name</div>
                 <div className="w-28 text-right pr-2">Actions</div>
@@ -183,7 +183,7 @@ const TerminationReasonsPage: React.FC = () => {
               )}
 
               {isError && !isLoading && (
-                <div className="text-xs text-red-500 px-2 py-4">
+                <div className="text-xs text-green-500 px-2 py-4">
                   Failed to load termination reasons.
                   <button
                     onClick={() => refetch()}
@@ -205,12 +205,12 @@ const TerminationReasonsPage: React.FC = () => {
                 items.map((item) => (
                   <div
                     key={item._id}
-                    className="flex items-center rounded-full bg-white border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] h-10 px-5 hover:bg-red-50/40 transition-colors"
+                    className="flex items-center rounded-full bg-white border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] h-10 px-5 hover:bg-green-50/40 transition-colors"
                   >
                     <div className="w-10 flex justify-center">
                       <input
                         type="checkbox"
-                        className="accent-red-500"
+                        className="accent-green-500"
                       />
                     </div>
 
@@ -221,7 +221,7 @@ const TerminationReasonsPage: React.FC = () => {
                     <div className="w-28 flex items-center justify-end gap-2 pr-1">
                       <button
                         onClick={() => handleDelete(item._id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f5f7fb] hover:bg-red-50"
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f5f7fb] hover:bg-green-50"
                         title="Delete"
                       >
                         <FiTrash2 className="text-slate-500" size={13} />
@@ -250,17 +250,17 @@ const TerminationReasonsPage: React.FC = () => {
             </h3>
 
             <label className="block text-xs font-medium text-slate-600 mb-1">
-              Name<span className="text-red-500">*</span>
+              Name<span className="text-green-500">*</span>
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Resigned - Self Proposed"
             />
             {errorMsg && (
-              <p className="mt-2 text-xs text-red-500">{errorMsg}</p>
+              <p className="mt-2 text-xs text-green-500">{errorMsg}</p>
             )}
 
             <div className="mt-6 flex justify-end gap-3">
@@ -273,7 +273,7 @@ const TerminationReasonsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded-full text-sm font-semibold bg-red-500 hover:bg-red-600 text-white disabled:opacity-60"
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-green-500 hover:bg-green-600 text-white disabled:opacity-60"
                 disabled={isCreating || isUpdating}
               >
                 {editing

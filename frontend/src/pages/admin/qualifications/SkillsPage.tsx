@@ -72,7 +72,7 @@ export default function SkillsPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-4 py-2 w-10 text-left">
-                    <input type="checkbox" className="accent-red-500" />
+                    <input type="checkbox" className="accent-green-500" />
                   </th>
                   <th className="px-4 py-2 text-left font-semibold">Skill</th>
                   <th className="px-4 py-2 text-left font-semibold">
@@ -103,7 +103,7 @@ export default function SkillsPage() {
                       className="odd:bg-white even:bg-slate-50/50"
                     >
                       <td className="px-4 py-2">
-                        <input type="checkbox" className="accent-red-500" />
+                        <input type="checkbox" className="accent-green-500" />
                       </td>
                       <td className="px-4 py-2 text-slate-800">{s.name}</td>
                       <td className="px-4 py-2 text-slate-500">

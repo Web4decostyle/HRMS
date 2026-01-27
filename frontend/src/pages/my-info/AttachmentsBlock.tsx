@@ -108,7 +108,7 @@ export default function AttachmentsBlock({
               <tr>
                 <td
                   colSpan={8}
-                  className="px-3 py-6 text-center text-red-500"
+                  className="px-3 py-6 text-center text-green-500"
                 >
                   Failed to load attachments.
                 </td>
@@ -142,7 +142,7 @@ export default function AttachmentsBlock({
                     <button
                       onClick={() => handleDelete(a._id)}
                       disabled={isDeleting}
-                      className="text-[11px] text-red-500 hover:underline"
+                      className="text-[11px] text-green-500 hover:underline"
                     >
                       Delete
                     </button>

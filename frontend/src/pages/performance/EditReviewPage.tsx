@@ -24,8 +24,8 @@ const PerformanceTopTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-white text-red-600 shadow-sm border-white hover:bg-red-50";
-  const normal = "text-slate-700 bg-white hover:bg-red-50 border-white";
+    "bg-white text-green-600 shadow-sm border-white hover:bg-green-50";
+  const normal = "text-slate-700 bg-white hover:bg-green-50 border-white";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -58,8 +58,8 @@ const ManageReviewSubtabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-red-500 text-white shadow-sm border-red-500 hover:bg-red-600";
-  const normal = "text-slate-700 bg-white hover:bg-red-50";
+    "bg-green-500 text-white shadow-sm border-green-500 hover:bg-green-600";
+  const normal = "text-slate-700 bg-white hover:bg-green-50";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -447,7 +447,7 @@ const loadKpisForJobTitle = () => {
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-4 py-1.5 bg-red-500 text-white rounded-full text-xs font-semibold hover:bg-red-600 disabled:opacity-60 flex items-center gap-2"
+                    className="px-4 py-1.5 bg-green-500 text-white rounded-full text-xs font-semibold hover:bg-green-600 disabled:opacity-60 flex items-center gap-2"
                   >
                     <FiSave className="text-xs" />
                     {isSaving ? "Saving..." : "Save Changes"}
@@ -485,7 +485,7 @@ function Input({
         onChange={onChange}
         required={required}
         placeholder={placeholder}
-        className="border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+        className="border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
       />
     </div>
   );
@@ -499,7 +499,7 @@ function Select({ label, name, value, onChange, options }: any) {
         name={name}
         value={value}
         onChange={onChange}
-        className="border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+        className="border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
       >
         {options.map((opt: string) => (
           <option key={opt} value={opt}>

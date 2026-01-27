@@ -122,7 +122,7 @@ export default function PayGradesPage() {
           <div className="flex flex-col gap-1">
             <label className="font-medium text-slate-700">Name *</label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Grade A"
@@ -131,7 +131,7 @@ export default function PayGradesPage() {
           <div className="flex flex-col gap-1">
             <label className="font-medium text-slate-700">Currency</label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             />
@@ -142,7 +142,7 @@ export default function PayGradesPage() {
             </label>
             <input
               type="number"
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={minSalary}
               onChange={(e) => setMinSalary(e.target.value)}
             />
@@ -153,7 +153,7 @@ export default function PayGradesPage() {
             </label>
             <input
               type="number"
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
               value={maxSalary}
               onChange={(e) => setMaxSalary(e.target.value)}
             />
@@ -167,7 +167,7 @@ export default function PayGradesPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="text-left px-4 py-2 w-10">
-                    <input type="checkbox" className="accent-red-500" />
+                    <input type="checkbox" className="accent-green-500" />
                   </th>
                   <th className="text-left px-4 py-2 font-semibold">Name</th>
                   <th className="text-left px-4 py-2 font-semibold">
@@ -204,23 +204,23 @@ export default function PayGradesPage() {
                     if (isEditing) {
                       // Editable row
                       return (
-                        <tr key={g._id} className="bg-red-50/40">
+                        <tr key={g._id} className="bg-green-50/40">
                           <td className="px-4 py-2">
                             <input
                               type="checkbox"
-                              className="accent-red-500"
+                              className="accent-green-500"
                             />
                           </td>
                           <td className="px-4 py-2">
                             <input
-                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
                             />
                           </td>
                           <td className="px-4 py-2">
                             <input
-                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
                               value={editCurrency}
                               onChange={(e) =>
                                 setEditCurrency(e.target.value)
@@ -231,7 +231,7 @@ export default function PayGradesPage() {
                             <div className="flex gap-2">
                               <input
                                 type="number"
-                                className="w-1/2 border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                                className="w-1/2 border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
                                 placeholder="Min"
                                 value={editMinSalary}
                                 onChange={(e) =>
@@ -240,7 +240,7 @@ export default function PayGradesPage() {
                               />
                               <input
                                 type="number"
-                                className="w-1/2 border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                                className="w-1/2 border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
                                 placeholder="Max"
                                 value={editMaxSalary}
                                 onChange={(e) =>
@@ -280,7 +280,7 @@ export default function PayGradesPage() {
                         <td className="px-4 py-2">
                           <input
                             type="checkbox"
-                            className="accent-red-500"
+                            className="accent-green-500"
                           />
                         </td>
                         <td className="px-4 py-2 text-slate-800">{g.name}</td>
@@ -308,7 +308,7 @@ export default function PayGradesPage() {
                             type="button"
                             disabled={isBusy}
                             onClick={() => handleDelete(g._id)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-green-200 text-green-500 hover:bg-green-50 disabled:opacity-60"
                             title="Delete"
                           >
                             <FiTrash2 className="w-3.5 h-3.5" />

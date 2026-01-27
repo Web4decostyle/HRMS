@@ -85,7 +85,7 @@ export default function EmergencyContactsTab({
                           window.confirm("Delete?") &&
                           deleteContact({ employeeId, id: c._id })
                         }
-                        className="text-[11px] text-red-500 hover:underline"
+                        className="text-[11px] text-green-500 hover:underline"
                       >
                         Delete
                       </button>

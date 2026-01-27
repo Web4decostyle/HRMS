@@ -119,7 +119,7 @@ export default function RegisterPage() {
         </label>
 
         {error && (
-          <p className="text-sm text-red-600 mt-3">
+          <p className="text-sm text-green-600 mt-3">
             {error}
           </p>
         )}

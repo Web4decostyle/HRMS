@@ -40,7 +40,7 @@ function tzLabelFromLocal() {
 const pillBase =
   "px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1";
 const pillInactive = "bg-slate-100 text-slate-500 hover:bg-slate-200/60";
-const pillActive = "bg-red-100 text-red-600";
+const pillActive = "bg-green-100 text-green-600";
 
 export default function MyAttendanceRecordsPage() {
   const today = useMemo(() => new Date(), []);
@@ -65,7 +65,7 @@ export default function MyAttendanceRecordsPage() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-[#f6f6fb]">
       {/* top gradient strip */}
-      <div className="w-full bg-gradient-to-r from-red-500 via-red-600 to-red-500">
+      <div className="w-full bg-gradient-to-r from-green-500 via-green-600 to-green-500">
         <div className="px-6 md:px-8 py-4">
           <div className="text-white/90 text-sm font-medium">
             Attendance / Attendance
@@ -112,7 +112,7 @@ export default function MyAttendanceRecordsPage() {
 
             <form onSubmit={onView} className="mt-6">
               <label className="block text-sm font-medium text-slate-700">
-                Date<span className="text-red-500">*</span>
+                Date<span className="text-green-500">*</span>
               </label>
 
               <div className="mt-2 flex items-end justify-between gap-6 flex-wrap">
@@ -124,7 +124,7 @@ export default function MyAttendanceRecordsPage() {
                     className="
                       w-full h-11 rounded-xl border border-slate-200 bg-white
                       px-4 pr-12 text-sm text-slate-700 outline-none
-                      focus:ring-2 focus:ring-red-200 focus:border-red-300
+                      focus:ring-2 focus:ring-green-200 focus:border-green-300
                     "
                     required
                     disabled={isFetching}
@@ -185,7 +185,7 @@ export default function MyAttendanceRecordsPage() {
             {/* Data rows */}
             <div className="px-4 md:px-6 py-4">
               {error ? (
-                <div className="text-sm text-red-600 px-2 py-4">
+                <div className="text-sm text-green-600 px-2 py-4">
                   Failed to load records for this date.
                 </div>
               ) : rows.length === 0 ? (

@@ -33,9 +33,9 @@ function Badge({
 }) {
   const cls =
     tone === "success"
-      ? "bg-red-50 text-red-700 border-red-200"
+      ? "bg-green-50 text-green-700 border-green-200"
       : tone === "error"
-      ? "bg-red-50 text-red-600 border-red-200"
+      ? "bg-green-50 text-green-600 border-green-200"
       : "bg-slate-50 text-slate-600 border-slate-200";
 
   return (
@@ -165,7 +165,7 @@ export default function DataImportPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        <button className="px-5 py-2 text-sm rounded-full bg-red-500 text-white">
+        <button className="px-5 py-2 text-sm rounded-full bg-green-500 text-white">
           Configuration
         </button>
         <button
@@ -196,7 +196,7 @@ export default function DataImportPage() {
               <li>Maximum 100 records per file</li>
               <li>
                 Sample CSV:{" "}
-                <a href={sampleUrl} className="text-red-500 font-semibold">
+                <a href={sampleUrl} className="text-green-500 font-semibold">
                   Download
                 </a>
               </li>
@@ -221,12 +221,12 @@ export default function DataImportPage() {
             </label>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full inline-block">
+              <p className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
                 {error}
               </p>
             )}
             {message && (
-              <p className="text-xs text-red-700 bg-red-50 px-3 py-1 rounded-full inline-block">
+              <p className="text-xs text-green-700 bg-green-50 px-3 py-1 rounded-full inline-block">
                 {message}
               </p>
             )}

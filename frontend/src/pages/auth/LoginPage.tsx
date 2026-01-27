@@ -59,7 +59,7 @@ export default function LoginPage() {
           />
         </label>
 
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-sm text-green-600 mb-3">{error}</p>}
 
         <button
           type="submit"

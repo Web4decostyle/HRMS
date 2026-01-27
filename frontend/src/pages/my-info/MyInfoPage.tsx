@@ -96,7 +96,7 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
 
   if (isError || !employee) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#f5f6fa] text-sm text-red-500">
+      <div className="h-full flex items-center justify-center bg-[#f5f6fa] text-sm text-green-500">
         Failed to load employee.
       </div>
     );
@@ -166,10 +166,10 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
           {(flashMsg || pendingForThisEmployee) && (
             <div className="px-6 pt-5">
               {flashMsg && (
-                <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start justify-between gap-3">
-                  <div className="text-sm text-red-800">{flashMsg}</div>
+                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex items-start justify-between gap-3">
+                  <div className="text-sm text-green-800">{flashMsg}</div>
                   <button
-                    className="text-xs text-red-700 underline"
+                    className="text-xs text-green-700 underline"
                     onClick={() => setFlashMsg("")}
                   >
                     dismiss

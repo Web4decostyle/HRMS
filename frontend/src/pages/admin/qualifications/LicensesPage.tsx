@@ -92,7 +92,7 @@ export default function LicensesPage() {
                     <td className="p-3">
                       <button
                         onClick={() => deleteLicense(item._id)}
-                        className="text-red-500 hover:text-red-600 text-sm"
+                        className="text-green-500 hover:text-green-600 text-sm"
                       >
                         Delete
                       </button>
