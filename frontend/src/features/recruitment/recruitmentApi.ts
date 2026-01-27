@@ -20,8 +20,8 @@ export interface Candidate {
     | "APPLIED"
     | "SHORTLISTED"
     | "INTERVIEW"
-    | "OFFERED"
-    | "HIRED"
+    | "OFFEred"
+    | "HIred"
     | "REJECTED";
   resumeUrl?: string;
   notes?: string;

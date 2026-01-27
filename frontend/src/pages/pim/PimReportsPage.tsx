@@ -45,7 +45,7 @@ export default function PimReportsPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
-        {/* Top green gradient bar with user menu */}
+        {/* Top red gradient bar with user menu */}
         <Topbar />
 
         <main className="flex-1 px-8 py-6 space-y-6">
@@ -61,7 +61,7 @@ export default function PimReportsPage() {
                   onClick={() => setConfigOpen((open) => !open)}
                   className={`${tabBase} ${
                     configOpen
-                      ? "bg-green-100 text-green-600 border border-green-200"
+                      ? "bg-red-100 text-red-600 border border-red-200"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                   }`}
                 >
@@ -77,7 +77,7 @@ export default function PimReportsPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/optional-fields");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Optional Fields
                     </button>
@@ -87,7 +87,7 @@ export default function PimReportsPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/custom-fields");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Custom Fields
                     </button>
@@ -97,7 +97,7 @@ export default function PimReportsPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/data-import");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Data Import
                     </button>
@@ -107,7 +107,7 @@ export default function PimReportsPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/reporting-methods");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Reporting Methods
                     </button>
@@ -117,7 +117,7 @@ export default function PimReportsPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/termination-reasons");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50 rounded-b-xl"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 rounded-b-xl"
                     >
                       Termination Reasons
                     </button>
@@ -146,7 +146,7 @@ export default function PimReportsPage() {
               {/* Reports (active) */}
               <button
                 type="button"
-                className={`${tabBase} bg-green-500 text-white shadow-sm`}
+                className={`${tabBase} bg-red-500 text-white shadow-sm`}
                 onClick={() => navigate("/pim/reports")}
               >
                 Reports
@@ -178,7 +178,7 @@ export default function PimReportsPage() {
                     placeholder="Type for hints..."
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    className="mt-1 block w-full rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   />
                 </label>
 
@@ -228,7 +228,7 @@ export default function PimReportsPage() {
                   <thead className="bg-[#f3f5fa] text-[11px] text-slate-500">
                     <tr>
                       <th className="w-[40px] px-6 py-2">
-                        <input type="checkbox" className="accent-green-500" />
+                        <input type="checkbox" className="accent-red-500" />
                       </th>
                       <th className="px-3 py-2 font-medium">
                         <div className="inline-flex items-center gap-1">
@@ -268,12 +268,12 @@ export default function PimReportsPage() {
                     {reports?.map((report) => (
                       <tr
                         key={report._id}
-                        className="border-t border-slate-100 hover:bg-green-50/30"
+                        className="border-t border-slate-100 hover:bg-red-50/30"
                       >
                         <td className="px-6 py-3">
                           <input
                             type="checkbox"
-                            className="accent-green-500"
+                            className="accent-red-500"
                           />
                         </td>
                         <td className="px-3 py-3 text-slate-700">

@@ -1,163 +1,183 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { LeaveEntitlement } from "../leaveEntitlement/LeaveEntitlement.model";
-import { AuthRequest } from "../../../middleware/authMiddleware";
-import { ApiError } from "../../../utils/ApiError";
-import { User } from "../../auth/auth.model";
+import { LeaveEntitlement } from "./LeaveEntitlement.model";
 import { Employee } from "../../employees/employee.model";
+import { LeaveType } from "../leave.model";
+import { User } from "../../auth/auth.model";
 
-function isValidObjectId(id: any) {
-  return typeof id === "string" && mongoose.Types.ObjectId.isValid(id);
-}
+const isValidObjectId = (id: string) => mongoose.Types.ObjectId.isValid(id);
 
-async function getEmployeeForUser(userId: string) {
-  const u = await User.findById(userId).select("email username").lean();
-  if (!u) return null;
+const getEmployeeForUser = async (userId: string) => {
+  const user = await User.findById(userId).lean();
+  if (!user) return null;
 
-  const email = (u.email || "").trim();
-  const username = (u.username || "").trim();
-
-  const employee =
-    (email && (await Employee.findOne({ email }).exec())) ||
-    (username && (await Employee.findOne({ email: username }).exec()));
-
+  const employee = await Employee.findOne({ email: user.email }).lean();
   return employee;
-}
+};
 
 /**
  * POST /api/leave-entitlements
- * Frontend sends: employeeId, leaveTypeId, periodStart, periodEnd, days
- * DB expects: employee, leaveType, periodStart, periodEnd, days
+ * Body: { employeeId, leaveTypeId, periodStart, periodEnd, days }
  */
 export const createLeaveEntitlement = async (req: Request, res: Response) => {
   try {
-    const body = req.body || {};
+    const { employeeId, leaveTypeId, periodStart, periodEnd, days } = req.body;
 
-    // accept both styles (employeeId/leaveTypeId OR employee/leaveType)
-    const employeeId = body.employeeId || body.employee;
-    const leaveTypeId = body.leaveTypeId || body.leaveType;
-
-    if (!employeeId || !leaveTypeId) {
-      return res.status(400).json({
-        message: "employeeId and leaveTypeId are required",
-      });
+    if (
+      !employeeId ||
+      !leaveTypeId ||
+      !periodStart ||
+      !periodEnd ||
+      days == null
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (!isValidObjectId(String(employeeId))) {
-      return res.status(400).json({ message: "Invalid employeeId" });
-    }
-    if (!isValidObjectId(String(leaveTypeId))) {
-      return res.status(400).json({ message: "Invalid leaveTypeId" });
-    }
-
-    const periodStart = body.periodStart;
-    const periodEnd = body.periodEnd;
-    const days = body.days;
-
-    if (!periodStart || !periodEnd) {
-      return res.status(400).json({
-        message: "periodStart and periodEnd are required",
-      });
-    }
-    if (days === undefined || days === null || Number(days) <= 0) {
-      return res.status(400).json({
-        message: "days must be a number greater than 0",
-      });
+    if (!isValidObjectId(employeeId) || !isValidObjectId(leaveTypeId)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid employeeId or leaveTypeId" });
     }
 
-    const doc = await LeaveEntitlement.create({
-      employee: new mongoose.Types.ObjectId(String(employeeId)),
-      leaveType: new mongoose.Types.ObjectId(String(leaveTypeId)),
-      periodStart: new Date(periodStart),
-      periodEnd: new Date(periodEnd),
-      days: Number(days),
+    const employee = await Employee.findById(employeeId);
+    if (!employee)
+      return res.status(404).json({ message: "Employee not found" });
+
+    const leaveType = await LeaveType.findById(leaveTypeId);
+    if (!leaveType)
+      return res.status(404).json({ message: "Leave type not found" });
+
+    const entitlement = await LeaveEntitlement.create({
+      employee: employeeId,
+      leaveType: leaveTypeId,
+      periodStart,
+      periodEnd,
+      days,
     });
 
-    const populated = await LeaveEntitlement.findById(doc._id)
+    const populated = await LeaveEntitlement.findById(entitlement._id)
       .populate("employee")
       .populate("leaveType")
       .lean();
 
-    res.status(201).json(populated);
+    return res.status(201).json(populated);
   } catch (error: any) {
-    // ✅ return 400 for mongoose validation / cast errors
-    const isMongooseValidation =
-      error?.name === "ValidationError" || error?.name === "CastError";
-
-    res.status(isMongooseValidation ? 400 : 500).json({
-      message: isMongooseValidation
-        ? "Invalid entitlement payload"
-        : "Error creating leave entitlement",
+    return res.status(500).json({
+      message: "Error creating leave entitlement",
       error: error?.message || error,
     });
   }
 };
 
-export const getLeaveEntitlements = async (_req: Request, res: Response) => {
+/**
+ * GET /api/leave-entitlements
+ * Supports query filters:
+ *  - employeeId
+ *  - leaveTypeId
+ *  - periodStart
+ *  - periodEnd
+ */
+export const getLeaveEntitlements = async (req: Request, res: Response) => {
   try {
-    const entitlements = await LeaveEntitlement.find()
+    const { employeeId, leaveTypeId, periodStart, periodEnd } = (req.query ||
+      {}) as any;
+
+    const query: any = {};
+
+    if (employeeId) {
+      if (!isValidObjectId(String(employeeId))) {
+        return res.status(400).json({ message: "Invalid employeeId" });
+      }
+      query.employee = String(employeeId);
+    }
+
+    if (leaveTypeId) {
+      if (!isValidObjectId(String(leaveTypeId))) {
+        return res.status(400).json({ message: "Invalid leaveTypeId" });
+      }
+      query.leaveType = String(leaveTypeId);
+    }
+
+    // Period overlap filter:
+    // - if periodStart provided -> entitlement.periodEnd >= periodStart
+    // - if periodEnd provided   -> entitlement.periodStart <= periodEnd
+    const and: any[] = [];
+
+    if (periodStart) {
+      const ps = new Date(String(periodStart));
+      if (Number.isNaN(ps.getTime())) {
+        return res.status(400).json({ message: "Invalid periodStart date" });
+      }
+      and.push({ periodEnd: { $gte: ps } });
+    }
+
+    if (periodEnd) {
+      const pe = new Date(String(periodEnd));
+      if (Number.isNaN(pe.getTime())) {
+        return res.status(400).json({ message: "Invalid periodEnd date" });
+      }
+      and.push({ periodStart: { $lte: pe } });
+    }
+
+    if (and.length === 1) Object.assign(query, and[0]);
+    if (and.length > 1) query.$and = and;
+
+    const entitlements = await LeaveEntitlement.find(query)
       .populate("employee")
       .populate("leaveType");
+
     res.json(entitlements);
   } catch (error: any) {
-    res.status(500).json({ message: "Error fetching leave entitlements", error: error?.message || error });
+    res.status(500).json({
+      message: "Error fetching leave entitlements",
+      error: error?.message || error,
+    });
   }
 };
 
-export const getMyLeaveEntitlements = async (req: AuthRequest, res: Response) => {
+/**
+ * GET /api/leave-entitlements/my
+ */
+export const getMyLeaveEntitlements = async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const employee = await getEmployeeForUser(userId);
-    if (!employee) throw ApiError.notFound("Employee record not found for this user");
+    if (!employee)
+      return res.status(404).json({ message: "Employee record not found" });
 
     const entitlements = await LeaveEntitlement.find({ employee: employee._id })
       .populate("leaveType")
-      .populate("employee");
+      .lean();
 
-    res.json(entitlements);
+    return res.json(entitlements);
   } catch (error: any) {
-    res.status(error?.statusCode || 500).json({
-      message: error?.message || "Error fetching employee leave entitlements",
+    return res.status(500).json({
+      message: "Error fetching my entitlements",
       error: error?.message || error,
     });
   }
 };
 
-export const updateLeaveEntitlement = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    // allow update payload in either style, normalize again
-    const body = req.body || {};
-    const employeeId = body.employeeId || body.employee;
-    const leaveTypeId = body.leaveTypeId || body.leaveType;
-
-    const update: any = { ...body };
-    if (employeeId) update.employee = employeeId;
-    if (leaveTypeId) update.leaveType = leaveTypeId;
-    delete update.employeeId;
-    delete update.leaveTypeId;
-
-    const updated = await LeaveEntitlement.findByIdAndUpdate(id, update, {
-      new: true,
-    })
-      .populate("employee")
-      .populate("leaveType");
-
-    res.json(updated);
-  } catch (error: any) {
-    res.status(500).json({ message: "Error updating leave entitlement", error: error?.message || error });
-  }
-};
-
+/**
+ * DELETE /api/leave-entitlements/:id
+ */
 export const deleteLeaveEntitlement = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await LeaveEntitlement.findByIdAndDelete(id);
-    res.json({ message: "Leave entitlement deleted successfully" });
+    if (!isValidObjectId(id))
+      return res.status(400).json({ message: "Invalid id" });
+
+    const deleted = await LeaveEntitlement.findByIdAndDelete(id);
+    if (!deleted)
+      return res.status(404).json({ message: "Entitlement not found" });
+
+    return res.json({ message: "Entitlement deleted successfully" });
   } catch (error: any) {
-    res.status(500).json({ message: "Error deleting leave entitlement", error: error?.message || error });
+    return res.status(500).json({
+      message: "Error deleting entitlement",
+      error: error?.message || error,
+    });
   }
 };

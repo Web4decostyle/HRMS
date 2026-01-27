@@ -20,7 +20,7 @@ const PerformanceTopTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-green-600 shadow-sm`
+      ? `${pill} bg-white text-red-600 shadow-sm`
       : `${pill} text-slate-600 hover:bg-white/60`;
 
   return (
@@ -48,8 +48,8 @@ const ConfigureSubTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-green-500 text-white shadow-sm`
-      : `${pill} text-slate-600 bg-white hover:bg-green-50`;
+      ? `${pill} bg-red-500 text-white shadow-sm`
+      : `${pill} text-slate-600 bg-white hover:bg-red-50`;
 
   return (
     <div className="flex gap-2">
@@ -204,7 +204,7 @@ const handleChange = (
                   value={jobTitleFilter}
                   onChange={(e) => setJobTitleFilter(e.target.value)}
                   placeholder="-- Select --"
-                  className="w-56 rounded-md border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                  className="w-56 rounded-md border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ const handleChange = (
                   value={form.jobTitle}
                   onChange={handleChange}
                   required
-                  className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
                   placeholder="e.g. Sales Executive"
                 />
               </div>
@@ -330,7 +330,7 @@ const handleChange = (
                   value={form.kpiTitle}
                   onChange={handleChange}
                   required
-                  className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
                   placeholder="e.g. Achieves monthly sales target"
                 />
               </div>
@@ -347,7 +347,7 @@ const handleChange = (
                     min={0}
                     max={form.maxRate}
                     onChange={handleChange}
-                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -360,7 +360,7 @@ const handleChange = (
                     value={form.maxRate}
                     min={form.minRate}
                     onChange={handleChange}
-                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    className="rounded-md border border-slate-200 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
                   />
                 </div>
               </div>
@@ -388,7 +388,7 @@ const handleChange = (
                 <button
                   type="submit"
                   disabled={busy}
-                  className="px-4 py-1.5 rounded-full bg-green-500 text-white text-xs font-semibold hover:bg-green-600 disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-full bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-60"
                 >
                   {busy ? "Saving..." : "Save"}
                 </button>

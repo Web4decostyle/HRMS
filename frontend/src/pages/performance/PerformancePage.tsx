@@ -21,14 +21,14 @@ const PerformanceTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap";
   const getClassName = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${linkBase} bg-white text-green-600 shadow-sm`
-      : `${linkBase} text-green-50/90 hover:bg-white/10`;
+      ? `${linkBase} bg-white text-red-600 shadow-sm`
+      : `${linkBase} text-red-50/90 hover:bg-white/10`;
 
   const dropdownLinkBase =
     "block px-3 py-1.5 text-[11px] whitespace-nowrap border-b last:border-b-0";
   const getDropdownClassName = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${dropdownLinkBase} bg-green-50 text-green-700 font-semibold`
+      ? `${dropdownLinkBase} bg-red-50 text-red-700 font-semibold`
       : `${dropdownLinkBase} text-slate-600 hover:bg-slate-50`;
 
   return (
@@ -134,9 +134,9 @@ export default function PerformancePage() {
           Performance / Manage Reviews
         </h1>
 
-        {/* green top bar + tabs () */}
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl px-4 py-2 shadow-sm flex items-center justify-between">
-          <div className="text-xs text-green-50/90">
+        {/* red top bar + tabs () */}
+        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl px-4 py-2 shadow-sm flex items-center justify-between">
+          <div className="text-xs text-red-50/90">
             Performance <span className="opacity-75">/</span>{" "}
             <span className="font-medium">Manage Reviews</span>
           </div>
@@ -167,7 +167,7 @@ export default function PerformancePage() {
                   setFilters((f) => ({ ...f, employeeName: e.target.value }))
                 }
                 placeholder="Type for hints..."
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] placeholder:text-slate-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] placeholder:text-slate-300 focus:outline-none focus:ring-1 focus:ring-red-500"
               />
             </div>
 
@@ -181,7 +181,7 @@ export default function PerformancePage() {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, jobTitle: e.target.value }))
                 }
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
               >
                 <option value="">-- Select --</option>
                 {/* hook real job titles later */}
@@ -198,7 +198,7 @@ export default function PerformancePage() {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, subUnit: e.target.value }))
                 }
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
               >
                 <option value="">-- Select --</option>
               </select>
@@ -217,7 +217,7 @@ export default function PerformancePage() {
                     include: e.target.value as PerformanceFilters["include"],
                   }))
                 }
-                className="w-full rounded-full border border-slate-200 px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full rounded-full border border-slate-200 px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-red-500"
               >
                 <option value="CURRENT">Current Employees Only</option>
                 <option value="ALL">Current and Past Employees</option>
@@ -238,7 +238,7 @@ export default function PerformancePage() {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, status: e.target.value }))
                 }
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
               >
                 <option value="">-- Select --</option>
                 <option value="NOT_STARTED">Not Started</option>
@@ -259,7 +259,7 @@ export default function PerformancePage() {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, fromDate: e.target.value }))
                 }
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-red-500"
               />
             </div>
 
@@ -274,7 +274,7 @@ export default function PerformancePage() {
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, toDate: e.target.value }))
                 }
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-red-500"
               />
             </div>
           </div>
@@ -357,7 +357,7 @@ export default function PerformancePage() {
                       <td className="py-2 px-4">{dueDate}</td>
                       <td className="py-2 px-4">{r.status}</td>
                       <td className="py-2 px-4 text-right">
-                        <button className="text-[11px] font-medium text-green-600 hover:underline">
+                        <button className="text-[11px] font-medium text-red-600 hover:underline">
                           View
                         </button>
                       </td>

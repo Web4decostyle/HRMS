@@ -16,8 +16,8 @@ const PerformanceTopTabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-white text-green-600 shadow-sm border-white hover:bg-green-50";
-  const normal = "text-slate-700 bg-white hover:bg-green-50 border-white";
+    "bg-white text-red-600 shadow-sm border-white hover:bg-red-50";
+  const normal = "text-slate-700 bg-white hover:bg-red-50 border-white";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -49,8 +49,8 @@ const ManageReviewSubtabs = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border transition-colors";
 
   const active =
-    "bg-green-500 text-white shadow-sm border-green-500 hover:bg-green-600";
-  const normal = "text-slate-700 bg-white hover:bg-green-50";
+    "bg-red-500 text-white shadow-sm border-red-500 hover:bg-red-600";
+  const normal = "text-slate-700 bg-white hover:bg-red-50";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
     `${pill} ${isActive ? active : normal}`;
@@ -175,7 +175,7 @@ export default function ViewReviewPage() {
                     <InfoRow
                       label="Status"
                       value={
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-600">
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600">
                           {review.status.replace("_", " ")}
                         </span>
                       }

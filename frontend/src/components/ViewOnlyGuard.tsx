@@ -12,7 +12,7 @@ export default function ViewOnlyGuard({
   return (
     <div className={isViewOnly ? "view-only-scope" : ""}>
       {isViewOnly && (
-        <div className="mb-3 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-xs text-green-800">
+        <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-800">
           <b>View-only mode:</b> You can browse and view information, but you
           can’t make changes.
         </div>

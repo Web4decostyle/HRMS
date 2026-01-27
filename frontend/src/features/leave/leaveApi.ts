@@ -10,6 +10,7 @@ export interface LeaveType {
   name: string;
   code: string;
   description?: string;
+  isActive?: boolean;
 }
 
 export interface LeaveRequest {
@@ -105,16 +106,29 @@ export interface HolidayFilters {
   to?: string;
 }
 
+/* ------------ Leave Balance (ESS) ------------ */
+
+export type MyLeaveBalanceItem = {
+  leaveTypeId: string;
+  leaveTypeName: string;
+  allotted: number;
+  used: number;
+  pending: number;
+  balance: number;
+};
+
+export type MyLeaveBalanceResponse = MyLeaveBalanceItem[];
+
 export const leaveApi = createApi({
   reducerPath: "leaveApi",
   baseQuery: authorizedBaseQuery,
-  // 🔥 add LeaveEntitlement here
   tagTypes: [
     "LeaveType",
     "LeaveRequest",
     "LeaveEntitlement",
     "WorkWeek",
     "Holiday",
+    "LeaveBalance",
   ],
   endpoints: (builder) => ({
     // GET /api/leave/types
@@ -123,6 +137,7 @@ export const leaveApi = createApi({
       providesTags: ["LeaveType"],
     }),
 
+    // GET /api/leave/:id
     getLeaveById: builder.query<LeaveRequest, string>({
       query: (id) => `leave/${id}`,
       providesTags: ["LeaveRequest"],
@@ -138,13 +153,22 @@ export const leaveApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["LeaveRequest"],
+      invalidatesTags: ["LeaveRequest", "LeaveBalance"],
     }),
 
     // GET /api/leave/my
     getMyLeaves: builder.query<LeaveRequest[], void>({
       query: () => "leave/my",
       providesTags: ["LeaveRequest"],
+    }),
+
+    // GET /api/leave/balance/me
+    getMyLeaveBalance: builder.query<MyLeaveBalanceResponse, void>({
+      query: () => ({
+        url: "leave/balance/me",
+        method: "GET",
+      }),
+      providesTags: ["LeaveBalance"],
     }),
 
     // GET /api/leave  (Leave List – admin / HR)
@@ -158,13 +182,12 @@ export const leaveApi = createApi({
         if (filters.status) params.status = filters.status;
         if (filters.typeId) params.typeId = filters.typeId;
         if (filters.employeeId) params.employeeId = filters.employeeId;
-        // subUnit / includePastEmployees can be wired later if backend supports
         return { url: "leave", params };
       },
       providesTags: ["LeaveRequest"],
     }),
 
-    // PATCH /api/leave/:id/status (admin / HR)
+    // PATCH /api/leave/:id/status (admin / HR / supervisor)
     updateLeaveStatus: builder.mutation<
       LeaveRequest,
       { id: string; status: LeaveStatus; remarks?: string }
@@ -177,9 +200,10 @@ export const leaveApi = createApi({
           ...(remarks && remarks.trim() ? { remarks: remarks.trim() } : {}),
         },
       }),
-      invalidatesTags: ["LeaveRequest"],
+      invalidatesTags: ["LeaveRequest", "LeaveBalance"],
     }),
 
+    // POST /api/leave/assign
     assignLeave: builder.mutation<
       LeaveRequest,
       {
@@ -195,7 +219,7 @@ export const leaveApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["LeaveRequest"],
+      invalidatesTags: ["LeaveRequest", "LeaveBalance"],
     }),
 
     // --- Leave Types: CRUD for Configure -> Leave Types ------------
@@ -282,17 +306,14 @@ export const leaveApi = createApi({
     >({
       query: (filters) => {
         const params = new URLSearchParams();
-        if (filters?.employeeId)
-          params.append("employeeId", filters.employeeId);
-        if (filters?.leaveTypeId)
-          params.append("leaveTypeId", filters.leaveTypeId);
-        if (filters?.periodStart)
-          params.append("periodStart", filters.periodStart);
+        if (filters?.employeeId) params.append("employeeId", filters.employeeId);
+        if (filters?.leaveTypeId) params.append("leaveTypeId", filters.leaveTypeId);
+        if (filters?.periodStart) params.append("periodStart", filters.periodStart);
         if (filters?.periodEnd) params.append("periodEnd", filters.periodEnd);
 
         const qs = params.toString();
         return {
-          url: `/leave-entitlements${qs ? `?${qs}` : ""}`,
+          url: `leave-entitlements${qs ? `?${qs}` : ""}`,
           method: "GET",
         };
       },
@@ -301,7 +322,7 @@ export const leaveApi = createApi({
 
     getMyLeaveEntitlements: builder.query<LeaveEntitlement[], void>({
       query: () => ({
-        url: "/leave-entitlements/my",
+        url: "leave-entitlements/my",
         method: "GET",
       }),
       providesTags: ["LeaveEntitlement"],
@@ -312,11 +333,11 @@ export const leaveApi = createApi({
       AddLeaveEntitlementPayload
     >({
       query: (body) => ({
-        url: "/leave-entitlements",
+        url: "leave-entitlements",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["LeaveEntitlement"],
+      invalidatesTags: ["LeaveEntitlement", "LeaveBalance"],
     }),
   }),
 });
@@ -339,4 +360,5 @@ export const {
   useCreateHolidayMutation,
   useDeleteHolidayMutation,
   useGetLeaveByIdQuery,
+  useGetMyLeaveBalanceQuery,
 } = leaveApi;

@@ -94,7 +94,7 @@ const TerminationReasonsPage: React.FC = () => {
 
       {/* Right side */}
       <div className="flex-1 flex flex-col">
-        {/* green top bar with user menu */}
+        {/* red top bar with user menu */}
         <Topbar active="pim-config-termination-reasons" />
 
         {/* PIM / Configuration heading + tabs  */}
@@ -108,7 +108,7 @@ const TerminationReasonsPage: React.FC = () => {
               {/* Configuration (active) */}
               <button
                 type="button"
-                className={`${tabBase} bg-green-500 text-white shadow-sm`}
+                className={`${tabBase} bg-red-500 text-white shadow-sm`}
               >
                 Configuration
               </button>
@@ -167,7 +167,7 @@ const TerminationReasonsPage: React.FC = () => {
             <div className="px-8 pb-4">
               <div className="flex items-center rounded-full bg-[#f3f5fa] h-10 px-5 text-[11px] font-semibold text-slate-500">
                 <div className="w-10 flex justify-center">
-                  <input type="checkbox" className="accent-green-500" />
+                  <input type="checkbox" className="accent-red-500" />
                 </div>
                 <div className="flex-1">Name</div>
                 <div className="w-28 text-right pr-2">Actions</div>
@@ -205,12 +205,12 @@ const TerminationReasonsPage: React.FC = () => {
                 items.map((item) => (
                   <div
                     key={item._id}
-                    className="flex items-center rounded-full bg-white border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] h-10 px-5 hover:bg-green-50/40 transition-colors"
+                    className="flex items-center rounded-full bg-white border border-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)] h-10 px-5 hover:bg-red-50/40 transition-colors"
                   >
                     <div className="w-10 flex justify-center">
                       <input
                         type="checkbox"
-                        className="accent-green-500"
+                        className="accent-red-500"
                       />
                     </div>
 
@@ -254,7 +254,7 @@ const TerminationReasonsPage: React.FC = () => {
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Resigned - Self Proposed"
@@ -273,7 +273,7 @@ const TerminationReasonsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded-full text-sm font-semibold bg-green-500 hover:bg-green-600 text-white disabled:opacity-60"
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-red-500 hover:bg-red-600 text-white disabled:opacity-60"
                 disabled={isCreating || isUpdating}
               >
                 {editing

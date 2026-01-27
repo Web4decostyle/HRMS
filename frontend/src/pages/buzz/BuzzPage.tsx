@@ -83,7 +83,7 @@ export default function BuzzPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="What's on your mind?"
-                  className="flex-1 h-10 rounded-full border border-slate-200 px-4 text-xs bg-white outline-none focus:ring-2 focus:ring-green-100"
+                  className="flex-1 h-10 rounded-full border border-slate-200 px-4 text-xs bg-white outline-none focus:ring-2 focus:ring-red-100"
                 />
 
                 <button
@@ -246,7 +246,7 @@ export default function BuzzPage() {
                     <button
                       type="button"
                       onClick={() => saveEdit(p._id)}
-                      className="px-4 rounded-full bg-green-600 text-white text-xs font-semibold"
+                      className="px-4 rounded-full bg-red-600 text-white text-xs font-semibold"
                     >
                       Save
                     </button>

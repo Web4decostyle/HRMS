@@ -106,7 +106,7 @@ export default function EmploymentStatusPage() {
               Employment Status *
             </label>
             <input
-              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
+              className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Full-Time Permanent"
@@ -120,7 +120,7 @@ export default function EmploymentStatusPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="text-left px-4 py-2 w-10">
-                    <input type="checkbox" className="accent-green-500" />
+                    <input type="checkbox" className="accent-red-500" />
                   </th>
                   <th className="text-left px-4 py-2 font-semibold">
                     Employment Status
@@ -151,16 +151,16 @@ export default function EmploymentStatusPage() {
                     const isEditing = editingId === s._id;
                     if (isEditing) {
                       return (
-                        <tr key={s._id} className="bg-green-50/40">
+                        <tr key={s._id} className="bg-red-50/40">
                           <td className="px-4 py-2">
                             <input
                               type="checkbox"
-                              className="accent-green-500"
+                              className="accent-red-500"
                             />
                           </td>
                           <td className="px-4 py-2">
                             <input
-                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-green-400 focus:outline-none"
+                              className="w-full border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-red-400 focus:outline-none"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
                             />
@@ -193,7 +193,7 @@ export default function EmploymentStatusPage() {
                         className="odd:bg-white even:bg-slate-50/50"
                       >
                         <td className="px-4 py-2">
-                          <input type="checkbox" className="accent-green-500" />
+                          <input type="checkbox" className="accent-red-500" />
                         </td>
                         <td className="px-4 py-2 text-slate-800">{s.name}</td>
                         <td className="px-4 py-2 text-right space-x-2">

@@ -15,7 +15,7 @@ const pillBase =
   "inline-flex items-center gap-1 px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
 
 const dropdownItemClasses =
-  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-green-50";
+  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-red-50";
 
 const TimeTopTabs: React.FC = () => {
   const location = useLocation();
@@ -64,7 +64,7 @@ const TimeTopTabs: React.FC = () => {
     },
   ];
 
-  // Close dropdowns when clicking outside the green bar
+  // Close dropdowns when clicking outside the red bar
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -80,15 +80,15 @@ const TimeTopTabs: React.FC = () => {
 
   return (
     <div className="mb-4" ref={wrapperRef}>
-      <div className="inline-flex gap-2 bg-green-500/90 rounded-full px-2 py-1 shadow-sm">
+      <div className="inline-flex gap-2 bg-red-500/90 rounded-full px-2 py-1 shadow-sm">
         {menus.map((menu) => {
           const isGroupActive = menu.items.some((item) =>
             location.pathname.startsWith(item.to)
           );
 
           const pillClasses = isGroupActive
-            ? `${pillBase} bg-white text-green-600 shadow-sm`
-            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-green-700`;
+            ? `${pillBase} bg-white text-red-600 shadow-sm`
+            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-red-700`;
 
           const isOpen = openMenu === menu.key;
 
@@ -120,7 +120,7 @@ const TimeTopTabs: React.FC = () => {
                       onClick={() => setOpenMenu(null)} // close on select
                       className={({ isActive }) =>
                         isActive
-                          ? `${dropdownItemClasses} bg-green-50 font-semibold text-green-600`
+                          ? `${dropdownItemClasses} bg-red-50 font-semibold text-red-600`
                           : dropdownItemClasses
                       }
                     >
@@ -189,7 +189,7 @@ export default function MyTimesheetsPage() {
             </label>
             <input
               type="date"
-              className="border border-slate-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              className="border border-slate-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
               value={periodStart}
               onChange={(e) => setPeriodStart(e.target.value)}
             />
@@ -200,7 +200,7 @@ export default function MyTimesheetsPage() {
             </label>
             <input
               type="date"
-              className="border border-slate-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              className="border border-slate-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
               value={periodEnd}
               onChange={(e) => setPeriodEnd(e.target.value)}
             />

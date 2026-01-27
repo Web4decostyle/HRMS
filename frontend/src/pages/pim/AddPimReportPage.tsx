@@ -185,7 +185,7 @@ export default function AddPimReportPage() {
                   onClick={() => setConfigOpen((open) => !open)}
                   className={`${tabBase} ${
                     configOpen
-                      ? "bg-green-100 text-green-600 border border-green-200"
+                      ? "bg-red-100 text-red-600 border border-red-200"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                   }`}
                 >
@@ -201,7 +201,7 @@ export default function AddPimReportPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/optional-fields");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Optional Fields
                     </button>
@@ -211,7 +211,7 @@ export default function AddPimReportPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/custom-fields");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Custom Fields
                     </button>
@@ -221,7 +221,7 @@ export default function AddPimReportPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/data-import");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Data Import
                     </button>
@@ -231,7 +231,7 @@ export default function AddPimReportPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/reporting-methods");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50"
                     >
                       Reporting Methods
                     </button>
@@ -241,7 +241,7 @@ export default function AddPimReportPage() {
                         setConfigOpen(false);
                         navigate("/pim/config/termination-reasons");
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-green-50 rounded-b-xl"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 rounded-b-xl"
                     >
                       Termination Reasons
                     </button>
@@ -270,7 +270,7 @@ export default function AddPimReportPage() {
               {/* Reports (active) */}
               <button
                 type="button"
-                className={`${tabBase} bg-green-500 text-white shadow-sm`}
+                className={`${tabBase} bg-red-500 text-white shadow-sm`}
                 onClick={() => navigate("/pim/reports")}
               >
                 Reports
@@ -295,7 +295,7 @@ export default function AddPimReportPage() {
                 placeholder="Type here ..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full max-w-xl rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full max-w-xl rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
               />
             </div>
 
@@ -320,7 +320,7 @@ export default function AddPimReportPage() {
                         onChange={(e) =>
                           setSelectedCriteria(e.target.value || "")
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 appearance-none pr-8"
                       >
                         <option value="">-- Select --</option>
                         {SELECTION_CRITERIA_OPTIONS.map((opt) => (
@@ -381,7 +381,7 @@ export default function AddPimReportPage() {
                       onChange={(e) =>
                         setInclude(e.target.value as IncludeFilter)
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 appearance-none pr-8"
                     >
                       {INCLUDE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -418,7 +418,7 @@ export default function AddPimReportPage() {
                         setSelectedGroup(e.target.value);
                         setSelectedField("");
                       }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 appearance-none pr-8"
                     >
                       <option value="">-- Select --</option>
                       {DISPLAY_GROUPS.map((g) => (
@@ -443,7 +443,7 @@ export default function AddPimReportPage() {
                       <select
                         value={selectedField}
                         onChange={(e) => setSelectedField(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 appearance-none pr-8"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 appearance-none pr-8"
                       >
                         <option value="">-- Select --</option>
                         {DISPLAY_GROUPS.find(
@@ -528,7 +528,7 @@ export default function AddPimReportPage() {
                         onClick={() => toggleIncludeHeader(group.groupKey)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                           group.includeHeader
-                            ? "bg-green-400"
+                            ? "bg-red-400"
                             : "bg-slate-300"
                         }`}
                       >

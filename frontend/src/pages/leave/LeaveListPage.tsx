@@ -24,7 +24,7 @@ const chipBase =
 const btnBase =
   "px-4 h-9 rounded-full text-[12px] font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed";
 const btnPrimary = "bg-[#8bc34a] text-white hover:bg-[#7cb342]";
-const btnOutlineGreen = "border border-[#8bc34a] text-[#7cb342] bg-white hover:bg-[#f4fbec]";
+const btnOutlinered = "border border-[#8bc34a] text-[#7cb342] bg-white hover:bg-[#f4fbec]";
 const btnGhost = "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
 
 /* ------------------------------------------------------------------
@@ -421,7 +421,7 @@ export default function LeaveListPage() {
               </div>
 
               <div className="hidden md:flex items-center gap-2">
-                <button className={`${btnBase} ${btnOutlineGreen}`} onClick={handleReset}>
+                <button className={`${btnBase} ${btnOutlinered}`} onClick={handleReset}>
                   Reset
                 </button>
                 <button className={`${btnBase} ${btnPrimary}`} onClick={handleSearch}>

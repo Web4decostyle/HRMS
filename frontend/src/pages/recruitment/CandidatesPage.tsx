@@ -15,7 +15,7 @@ const RecruitmentTopTabs: React.FC = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-green-600 shadow-sm`
+      ? `${pill} bg-white text-red-600 shadow-sm`
       : `${pill} text-slate-600 hover:bg-white/70`;
 
   return (
@@ -105,7 +105,7 @@ export default function CandidatesPage() {
             </h1>
           </div>
 
-          {/* green-style top tabs */}
+          {/* red-style top tabs */}
           <RecruitmentTopTabs />
 
           {/* Card */}
@@ -122,20 +122,20 @@ export default function CandidatesPage() {
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <input
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                     placeholder="First Name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
                   />
                   <input
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                     placeholder="Middle Name"
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
                   />
                   <input
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                     placeholder="Last Name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -151,7 +151,7 @@ export default function CandidatesPage() {
                     Vacancy
                   </label>
                   <select
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
                     value={vacancyId}
                     onChange={(e) => setVacancyId(e.target.value)}
                   >
@@ -173,7 +173,7 @@ export default function CandidatesPage() {
                   </label>
                   <input
                     type="email"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -184,7 +184,7 @@ export default function CandidatesPage() {
                     Contact Number
                   </label>
                   <input
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                     value={contactNumber}
                     onChange={(e) => setContactNumber(e.target.value)}
                   />
@@ -224,7 +224,7 @@ export default function CandidatesPage() {
                     Keywords
                   </label>
                   <input
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                     placeholder="Enter comma separated words..."
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
@@ -236,7 +236,7 @@ export default function CandidatesPage() {
                   </label>
                   <input
                     type="date"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                     value={dateOfApplication}
                     onChange={(e) => setDateOfApplication(e.target.value)}
                   />
@@ -249,7 +249,7 @@ export default function CandidatesPage() {
                   Notes
                 </label>
                 <textarea
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-green-200"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-red-200"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Type here"
@@ -261,7 +261,7 @@ export default function CandidatesPage() {
                 <input
                   id="consent"
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-green-500 focus:ring-green-400"
+                  className="h-4 w-4 rounded border-slate-300 text-red-500 focus:ring-red-400"
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
                 />

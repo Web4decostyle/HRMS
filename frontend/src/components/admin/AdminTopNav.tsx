@@ -90,8 +90,8 @@ export default function AdminTopNav() {
 
   return (
     <div className="w-full bg-white">
-      {/* Top green gradient bar */}
-      <div className="w-full bg-gradient-to-r from-green-500 to-red-500 text-white px-6 py-3 flex items-center justify-between">
+      {/* Top red gradient bar */}
+      <div className="w-full bg-gradient-to-r from-red-500 to-red-500 text-white px-6 py-3 flex items-center justify-between">
         <h1 className="text-sm font-semibold">Admin</h1>
 
         <div className="flex items-center gap-3">
@@ -141,8 +141,8 @@ export default function AdminTopNav() {
                   to={(tab as any).path}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                     active
-                      ? "bg-green-100 text-green-600 border border-green-300"
-                      : "bg-slate-100 text-slate-600 hover:bg-green-50"
+                      ? "bg-red-100 text-red-600 border border-red-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-red-50"
                   }`}
                 >
                   {tab.name}
@@ -157,8 +157,8 @@ export default function AdminTopNav() {
                   onClick={() => toggleDropdown(tab.name)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 ${
                     active || openTab === tab.name
-                      ? "bg-green-100 text-green-600 border border-green-300"
-                      : "bg-slate-100 text-slate-600 hover:bg-green-50"
+                      ? "bg-red-100 text-red-600 border border-red-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-red-50"
                   }`}
                 >
                   {tab.name}
@@ -177,7 +177,7 @@ export default function AdminTopNav() {
                       <Link
                         key={item.path}
                         to={item.path}
-                        className="block px-5 py-2 text-xs text-slate-500 hover:bg-green-50 hover:text-green-500"
+                        className="block px-5 py-2 text-xs text-slate-500 hover:bg-red-50 hover:text-red-500"
                         onClick={() => setOpenTab(null)}
                       >
                         {item.name}

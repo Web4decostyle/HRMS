@@ -78,7 +78,7 @@ export default function MaintenanceAuthPage() {
           <button
             type="submit"
             disabled={isLoading || !password}
-            className="flex-1 bg-green-600 text-white rounded-full py-2 font-semibold disabled:opacity-60"
+            className="flex-1 bg-red-600 text-white rounded-full py-2 font-semibold disabled:opacity-60"
           >
             {isLoading ? "Confirming..." : "Confirm"}
           </button>

@@ -4,7 +4,7 @@ export type CandidateStatus =
   | "APPLIED"
   | "SHORTLISTED"
   | "INTERVIEW_SCHEDULED"
-  | "HIRED"
+  | "HIred"
   | "REJECTED";
 
 export interface ICandidate extends Document {
@@ -55,7 +55,7 @@ const CandidateSchema = new Schema<ICandidate>(
     consentToKeepData: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["APPLIED", "SHORTLISTED", "INTERVIEW_SCHEDULED", "HIRED", "REJECTED"],
+      enum: ["APPLIED", "SHORTLISTED", "INTERVIEW_SCHEDULED", "HIred", "REJECTED"],
       default: "APPLIED",
     },
     resume: ResumeSchema,

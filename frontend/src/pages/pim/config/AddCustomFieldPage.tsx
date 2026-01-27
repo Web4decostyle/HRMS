@@ -62,7 +62,7 @@ export default function AddCustomFieldPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className={`${tabBase} bg-green-500 text-white shadow-sm`}
+            className={`${tabBase} bg-red-500 text-white shadow-sm`}
           >
             Configuration
           </button>
@@ -105,7 +105,7 @@ export default function AddCustomFieldPage() {
             type="text"
             value={fieldName}
             onChange={(e) => setFieldName(e.target.value)}
-            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
             placeholder="Enter field name"
           />
         </div>
@@ -118,7 +118,7 @@ export default function AddCustomFieldPage() {
           <select
             value={screen}
             onChange={(e) => setScreen(e.target.value)}
-            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-500"
           >
             <option value="">Select Screen</option>
             <option value="personal">Personal Details</option>
@@ -137,7 +137,7 @@ export default function AddCustomFieldPage() {
           <select
             value={type}
             onChange={(e) => setType(e.target.value as any)}
-            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+            className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-red-500"
           >
             <option value="text">Text Field</option>
             <option value="dropdown">Dropdown</option>
@@ -156,7 +156,7 @@ export default function AddCustomFieldPage() {
                 type="text"
                 value={tempOption}
                 onChange={(e) => setTempOption(e.target.value)}
-                className="flex-1 border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="flex-1 border border-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
                 placeholder="Add option"
               />
               <button
@@ -212,7 +212,7 @@ export default function AddCustomFieldPage() {
             type="button"
             onClick={handleSave}
             disabled={isLoading}
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm shadow disabled:opacity-60"
+            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm shadow disabled:opacity-60"
           >
             {isLoading ? "Saving..." : "Save"}
           </button>

@@ -56,7 +56,7 @@ export default function Typeahead({
         }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder || "Type for hints..."}
-        className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-200"
+        className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200"
       />
 
       {show ? (

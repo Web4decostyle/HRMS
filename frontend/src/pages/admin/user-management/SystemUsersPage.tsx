@@ -112,7 +112,7 @@ export default function SystemUsersPage() {
         password: addForm.password.trim(),
         role: addForm.role as any,
 
-        // ✅ REQUIRED by your backend
+        // ✅ REQUIred by your backend
         firstName,
         lastName,
 
@@ -162,7 +162,7 @@ export default function SystemUsersPage() {
         <p className="text-[11px] text-slate-400">Admin</p>
         <h1 className="text-base md:text-lg font-semibold text-slate-900">
           Admin /{" "}
-          <span className="text-green-500 font-semibold">User Management</span>
+          <span className="text-red-500 font-semibold">User Management</span>
         </h1>
       </div>
 
@@ -279,7 +279,7 @@ export default function SystemUsersPage() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-4 py-2 w-10 text-left">
-                    <input type="checkbox" className="accent-green-500" />
+                    <input type="checkbox" className="accent-red-500" />
                   </th>
                   <th className="px-4 py-2 text-left font-semibold">
                     Username
@@ -317,7 +317,7 @@ export default function SystemUsersPage() {
                   users.map((u) => (
                     <tr key={u._id} className="bg-white">
                       <td className="px-4 py-3 border-t border-slate-100">
-                        <input type="checkbox" className="accent-green-500" />
+                        <input type="checkbox" className="accent-red-500" />
                       </td>
                       <td className="px-4 py-3 border-t border-slate-100 text-slate-800">
                         {u.username}

@@ -203,7 +203,7 @@ async function handleDelete(id: string) {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="text-left px-4 py-2 w-10">
-                    <input type="checkbox" className="accent-green-500" />
+                    <input type="checkbox" className="accent-red-500" />
                   </th>
                   <th className="text-left px-4 py-2 font-semibold">Work Shift</th>
                   <th className="text-left px-4 py-2 font-semibold">Hours per Day</th>
@@ -227,7 +227,7 @@ async function handleDelete(id: string) {
                   localShifts.map((s) => (
                     <tr key={s._id} className="odd:bg-white even:bg-slate-50/50">
                       <td className="px-4 py-2">
-                        <input type="checkbox" className="accent-green-500" />
+                        <input type="checkbox" className="accent-red-500" />
                       </td>
                       <td className="px-4 py-2 text-slate-800">{s.name}</td>
                       <td className="px-4 py-2 text-slate-800">{s.hoursPerDay.toFixed(2)}</td>

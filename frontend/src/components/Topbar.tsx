@@ -1,3 +1,4 @@
+// frontend/src/components/Topbar.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMeQuery } from "../features/auth/authApi";
@@ -43,11 +44,15 @@ const typeDot = (type?: string) => {
     case "RECRUITMENT":
       return "bg-pink-500";
     case "PIM":
-      return "bg-green-500";
+      return "bg-red-500";
     case "ORDER":
       return "bg-blue-500";
     case "INVOICE":
       return "bg-lime-500";
+    case "INFO":
+      return "bg-sky-500";
+    case "APPROVAL":
+      return "bg-violet-500";
     default:
       return "bg-slate-400";
   }
@@ -100,14 +105,24 @@ export default function Topbar({ active }: TopbarProps) {
   const [open, setOpen] = useState(false);
   const popRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: unreadData, refetch: refetchUnread } = useGetUnreadCountQuery(undefined, {
-    pollingInterval: 15000,
+  // ✅ IMPORTANT: no RTK polling here (this was causing your spam)
+  const {
+    data: unreadData,
+    refetch: refetchUnread,
+    isFetching: isFetchingUnread,
+  } = useGetUnreadCountQuery(undefined, {
     skip: !data?.user,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
 
   const { data: listData, refetch: refetchList } = useGetMyNotificationsQuery(
     { limit: 12 },
-    { skip: !data?.user }
+    {
+      skip: !data?.user,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
   );
 
   const unreadCount = unreadData?.count ?? 0;
@@ -115,6 +130,9 @@ export default function Topbar({ active }: TopbarProps) {
 
   const [markRead] = useMarkNotificationReadMutation();
   const [markAllRead, { isLoading: isMarkingAll }] = useMarkAllReadMutation();
+
+  // keeping mutation import (you used it before); dropdown still shows Delete button below,
+  // if you want NO delete anywhere, remove the button too.
   const [deleteOne] = useDeleteNotificationMutation();
 
   // Close dropdown if clicked outside
@@ -128,11 +146,17 @@ export default function Topbar({ active }: TopbarProps) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  // ✅ Connect socket when user is available
+  // ✅ Connect socket once per user
+  const socketConnectedRef = useRef<string | null>(null);
   useEffect(() => {
     const uid = user?.id || user?._id;
     if (!uid) return;
-    connectSocket(String(uid));
+
+    const s = String(uid);
+    if (socketConnectedRef.current === s) return;
+
+    socketConnectedRef.current = s;
+    connectSocket(s);
   }, [user?.id, user?._id]);
 
   // ✅ Listen for real-time notifications
@@ -141,20 +165,38 @@ export default function Topbar({ active }: TopbarProps) {
     if (!socket) return;
 
     const onNew = () => {
-      // Instantly refresh bell + list
       refetchUnread();
       refetchList();
     };
 
     socket.on("notification:new", onNew);
-
     return () => {
       socket.off("notification:new", onNew);
     };
   }, [refetchUnread, refetchList]);
 
+  // ✅ Controlled interval refresh (1 request / 30s, not spam)
+  useEffect(() => {
+    if (!data?.user) return;
+
+    let alive = true;
+    const id = window.setInterval(() => {
+      if (!alive) return;
+      // only refresh count if tab is visible (prevents background hammering)
+      if (document.visibilityState === "visible") {
+        refetchUnread();
+      }
+    }, 30000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [data?.user, refetchUnread]);
+
   async function onOpenBell() {
     setOpen((s) => !s);
+    // when opening, fetch immediately
     if (!open) {
       refetchUnread();
       refetchList();
@@ -164,14 +206,16 @@ export default function Topbar({ active }: TopbarProps) {
   async function handleClickNotification(n: AppNotification) {
     setOpen(false);
 
-    if (!n.read) {
+    if (!(n as any).read && !(n as any).isRead) {
       try {
-        await markRead({ id: n._id }).unwrap();
+        await markRead({ id: (n as any)._id }).unwrap();
       } catch {}
     }
 
-    if (n.link) navigate(n.link);
+    if ((n as any).link) navigate((n as any).link);
   }
+
+  const isRead = (n: any) => Boolean(n.read ?? n.isRead);
 
   return (
     <header className="h-14 px-5 border-b bg-white flex items-center justify-between">
@@ -225,7 +269,7 @@ export default function Topbar({ active }: TopbarProps) {
                       refetchList();
                     } catch {}
                   }}
-                  className="text-[11px] text-green-600 hover:text-green-700 disabled:opacity-50"
+                  className="text-[11px] text-red-600 hover:text-red-700 disabled:opacity-50"
                 >
                   Mark all read
                 </button>
@@ -237,11 +281,11 @@ export default function Topbar({ active }: TopbarProps) {
                     No notifications yet.
                   </div>
                 ) : (
-                  items.map((n) => (
+                  items.map((n: any) => (
                     <div
                       key={n._id}
                       className={`px-3 py-3 border-b border-slate-100 flex gap-3 cursor-pointer hover:bg-slate-50 ${
-                        n.read ? "opacity-85" : "bg-white"
+                        isRead(n) ? "opacity-85" : "bg-white"
                       }`}
                       onClick={() => handleClickNotification(n)}
                     >
@@ -259,7 +303,7 @@ export default function Topbar({ active }: TopbarProps) {
                             {n.title}
                           </div>
                           <div className="text-[10px] text-slate-400 whitespace-nowrap">
-                            {timeAgo(n.createdAt)}
+                            {n.createdAt ? timeAgo(n.createdAt) : ""}
                           </div>
                         </div>
 
@@ -270,11 +314,13 @@ export default function Topbar({ active }: TopbarProps) {
                         )}
 
                         <div className="mt-2 flex items-center gap-2">
-                          {!n.read && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+                          {!isRead(n) && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">
                               New
                             </span>
                           )}
+
+                          {/* OPTIONAL: If you want to remove delete from dropdown too, delete this button */}
                           <button
                             type="button"
                             onClick={(e) => {
@@ -319,7 +365,7 @@ export default function Topbar({ active }: TopbarProps) {
 
         {/* Profile */}
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold">
             {initials}
           </div>
           <div className="leading-tight">
@@ -327,7 +373,7 @@ export default function Topbar({ active }: TopbarProps) {
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[11px] text-green-600 hover:text-green-700"
+              className="text-[11px] text-red-600 hover:text-red-700"
             >
               Logout
             </button>
@@ -337,4 +383,3 @@ export default function Topbar({ active }: TopbarProps) {
     </header>
   );
 }
-

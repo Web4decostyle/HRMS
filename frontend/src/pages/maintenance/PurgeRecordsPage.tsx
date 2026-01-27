@@ -63,7 +63,7 @@ export default function PurgeRecordsPage() {
         <div className="mt-6 flex justify-end">
           <button
             type="button"
-            className="h-10 px-8 rounded-full bg-green-600 text-white font-semibold disabled:opacity-60"
+            className="h-10 px-8 rounded-full bg-red-600 text-white font-semibold disabled:opacity-60"
             disabled={!picked}
             onClick={() => {
               // PART 2 backend: call purge endpoint here

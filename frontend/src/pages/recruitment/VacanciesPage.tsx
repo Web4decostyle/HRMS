@@ -18,7 +18,7 @@ const RecruitmentTopTabs: React.FC = () => {
     "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-green-600 shadow-sm`
+      ? `${pill} bg-white text-red-600 shadow-sm`
       : `${pill} text-slate-600 hover:bg-white/70`;
 
   return (
@@ -172,7 +172,7 @@ export default function VacanciesPage() {
                     <select
                       value={jobIdFilter}
                       onChange={(e) => setJobIdFilter(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
+                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
                     >
                       <option value="">-- Select --</option>
                       {jobs?.map((j: any) => (
@@ -193,7 +193,7 @@ export default function VacanciesPage() {
                   <input
                     value={vacancyNameFilter}
                     onChange={(e) => setVacancyNameFilter(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
+                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
                     placeholder="Type to filter..."
                   />
                 </div>
@@ -206,7 +206,7 @@ export default function VacanciesPage() {
                   <input
                     value={hiringManagerFilter}
                     onChange={(e) => setHiringManagerFilter(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
+                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white"
                     placeholder="Type to filter..."
                   />
                 </div>
@@ -220,7 +220,7 @@ export default function VacanciesPage() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
+                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:bg-white appearance-none"
                     >
                       <option value="">-- Select --</option>
                       <option value="OPEN">Open</option>
@@ -276,7 +276,7 @@ export default function VacanciesPage() {
                       <select
                         value={newJobId}
                         onChange={(e) => setNewJobId(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                       >
                         <option value="">-- Select --</option>
                         {jobs?.map((j: any) => (
@@ -296,7 +296,7 @@ export default function VacanciesPage() {
                     <input
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                       placeholder="e.g. Senior Designer"
                     />
                   </div>
@@ -308,7 +308,7 @@ export default function VacanciesPage() {
                     <input
                       value={newHiringManager}
                       onChange={(e) => setNewHiringManager(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                       placeholder="Manager name"
                     />
                   </div>
@@ -324,7 +324,7 @@ export default function VacanciesPage() {
                           onChange={(e) =>
                             setNewStatus(e.target.value as "OPEN" | "CLOSED")
                           }
-                          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                         >
                           <option value="OPEN">Open</option>
                           <option value="CLOSED">Closed</option>
@@ -336,7 +336,7 @@ export default function VacanciesPage() {
                     <button
                       type="submit"
                       disabled={creating}
-                      className="mt-4 rounded-full bg-green-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-60"
+                      className="mt-4 rounded-full bg-red-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-60"
                     >
                       {creating ? "Saving..." : "Save"}
                     </button>
@@ -391,7 +391,7 @@ export default function VacanciesPage() {
                             <td className="px-3 py-2 text-[11px] text-slate-700">
                               {v.status}
                             </td>
-                            <td className="px-3 py-2 text-[11px] text-green-600">
+                            <td className="px-3 py-2 text-[11px] text-red-600">
                               View
                             </td>
                           </tr>

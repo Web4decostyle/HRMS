@@ -35,7 +35,7 @@ export default function ReportingMethodsPage() {
           {/* Configuration (active) */}
           <button
             type="button"
-            className={`${tabBase} bg-green-500 text-white shadow-sm`}
+            className={`${tabBase} bg-red-500 text-white shadow-sm`}
           >
             Configuration
           </button>

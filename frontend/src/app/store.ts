@@ -1,7 +1,7 @@
 // frontend/src/app/store.ts
 import { configureStore } from "@reduxjs/toolkit";
 
-import authReducer from "../features/auth/authSlice";
+import authreducer from "../features/auth/authSlice";
 
 import { authApi } from "../features/auth/authApi";
 import { navigationApi } from "../features/navigation/navigationApi";
@@ -33,7 +33,7 @@ import { auditApi } from "../features/audit/auditApi";
 export const store = configureStore({
   reducer: {
     // ✅ ADD THIS LINE (THIS IS WHAT FIXES "Property 'auth' does not exist")
-    auth: authReducer,
+    auth: authreducer,
 
     // RTK Query APIs
     [authApi.reducerPath]: authApi.reducer,
