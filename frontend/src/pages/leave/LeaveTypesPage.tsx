@@ -11,7 +11,7 @@ const labelCls =
 const inputCls =
   "h-8 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
 
-type MenuKey = "entitlements" | "reports" | "configure" | null;
+type MenuKey = "configure" | null;
 
 /* ------- Properly typed tabs so TS knows who has `path` ------- */
 type BaseTab = {
@@ -33,31 +33,6 @@ const TABS: readonly (NavTab | MenuTab)[] = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
   {
-    key: "entitlements",
-    label: "Entitlements",
-    isMenu: true,
-    menu: [
-      { label: "Add Entitlements", path: "/leave/entitlements/add" },
-      { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
-      { label: "My Entitlements", path: "/leave/entitlements/my" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    isMenu: true,
-    menu: [
-      {
-        label: "Leave Entitlements and Usage Report",
-        path: "/leave/reports/entitlements-usage",
-      },
-      {
-        label: "My Leave Entitlements and Usage Report",
-        path: "/leave/reports/my-entitlements-usage",
-      },
-    ],
-  },
-  {
     key: "configure",
     label: "Configure",
     isMenu: true,
@@ -71,6 +46,7 @@ const TABS: readonly (NavTab | MenuTab)[] = [
   { key: "leave-list", label: "Leave List", path: "/leave" },
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
+
 
 const activeTabKey = "configure";
 

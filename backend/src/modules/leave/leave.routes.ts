@@ -9,7 +9,6 @@ import {
   updateLeaveStatus,
   assignLeave,
   getLeaveById, // ✅ ADD THIS
-  getMyLeaveBalance,
 } from "./leave.controller";
 
 import {
@@ -74,9 +73,6 @@ router.delete(
 /* ========================= Leave Requests ========================= */
 router.post("/", requireAuth, asyncHandler(createLeaveRequest));
 router.get("/my", requireAuth, asyncHandler(listMyLeave));
-
-// My leave balance (for ESS Apply page)
-router.get("/balance/me", requireAuth, asyncHandler(getMyLeaveBalance));
 
 router.get(
   "/",

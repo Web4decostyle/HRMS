@@ -128,10 +128,10 @@ export default function MyLeavePage() {
           </h2>
         </div>
 
-        <div className="px-7 pt-5 pb-4 text-[12px]">
-          <div className="grid grid-cols-4 gap-6 mb-4">
+        <div className="px-7 pt-5 pb-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className={labelCls}>From Date</label>
+              <label className={labelCls}>From</label>
               <input
                 type="date"
                 className={inputCls}
@@ -141,7 +141,7 @@ export default function MyLeavePage() {
             </div>
 
             <div>
-              <label className={labelCls}>To Date</label>
+              <label className={labelCls}>To</label>
               <input
                 type="date"
                 className={inputCls}
@@ -151,53 +151,13 @@ export default function MyLeavePage() {
             </div>
 
             <div>
-              <label className={labelCls}>Show Leave with Status*</label>
-              <select
-                className={selectCls}
-                value={status}
-                onChange={(e) => setStatus(e.target.value as MyStatusFilter)}
-              >
-                <option value="">-- Select --</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="CANCELLED">Cancelled</option>
-                <option value="PENDING">Pending Approval</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="TAKEN">Taken</option>
-                <option value="APPROVED">Approved</option>
-              </select>
-
-              <div className="mt-2 flex flex-wrap gap-2">
-                {STATUS_CHIPS.map((chip) => {
-                  const active = status === chip.value;
-                  return (
-                    <button
-                      key={chip.label}
-                      type="button"
-                      onClick={() =>
-                        setStatus((prev) => (prev === chip.value ? "" : chip.value))
-                      }
-                      className={[
-                        "inline-flex items-center px-2 h-6 rounded-full border text-[11px]",
-                        active
-                          ? "bg-[#fef4ea] text-[#f7941d] border-[#fbd7a5]"
-                          : "bg-[#f9fafb] text-slate-500 border-[#e5e7f0] hover:bg-[#fef4ea] hover:text-[#f7941d] hover:border-[#fbd7a5]",
-                      ].join(" ")}
-                    >
-                      {chip.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
               <label className={labelCls}>Leave Type</label>
               <select
                 className={selectCls}
                 value={leaveTypeId}
                 onChange={(e) => setLeaveTypeId(e.target.value)}
               >
-                <option value="">-- Select --</option>
+                <option value="">All</option>
                 {leaveTypes.map((t) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
@@ -205,58 +165,91 @@ export default function MyLeavePage() {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className={labelCls}>Status</label>
+              <select
+                className={selectCls}
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+              >
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
           </div>
 
-          <p className="text-[10px] text-slate-400 mt-2 mb-3">* Required</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {STATUS_CHIPS.map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => setStatus(chip.value)}
+                  className={[
+                    "px-3 h-8 rounded-full text-[11px] font-semibold border",
+                    status === chip.value
+                      ? "bg-[#fef4ea] border-[#f7941d] text-[#f7941d]"
+                      : "bg-white border-[#e5e7f0] text-slate-600 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
 
-          <div className="mt-2 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-6 h-8 rounded-full border border-[#8bc34a] text-[12px] text-[#8bc34a] bg-white hover:bg-[#f4fbec]"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="px-6 h-8 rounded-full bg-[#8bc34a] text-white text-[12px] font-semibold hover:bg-[#7cb342]"
-            >
-              Search
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-4 h-9 rounded-full border border-[#d5d7e5] bg-white text-slate-700 font-semibold text-[12px] hover:bg-slate-50"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="px-5 h-9 rounded-full bg-[#8bc34a] text-white font-semibold text-[12px] hover:bg-[#7cb342]"
+              >
+                Search
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Results */}
-      <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-8">
+      {/* Table */}
+      <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm overflow-hidden">
         <div className="px-7 py-4 border-b border-[#edf0f7]">
-          {isLoading ? (
-            <p className="text-[11px] text-slate-500">Loading...</p>
-          ) : filteredLeaves.length === 0 ? (
-            <p className="text-[11px] text-slate-500">No Records Found</p>
-          ) : null}
+          <h2 className="text-[13px] font-semibold text-slate-800">Results</h2>
         </div>
 
-        <div className="px-7 pt-3 pb-6">
-          <div className="border border-[#e3e5f0] rounded-lg overflow-hidden">
-            <table className="w-full text-[11px] text-slate-700">
-              <thead className="bg-[#f5f6fb] text-slate-500">
+        <div className="px-4 py-4 overflow-x-auto">
+          {isLoading ? (
+            <div className="text-[12px] text-slate-500 px-3 py-4">Loading…</div>
+          ) : filteredLeaves.length === 0 ? (
+            <div className="text-[12px] text-slate-500 px-3 py-4">
+              No leave requests found.
+            </div>
+          ) : (
+            <table className="w-full text-[12px] text-slate-700">
+              <thead className="bg-[#f5f6fb] text-slate-600">
                 <tr>
                   <th className="px-3 py-2 w-8">
                     <input type="checkbox" disabled />
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">Date</th>
                   <th className="px-3 py-2 text-left font-semibold">Leave Type</th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    Leave Balance (Days)
-                  </th>
                   <th className="px-3 py-2 text-left font-semibold">Number of Days</th>
                   <th className="px-3 py-2 text-left font-semibold">Status</th>
                   <th className="px-3 py-2 text-left font-semibold">Comments</th>
                   <th className="px-3 py-2 text-left font-semibold">Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {filteredLeaves.map((l) => {
                   const typeName =
@@ -273,7 +266,6 @@ export default function MyLeavePage() {
                       </td>
                       <td className="px-3 py-2">{dateText}</td>
                       <td className="px-3 py-2">{typeName}</td>
-                      <td className="px-3 py-2">--</td>
                       <td className="px-3 py-2">{l.days ?? ""}</td>
                       <td className="px-3 py-2">
                         <span
@@ -284,31 +276,23 @@ export default function MyLeavePage() {
                               : l.status === "REJECTED"
                               ? "bg-rose-100 text-rose-700"
                               : l.status === "CANCELLED"
-                              ? "bg-slate-200 text-slate-700"
+                              ? "bg-slate-100 text-slate-700"
                               : "bg-amber-100 text-amber-700",
                           ].join(" ")}
                         >
                           {l.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 max-w-xs truncate">{l.reason || "--"}</td>
+                      <td className="px-3 py-2">{l.reason || "--"}</td>
                       <td className="px-3 py-2">
-                        <span className="text-[#f7941d] cursor-pointer">View</span>
+                        <span className="text-slate-400">—</span>
                       </td>
                     </tr>
                   );
                 })}
-
-                {filteredLeaves.length === 0 && !isLoading && (
-                  <tr>
-                    <td colSpan={8} className="px-3 py-6 text-center text-slate-400">
-                      No Records Found
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
       </div>
     </div>

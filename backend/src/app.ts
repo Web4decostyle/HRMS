@@ -22,7 +22,6 @@ import maintenanceRoutes from "./modules/maintenance/maintenance.routes";
 import helpRoutes from "./modules/help/help.routes";
 import pimRoutes from "./modules/pim/pim.routes";
 import myInfoRoutes from "./modules/my-info/myInfo.routes";
-import leaveEntitlementRoutes from "./modules/leave/leaveEntitlement/leaveEntitlement.routes";
 import emailConfigRoutes from "./modules/admin/config/emailConfig.routes";
 import qualificationRoutes from "./modules/admin/qualifications/Qualification.Routes";
 import pimConfigRoutes from "./modules/pim/pimConfig/routes/pimConfig.routes";
@@ -64,7 +63,6 @@ app.use("/api/directory", directoryRoutes);
 app.use("/api/buzz", buzzRoutes);
 
 app.use("/api/leave", leaveRoutes);
-app.use("/api/leave-entitlements", leaveEntitlementRoutes);
 
 app.use("/api/time/timesheets", timesheetRoutes);
 app.use("/api/time", timeRoutes);

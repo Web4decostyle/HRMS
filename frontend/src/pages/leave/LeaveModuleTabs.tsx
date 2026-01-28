@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { selectAuthRole } from "../../features/auth/selectors";
 import type { Role } from "../../features/auth/authSlice";
 
-type MenuKey = "entitlements" | "reports" | "configure" | null;
+type MenuKey = "configure" | null;
 
 type RouteTabKey = "apply" | "my-leave" | "leave-list" | "assign-leave";
 type MenuTabKey = Exclude<MenuKey, null>;
@@ -32,25 +32,6 @@ const TABS: LeaveTab[] = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
   {
-    key: "entitlements",
-    label: "Entitlements",
-    isMenu: true,
-    menu: [
-      { label: "Add Entitlements", path: "/leave/entitlements/add" },
-      { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
-      { label: "My Entitlements", path: "/leave/entitlements/my" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    isMenu: true,
-    menu: [
-      { label: "Leave Entitlements and Usage Report", path: "/leave/reports/entitlements-usage" },
-      { label: "My Leave Entitlements and Usage Report", path: "/leave/reports/my-entitlements-usage" },
-    ],
-  },
-  {
     key: "configure",
     label: "Configure",
     isMenu: true,
@@ -69,7 +50,9 @@ function getVisibleTabs(role: Role | null | undefined): LeaveTab[] {
   if (role === "ADMIN" || role === "HR") return TABS;
 
   if (role === "SUPERVISOR") {
-    return TABS.filter((t) => t.key === "apply" || t.key === "my-leave" || t.key === "leave-list");
+    return TABS.filter(
+      (t) => t.key === "apply" || t.key === "my-leave" || t.key === "leave-list"
+    );
   }
 
   return TABS.filter((t) => t.key === "apply" || t.key === "my-leave");

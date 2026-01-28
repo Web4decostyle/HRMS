@@ -5,36 +5,11 @@ const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
 const valueCls = "text-[12px] text-slate-700";
 
-type MenuKey = "entitlements" | "reports" | "configure" | null;
+type MenuKey = "configure" | null;
 
 const TABS = [
   { key: "apply", label: "Apply", path: "/leave/apply" },
   { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
-  {
-    key: "entitlements",
-    label: "Entitlements",
-    isMenu: true as const,
-    menu: [
-      { label: "Add Entitlements", path: "/leave/entitlements/add" },
-      { label: "Employee Entitlements", path: "/leave/entitlements/employee" },
-      { label: "My Entitlements", path: "/leave/entitlements/my" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    isMenu: true as const,
-    menu: [
-      {
-        label: "Leave Entitlements and Usage Report",
-        path: "/leave/reports/entitlements-usage",
-      },
-      {
-        label: "My Leave Entitlements and Usage Report",
-        path: "/leave/reports/my-entitlements-usage",
-      },
-    ],
-  },
   {
     key: "configure",
     label: "Configure",
@@ -49,6 +24,7 @@ const TABS = [
   { key: "leave-list", label: "Leave List", path: "/leave" },
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
+
 
 const activeTabKey = "configure";
 

@@ -13,8 +13,6 @@ import { Supervisor } from "../my-info/reportTo/reportTo.model";
 import { User } from "../auth/auth.model";
 import { Counter } from "../pim/pimConfig/models/counter.model";
 
-import { LeaveEntitlement } from "./leaveEntitlement/LeaveEntitlement.model";
-
 /* ============================= ObjectId helpers ============================= */
 
 function toObjectId(id: unknown): mongoose.Types.ObjectId {
@@ -130,62 +128,6 @@ async function findUserIdByEmployeeEmail(email?: string | null) {
   return u?._id ? String(u._id) : null;
 }
 
-/* ============================= Entitlement/Balances helpers ============================= */
-
-/**
- * Ensures user has entitlement for selected leave type and sufficient balance.
- * We count APPROVED + PENDING leaves as "consumed" for balance purposes.
- */
-async function assertEntitlementBalanceOrThrow(args: {
-  employeeId: mongoose.Types.ObjectId;
-  leaveTypeId: mongoose.Types.ObjectId;
-  start: Date;
-  end: Date;
-  requestedDays: number;
-}) {
-  // Find entitlement(s) that overlap the requested range
-  const entitlements = await LeaveEntitlement.find({
-    employee: args.employeeId,
-    leaveType: args.leaveTypeId,
-    periodEnd: { $gte: args.start },
-    periodStart: { $lte: args.end },
-  }).lean();
-
-  if (!entitlements.length) {
-    throw ApiError.badRequest(
-      "No leave balance allocated for this leave type (or dates outside entitlement period). Please contact HR/Admin."
-    );
-  }
-
-  const allotted = entitlements.reduce((sum, e: any) => sum + (Number(e.days) || 0), 0);
-
-  // All usage in the overlap window (Approved + Pending)
-  const usage = await LeaveRequest.aggregate([
-    {
-      $match: {
-        employee: args.employeeId,
-        type: args.leaveTypeId,
-        status: { $in: ["APPROVED", "PENDING"] },
-        startDate: { $lte: args.end },
-        endDate: { $gte: args.start },
-      },
-    },
-    { $group: { _id: "$status", days: { $sum: "$days" } } },
-  ]);
-
-  const used = Number(usage.find((u: any) => u._id === "APPROVED")?.days || 0);
-  const pending = Number(usage.find((u: any) => u._id === "PENDING")?.days || 0);
-
-  const balance = allotted - used - pending;
-  const available = Math.max(0, balance);
-
-  if (args.requestedDays > available) {
-    throw ApiError.badRequest(
-      `Insufficient leave balance. Available: ${available} day(s), Requested: ${args.requestedDays} day(s).`
-    );
-  }
-}
-
 /* ============================= LEAVE TYPES ============================= */
 
 export async function listLeaveTypes(_req: Request, res: Response) {
@@ -249,14 +191,7 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
   const employeeId = toObjectId(employee._id);
   const leaveTypeObjId = toObjectId(typeId);
 
-  // ✅ ENFORCE ENTITLEMENT BALANCE (Fix: leave perfect)
-  await assertEntitlementBalanceOrThrow({
-    employeeId,
-    leaveTypeId: leaveTypeObjId,
-    start,
-    end,
-    requestedDays: days,
-  });
+  // Balance enforcement is disabled in this project.
 
   const supervisorEmployeeId = await findDirectSupervisorEmployeeId(employee._id);
 
@@ -433,115 +368,6 @@ export async function getLeaveById(req: AuthRequest, res: Response) {
   }
 
   return res.json(leave);
-}
-
-/**
- * GET /api/leave/balance/me
- * Returns current-year leave balance for logged-in user based on:
- * - LeaveEntitlement.days (allotted)
- * - LeaveRequest.days where status=APPROVED (used)
- * - LeaveRequest.days where status=PENDING (pending)
- */
-export async function getMyLeaveBalance(req: AuthRequest, res: Response) {
-  if (!req.user?.id) throw ApiError.unauthorized("Not authenticated");
-
-  const employee = await ensureEmployeeForUser(req.user.id);
-  const employeeId = toObjectId(employee._id);
-
-  const now = new Date();
-  const yearStart = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-  const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-
-  // 1) Sum entitlements (allotted) per leaveType for this year
-  const entAgg = await LeaveEntitlement.aggregate([
-    {
-      $match: {
-        employee: employeeId,
-        periodEnd: { $gte: yearStart },
-        periodStart: { $lte: yearEnd },
-      },
-    },
-    {
-      $group: {
-        _id: "$leaveType",
-        allotted: { $sum: "$days" },
-      },
-    },
-  ]);
-
-  const leaveTypeIds = entAgg.map((x) => x._id);
-
-  // 2) Sum used/pending leaves per leaveType for this year (overlap based)
-  const leaveAgg = await LeaveRequest.aggregate([
-    {
-      $match: {
-        employee: employeeId,
-        status: { $in: ["APPROVED", "PENDING"] },
-        startDate: { $lte: yearEnd },
-        endDate: { $gte: yearStart },
-      },
-    },
-    {
-      $group: {
-        _id: { type: "$type", status: "$status" },
-        days: { $sum: "$days" },
-      },
-    },
-  ]);
-
-  const usedByType = new Map<string, number>();
-  const pendingByType = new Map<string, number>();
-
-  for (const row of leaveAgg) {
-    const typeId = String(row._id.type);
-    const st = String(row._id.status);
-    const d = Number(row.days || 0);
-
-    if (st === "APPROVED") usedByType.set(typeId, (usedByType.get(typeId) || 0) + d);
-    if (st === "PENDING") pendingByType.set(typeId, (pendingByType.get(typeId) || 0) + d);
-  }
-
-  // Include leave types that appear in requests but not in entitlements
-  const requestTypeIds = Array.from(new Set(leaveAgg.map((x) => String(x._id.type))))
-    .filter((id) => mongoose.Types.ObjectId.isValid(id))
-    .map((id) => new mongoose.Types.ObjectId(id));
-
-  const allTypeIds = Array.from(
-    new Set([...leaveTypeIds.map(String), ...requestTypeIds.map(String)])
-  ).map((id) => new mongoose.Types.ObjectId(id));
-
-  // 3) Load leave type names (do NOT filter isActive here, otherwise name can become "Leave")
-  const types = await LeaveType.find({ _id: { $in: allTypeIds } })
-    .select("_id name")
-    .lean();
-
-  const nameByType = new Map<string, string>();
-  types.forEach((t) => nameByType.set(String(t._id), String(t.name)));
-
-  const allottedByType = new Map<string, number>();
-  entAgg.forEach((e) => allottedByType.set(String(e._id), Number(e.allotted || 0)));
-
-  // 4) Build response
-  const result = allTypeIds.map((tid) => {
-    const id = String(tid);
-    const allotted = allottedByType.get(id) || 0;
-    const used = usedByType.get(id) || 0;
-    const pending = pendingByType.get(id) || 0;
-    const balance = Math.max(0, allotted - used - pending);
-
-    return {
-      leaveTypeId: id,
-      leaveTypeName: nameByType.get(id) || "Leave",
-      allotted,
-      used,
-      pending,
-      balance,
-    };
-  });
-
-  result.sort((a, b) => a.leaveTypeName.localeCompare(b.leaveTypeName));
-
-  res.json(result);
 }
 
 /**
@@ -748,14 +574,7 @@ export async function assignLeave(req: AuthRequest, res: Response) {
   const days = calcDaysInclusive(start, end);
   const now = new Date();
 
-  // ✅ ENFORCE ENTITLEMENT BALANCE (also for assign)
-  await assertEntitlementBalanceOrThrow({
-    employeeId: toObjectId(employee._id),
-    leaveTypeId: toObjectId(typeId),
-    start,
-    end,
-    requestedDays: days,
-  });
+  // Balance enforcement is disabled in this project.
 
   const leave = await LeaveRequest.create({
     employee: toObjectId(employee._id),

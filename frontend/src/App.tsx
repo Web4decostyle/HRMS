@@ -25,9 +25,6 @@ import MyInfoPage from "./pages/my-info/MyInfoPage";
 // Leave
 import LeaveIndexPage from "./pages/leave/LeaveIndexPage";
 import LeaveListPage from "./pages/leave/LeaveListPage";
-import AddLeaveEntitlementPage from "./pages/leave/AddLeaveEntitlementPage";
-import EmployeeEntitlementsPage from "./pages/leave/EmployeeEntitlementsPage";
-import MyEntitlementsPage from "./pages/leave/MyEntitlementsPage";
 import ApplyLeavePage from "./pages/leave/ApplyLeavePage";
 import MyLeavePage from "./pages/leave/MyLeavePage";
 import AssignLeavePage from "./pages/leave/AssignLeavePage";
@@ -511,41 +508,6 @@ export default function App() {
               <RequireRole allowed={["ADMIN", "HR", "SUPERVISOR"]}>
                 <LeaveRequestViewPage />
               </RequireRole>
-            </Layout>
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/leave/entitlements/add"
-        element={
-          <RequireAuth>
-            <Layout>
-              <RequireRole allowed={["ADMIN", "HR"]}>
-                <AddLeaveEntitlementPage />
-              </RequireRole>
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/leave/entitlements/employee"
-        element={
-          <RequireAuth>
-            <Layout>
-              <RequireRole allowed={["ADMIN", "HR"]}>
-                <EmployeeEntitlementsPage />
-              </RequireRole>
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/leave/entitlements/my"
-        element={
-          <RequireAuth>
-            <Layout>
-              <MyEntitlementsPage />
             </Layout>
           </RequireAuth>
         }
