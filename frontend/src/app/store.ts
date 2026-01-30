@@ -28,6 +28,7 @@ import { attendanceApi } from "../features/time/attendanceApi";
 import { changeRequestsApi } from "../features/changeRequests/changeRequestsApi";
 import { notificationsApi } from "../features/notifications/notificationsApi";
 import { auditApi } from "../features/audit/auditApi";
+import { divisionsApi } from "../features/divisions/divisionsApi";
 
 
 export const store = configureStore({
@@ -61,6 +62,7 @@ export const store = configureStore({
     [changeRequestsApi.reducerPath]: changeRequestsApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
     [auditApi.reducerPath]: auditApi.reducer,
+    [divisionsApi.reducerPath]: divisionsApi.reducer,
 
   },
 
@@ -90,7 +92,8 @@ export const store = configureStore({
       attendanceApi.middleware,
       changeRequestsApi.middleware,
       notificationsApi.middleware,
-      auditApi.middleware
+      auditApi.middleware,
+      divisionsApi.middleware
     ),
 });
 

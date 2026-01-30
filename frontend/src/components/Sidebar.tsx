@@ -2,7 +2,10 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
-import { useGetMenuQuery, MenuItem } from "../features/navigation/navigationApi";
+import {
+  useGetMenuQuery,
+  MenuItem,
+} from "../features/navigation/navigationApi";
 import { selectAuthRole } from "../features/auth/selectors";
 
 export default function Sidebar() {
@@ -25,41 +28,48 @@ export default function Sidebar() {
 
     // if backend already sends notifications, don't add again
     const hasNotif = fromApi.some(
-      (x) => x.key === "notifications" || x.path === "/notifications"
+      (x) => x.key === "notifications" || x.path === "/notifications",
     );
     if (hasNotif) return fromApi;
 
     // find My Info index
     const idx = fromApi.findIndex(
-      (x) => x.key === "myInfo" || x.path === "/my-info" || x.label === "My Info"
+      (x) =>
+        x.key === "myInfo" || x.path === "/my-info" || x.label === "My Info",
     );
 
     // if My Info exists, insert after it; else append at end
     if (idx >= 0) {
-      return [...fromApi.slice(0, idx + 1), notifItem, ...fromApi.slice(idx + 1)];
+      return [
+        ...fromApi.slice(0, idx + 1),
+        notifItem,
+        ...fromApi.slice(idx + 1),
+      ];
     }
     return [...fromApi, notifItem];
   })();
 
   // ✅ Defensive RBAC filter (in case backend returns unfiltered items)
   const filterByRole = (list: MenuItem[]): MenuItem[] => {
-    return list
-      .filter((item) => {
-        // If the item doesn't declare roles, keep it.
-        if (!item.roles || item.roles.length === 0) return true;
-        return item.roles.includes(role as any);
-      })
-      .map((item) => {
-        if (!item.children || item.children.length === 0) return item;
-        const children = filterByRole(item.children);
-        return { ...item, children };
-      })
-      // If a parent ends up with no children and no path, drop it
-      .filter((item) => {
-        if (item.path) return true;
-        if (item.children && item.children.length > 0) return true;
-        return false;
-      });
+    return (
+      list
+        .filter((item) => {
+          // If the item doesn't declare roles, keep it.
+          if (!item.roles || item.roles.length === 0) return true;
+          return item.roles.includes(role as any);
+        })
+        .map((item) => {
+          if (!item.children || item.children.length === 0) return item;
+          const children = filterByRole(item.children);
+          return { ...item, children };
+        })
+        // If a parent ends up with no children and no path, drop it
+        .filter((item) => {
+          if (item.path) return true;
+          if (item.children && item.children.length > 0) return true;
+          return false;
+        })
+    );
   };
 
   const roleFiltered = filterByRole(merged);
@@ -111,6 +121,10 @@ export default function Sidebar() {
         return "⭐";
       case "directory":
         return "📇";
+      case "check":
+        return "✅";
+      case "building":
+        return "🏢";
       case "wrench":
         return "🔧";
       case "wallet":

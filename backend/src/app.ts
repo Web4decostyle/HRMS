@@ -37,6 +37,7 @@ import notificationRoutes from "./modules/notifications/notification.routes";
 import changeRequestRoutes from "./modules/change-requests/changeRequest.routes";
 import auditRoutes from "./modules/audit/audit.routes";
 import approvalRoutes from "./modules/approvals/approval.routes";
+import divisionRoutes from "./modules/divisions/division.routes";
 
 const app = express();
 
@@ -88,6 +89,9 @@ app.use("/config/email", emailConfigRoutes);
 app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/pim-config", pimConfigRoutes);
 app.use("/api/claim-config", claimConfigRoutes);
+// Divisions
+app.use("/api/divisions", divisionRoutes);
+
 
 app.use("/api/change-requests", changeRequestRoutes);
 

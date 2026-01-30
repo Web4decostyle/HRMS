@@ -8,6 +8,7 @@ export interface IEmployee extends Document {
   phone?: string;
   jobTitle?: string;
   department?: string;
+  division?: mongoose.Types.ObjectId | null; // ✅ NEW
   location?: string;
   status: "ACTIVE" | "INACTIVE";
 }
@@ -25,6 +26,10 @@ const EmployeeSchema = new Schema<IEmployee>(
 
     jobTitle: String,
     department: String,
+
+    // ✅ Division-based hierarchy
+    division: { type: Schema.Types.ObjectId, ref: "Division", default: null, index: true },
+
     status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
   },
   { timestamps: true }

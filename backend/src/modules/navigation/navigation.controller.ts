@@ -97,6 +97,14 @@ const MENU_ITEMS: MenuItem[] = [
     path: "/buzz",
     roles: ["ADMIN", "HR", "SUPERVISOR", "ESS", "ESS_VIEWER"],
   },
+    // ✅ NEW: Divisions (Admin/HR)
+  {
+    key: "divisions",
+    label: "Divisions",
+    icon: "building",
+    path: "/divisions",
+    roles: ["ADMIN", "HR"],
+  },
 ];
 
 export async function getMenu(req: AuthRequest, res: Response) {

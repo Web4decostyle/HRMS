@@ -115,6 +115,7 @@ import AdminApprovalsPage from "./pages/admin/approvals/AdminApprovalsPage";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import AdminAuditHistoryPage from "./pages/admin/AdminAuditHistoryPage";
 import LeaveRequestViewPage from "./pages/leave/LeaveRequestViewPage";
+import DivisionsPage from "./pages/divisions/DivisionsPage";
 
 export default function App() {
   return (
@@ -131,6 +132,18 @@ export default function App() {
             <Layout>
               <DashboardPage />
             </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/divisions"
+        element={
+          <RequireAuth>
+            <RequireRole allowed={["ADMIN", "HR"]}>
+              <Layout>
+                <DivisionsPage />
+              </Layout>
+            </RequireRole>
           </RequireAuth>
         }
       />
