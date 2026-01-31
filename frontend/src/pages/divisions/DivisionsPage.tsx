@@ -36,8 +36,8 @@ export default function DivisionsPage() {
       .slice()
       .sort((a, b) =>
         `${a.firstName} ${a.lastName}`.localeCompare(
-          `${b.firstName} ${b.lastName}`
-        )
+          `${b.firstName} ${b.lastName}`,
+        ),
       )
       .map((e) => ({
         id: e._id,
@@ -129,6 +129,30 @@ export default function DivisionsPage() {
     setTlOpen(true);
   }
 
+  function isSameId(a: any, b: any) {
+    if (!a || !b) return false;
+    return String(a) === String(b);
+  }
+
+  function formatEmpShort(e: any) {
+    return (
+      `${e.firstName || ""} ${e.lastName || ""}`.trim() +
+      ` (${e.employeeId || ""})`
+    );
+  }
+
+  const getTLsForDivision = (divisionId: string) => {
+    const list = (employees ?? []) as any[];
+    return list
+      .filter((e) => isSameId(e.division, divisionId) && e.level === "TL")
+      .filter((e) => e.status !== "INACTIVE") // optional: only active TLs
+      .sort((a, b) =>
+        `${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.firstName} ${b.lastName}`,
+        ),
+      );
+  };
+
   // ✅ NEW: promote selected employee to TL + assign division
   async function confirmCreateTL() {
     if (!tlDivisionId || !tlEmployeeId) return;
@@ -143,7 +167,7 @@ export default function DivisionsPage() {
     const currentDiv = (emp as any).division;
     if (currentDiv && String(currentDiv) !== String(tlDivisionId)) {
       const ok = confirm(
-        "This employee is already assigned to another division. Move them and set as TL?"
+        "This employee is already assigned to another division. Move them and set as TL?",
       );
       if (!ok) return;
     }
@@ -171,7 +195,7 @@ export default function DivisionsPage() {
         const sb = b.status === "ACTIVE" ? 0 : 1;
         if (sa !== sb) return sa - sb;
         return `${a.firstName} ${a.lastName}`.localeCompare(
-          `${b.firstName} ${b.lastName}`
+          `${b.firstName} ${b.lastName}`,
         );
       })
       .filter((e) => {
@@ -291,7 +315,10 @@ export default function DivisionsPage() {
                   divisions.map((d) => {
                     const isEditing = editingId === d._id;
                     return (
-                      <tr key={d._id} className="odd:bg-white even:bg-slate-50/50">
+                      <tr
+                        key={d._id}
+                        className="odd:bg-white even:bg-slate-50/50"
+                      >
                         <td className="px-4 py-2">
                           {isEditing ? (
                             <input
@@ -314,7 +341,9 @@ export default function DivisionsPage() {
                               onChange={(e) => setEditCode(e.target.value)}
                             />
                           ) : (
-                            <span className="text-slate-600">{d.code || "—"}</span>
+                            <span className="text-slate-600">
+                              {d.code || "—"}
+                            </span>
                           )}
                         </td>
 
@@ -333,9 +362,26 @@ export default function DivisionsPage() {
                               ))}
                             </select>
                           ) : (
-                            <span className="text-slate-600">
-                              {getManagerLabel(d.managerEmployee)}
-                            </span>
+                            <div className="text-slate-600">
+                              <div>{getManagerLabel(d.managerEmployee)}</div>
+
+                              {/* ✅ NEW: show assigned TLs */}
+                              <div className="mt-1 text-[11px] text-slate-500">
+                                {(() => {
+                                  const tls = getTLsForDivision(d._id);
+                                  if (tls.length === 0)
+                                    return <span>TL: —</span>;
+                                  return (
+                                    <span>
+                                      TL:{" "}
+                                      <span className="text-slate-700">
+                                        {tls.map(formatEmpShort).join(", ")}
+                                      </span>
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            </div>
                           )}
                         </td>
 
@@ -345,7 +391,9 @@ export default function DivisionsPage() {
                               <input
                                 type="checkbox"
                                 checked={editIsActive}
-                                onChange={(e) => setEditIsActive(e.target.checked)}
+                                onChange={(e) =>
+                                  setEditIsActive(e.target.checked)
+                                }
                                 className="accent-green-500"
                               />
                               <span className="text-slate-600">Active</span>
