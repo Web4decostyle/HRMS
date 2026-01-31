@@ -116,6 +116,7 @@ import NotificationsPage from "./pages/notifications/NotificationsPage";
 import AdminAuditHistoryPage from "./pages/admin/AdminAuditHistoryPage";
 import LeaveRequestViewPage from "./pages/leave/LeaveRequestViewPage";
 import DivisionsPage from "./pages/divisions/DivisionsPage";
+import EmployeeProfilePage from "./pages/pim/EmployeeProfilePage";
 
 export default function App() {
   return (
@@ -454,6 +455,16 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <AddEmployeePage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/employees/:id"
+        element={
+          <RequireAuth>
+            <Layout>
+              <EmployeeProfilePage />
             </Layout>
           </RequireAuth>
         }

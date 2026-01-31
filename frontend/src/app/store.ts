@@ -28,12 +28,13 @@ import { attendanceApi } from "../features/time/attendanceApi";
 import { changeRequestsApi } from "../features/changeRequests/changeRequestsApi";
 import { notificationsApi } from "../features/notifications/notificationsApi";
 import { auditApi } from "../features/audit/auditApi";
-import { divisionsApi } from "../features/divisions/divisionsApi";
 
+// ✅ NEW
+import { divisionsApi } from "../features/divisions/divisionsApi";
 
 export const store = configureStore({
   reducer: {
-    // ✅ ADD THIS LINE (THIS IS WHAT FIXES "Property 'auth' does not exist")
+    // Auth slice
     auth: authreducer,
 
     // RTK Query APIs
@@ -62,8 +63,9 @@ export const store = configureStore({
     [changeRequestsApi.reducerPath]: changeRequestsApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
     [auditApi.reducerPath]: auditApi.reducer,
-    [divisionsApi.reducerPath]: divisionsApi.reducer,
 
+    // ✅ NEW
+    [divisionsApi.reducerPath]: divisionsApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -93,7 +95,7 @@ export const store = configureStore({
       changeRequestsApi.middleware,
       notificationsApi.middleware,
       auditApi.middleware,
-      divisionsApi.middleware
+      divisionsApi.middleware,
     ),
 });
 

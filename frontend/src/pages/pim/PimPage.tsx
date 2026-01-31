@@ -39,6 +39,7 @@ export default function EmployeesPage() {
   );
 
   const navigate = useNavigate();
+
   const {
     data: employees = [],
     isLoading,
@@ -266,7 +267,7 @@ export default function EmployeesPage() {
 
           {/* Row 2 */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Supervisor Name – placeholder for future supervisor relation */}
+            {/* Supervisor Name – placeholder */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
                 Supervisor Name
@@ -296,7 +297,7 @@ export default function EmployeesPage() {
               />
             </div>
 
-            {/* Sub Unit (maps to department) */}
+            {/* Sub Unit */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
                 Sub Unit
@@ -382,7 +383,7 @@ export default function EmployeesPage() {
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-6 py-8 text-center text-green-500 text-sm"
+                    className="px-6 py-8 text-center text-rose-600 text-sm"
                   >
                     Failed to load employees. Please try again.
                   </td>
@@ -407,15 +408,9 @@ export default function EmployeesPage() {
                     key={emp._id}
                     className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-6 py-3 text-slate-700">
-                      {emp.employeeId}
-                    </td>
-                    <td className="px-6 py-3 text-slate-700">
-                      {emp.firstName}
-                    </td>
-                    <td className="px-6 py-3 text-slate-700">
-                      {emp.lastName}
-                    </td>
+                    <td className="px-6 py-3 text-slate-700">{emp.employeeId}</td>
+                    <td className="px-6 py-3 text-slate-700">{emp.firstName}</td>
+                    <td className="px-6 py-3 text-slate-700">{emp.lastName}</td>
                     <td className="px-6 py-3 text-slate-700">
                       {emp.jobTitle || "-"}
                     </td>
@@ -426,11 +421,24 @@ export default function EmployeesPage() {
                       {emp.department || "-"}
                     </td>
                     <td className="px-6 py-3 text-slate-700">-</td>
-                    <td className="px-6 py-3 text-center text-xs text-green-600">
-                      <button className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100"
-                        onClick={() => navigate(`/pim/employee/${emp._id}`)}>
-                        Edit
-                      </button>
+
+                    {/* ✅ FIXED ACTIONS */}
+                    <td className="px-6 py-3 text-center text-xs">
+                      <div className="inline-flex gap-2">
+                        <button
+                          className="px-3 py-1 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                          onClick={() => navigate(`/employees/${emp._id}`)}
+                        >
+                          View
+                        </button>
+
+                        <button
+                          className="px-3 py-1 rounded-full border border-green-200 bg-green-50 hover:bg-green-100 text-green-700"
+                          onClick={() => navigate(`/employees/${emp._id}`)}
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

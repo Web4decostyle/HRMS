@@ -70,6 +70,64 @@ export async function updateDivision(req: Request, res: Response) {
   return res.json(updated);
 }
 
+export async function getDivisionOrgChart(req: any, res: any) {
+  const divisionId = toObjectId(req.params.id);
+
+  const division = await Division.findById(divisionId).lean();
+  if (!division) throw ApiError.notFound("Division not found");
+
+  const managerId = division.managerEmployee
+    ? String(division.managerEmployee)
+    : null;
+
+  const manager = managerId
+    ? await Employee.findById(managerId)
+        .select("_id employeeId firstName lastName level division")
+        .lean()
+    : null;
+
+  // TLs: in this division, level TL, reportsTo = manager
+  const tls = await Employee.find({
+    division: divisionId,
+    level: "TL",
+    ...(managerId ? { reportsTo: managerId } : {}),
+  })
+    .select("_id employeeId firstName lastName level reportsTo")
+    .sort({ firstName: 1 })
+    .lean();
+
+  const tlIds = tls.map((t) => t._id);
+
+  // Grades under TLs
+  const grades = await Employee.find({
+    division: divisionId,
+    level: { $in: ["GRADE1", "GRADE2"] },
+    reportsTo: { $in: tlIds },
+  })
+    .select("_id employeeId firstName lastName level reportsTo")
+    .sort({ level: 1, firstName: 1 })
+    .lean();
+
+  // Group by TL
+  const gradesByTl = new Map<string, any[]>();
+  for (const g of grades) {
+    const key = String(g.reportsTo);
+    if (!gradesByTl.has(key)) gradesByTl.set(key, []);
+    gradesByTl.get(key)!.push(g);
+  }
+
+  const tree = tls.map((tl) => ({
+    tl,
+    members: gradesByTl.get(String(tl._id)) ?? [],
+  }));
+
+  return res.json({
+    division: { _id: division._id, name: division.name },
+    manager,
+    teams: tree,
+  });
+}
+
 export async function deleteDivision(req: Request, res: Response) {
   const id = toObjectId(req.params.id);
 
@@ -77,7 +135,7 @@ export async function deleteDivision(req: Request, res: Response) {
   const assignedCount = await Employee.countDocuments({ division: id });
   if (assignedCount > 0) {
     throw ApiError.badRequest(
-      "Cannot delete division while employees are assigned to it"
+      "Cannot delete division while employees are assigned to it",
     );
   }
 

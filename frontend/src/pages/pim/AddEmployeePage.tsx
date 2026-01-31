@@ -1,11 +1,14 @@
 // frontend/src/pages/pim/AddEmployeePage.tsx
-import { FormEvent, useEffect, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useCreateEmployeeMutation,
   useGetEmployeesQuery,
 } from "../../features/employees/employeesApi";
 import { useRegisterMutation } from "../../features/auth/authApi";
+
+// ✅ NEW
+import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
 
 type LoginStatus = "ENABLED" | "DISABLED";
 
@@ -14,6 +17,10 @@ interface FormState {
   middleName: string;
   lastName: string;
   employeeId: string;
+
+  // ✅ NEW
+  divisionId: string;
+
   createLogin: boolean;
   username: string;
   email: string;
@@ -27,6 +34,10 @@ const initialForm: FormState = {
   middleName: "",
   lastName: "",
   employeeId: "",
+
+  // ✅ NEW
+  divisionId: "",
+
   createLogin: true,
   username: "",
   email: "",
@@ -50,6 +61,9 @@ export default function AddEmployeePage() {
   // For auto-generating next employeeId like 0002
   const { data: employees = [] } = useGetEmployeesQuery(undefined);
 
+  // ✅ NEW: divisions for dropdown
+  const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
+
   const [createEmployee, { isLoading: isCreatingEmployee }] =
     useCreateEmployeeMutation();
   const [registerUser, { isLoading: isCreatingUser }] = useRegisterMutation();
@@ -70,7 +84,7 @@ export default function AddEmployeePage() {
   }, [employees, form.employeeId]);
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
     const { name, value } = e.target;
 
@@ -164,6 +178,9 @@ export default function AddEmployeePage() {
         lastName: form.lastName.trim(),
         email: userEmail || form.email.trim() || "no-email@example.com",
         status,
+
+        // ✅ NEW: division assignment
+        division: form.divisionId || null,
       }).unwrap();
 
       setSuccess("Employee created successfully.");
@@ -191,10 +208,7 @@ export default function AddEmployeePage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Configuration + dropdown (same as EmployeesPage) */}
-          <div
-            className="relative"
-            onMouseLeave={() => setConfigOpen(false)}
-          >
+          <div className="relative" onMouseLeave={() => setConfigOpen(false)}>
             <button
               type="button"
               onClick={() => setConfigOpen((o) => !o)}
@@ -299,7 +313,7 @@ export default function AddEmployeePage() {
         </h2>
 
         {error && (
-          <div className="mb-4 text-xs text-green-600 bg-green-50 border border-green-100 px-3 py-2 rounded-lg">
+          <div className="mb-4 text-xs text-rose-700 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
@@ -401,6 +415,32 @@ export default function AddEmployeePage() {
                   onChange={handleChange}
                   className="w-full md:w-1/2 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
                 />
+              </div>
+
+              {/* ✅ NEW: Division */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-slate-500">
+                  Division
+                </label>
+
+                <select
+                  name="divisionId"
+                  value={form.divisionId}
+                  onChange={handleChange}
+                  className="w-full md:w-1/2 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">
+                    {divLoading ? "Loading..." : "-- Select Division --"}
+                  </option>
+
+                  {divisions
+                    .filter((d) => d.isActive !== false)
+                    .map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.name}
+                      </option>
+                    ))}
+                </select>
               </div>
 
               {/* Create Login Details + Status */}

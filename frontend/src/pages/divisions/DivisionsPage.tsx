@@ -5,7 +5,11 @@ import {
   useGetDivisionsQuery,
   useUpdateDivisionMutation,
 } from "../../features/divisions/divisionsApi";
-import { useGetEmployeesQuery } from "../../features/employees/employeesApi";
+import {
+  useGetEmployeesQuery,
+  useUpdateEmployeeMutation,
+  type Employee,
+} from "../../features/employees/employeesApi";
 
 const labelCls =
   "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
@@ -22,16 +26,23 @@ export default function DivisionsPage() {
   const [deleteDivision, { isLoading: isDeleting }] =
     useDeleteDivisionMutation();
 
+  // ✅ NEW: promote employee to TL
+  const [updateEmployee, { isLoading: isPromoting }] =
+    useUpdateEmployeeMutation();
+
   const employeeOptions = useMemo(() => {
     const list = employees ?? [];
     return list
       .slice()
       .sort((a, b) =>
-        `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+        `${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.firstName} ${b.lastName}`
+        )
       )
       .map((e) => ({
         id: e._id,
         label: `${e.firstName} ${e.lastName} (${e.employeeId})`,
+        raw: e,
       }));
   }, [employees]);
 
@@ -48,6 +59,12 @@ export default function DivisionsPage() {
   const [editDescription, setEditDescription] = useState("");
   const [editManagerId, setEditManagerId] = useState<string>("");
   const [editIsActive, setEditIsActive] = useState(true);
+
+  // ✅ NEW: TL modal state
+  const [tlOpen, setTlOpen] = useState(false);
+  const [tlDivisionId, setTlDivisionId] = useState<string>("");
+  const [tlDivisionName, setTlDivisionName] = useState<string>("");
+  const [tlEmployeeId, setTlEmployeeId] = useState<string>("");
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -103,6 +120,67 @@ export default function DivisionsPage() {
     const found = employeeOptions.find((x) => x.id === id);
     return found?.label ?? id;
   };
+
+  // ✅ NEW: open TL modal for a division
+  function openTLModal(divId: string, divName: string) {
+    setTlDivisionId(divId);
+    setTlDivisionName(divName);
+    setTlEmployeeId("");
+    setTlOpen(true);
+  }
+
+  // ✅ NEW: promote selected employee to TL + assign division
+  async function confirmCreateTL() {
+    if (!tlDivisionId || !tlEmployeeId) return;
+
+    const emp = employeeOptions.find((x) => x.id === tlEmployeeId)?.raw as
+      | (Employee & any)
+      | undefined;
+
+    if (!emp) return;
+
+    // Optional safety: warn if moving division
+    const currentDiv = (emp as any).division;
+    if (currentDiv && String(currentDiv) !== String(tlDivisionId)) {
+      const ok = confirm(
+        "This employee is already assigned to another division. Move them and set as TL?"
+      );
+      if (!ok) return;
+    }
+
+    await updateEmployee({
+      id: tlEmployeeId,
+      data: {
+        division: tlDivisionId,
+        level: "TL",
+        reportsTo: null,
+      } as any,
+    }).unwrap();
+
+    setTlOpen(false);
+  }
+
+  // ✅ Filter list inside modal: show ACTIVE employees first, and hide those already TL in same division
+  const tlCandidateOptions = useMemo(() => {
+    const list = (employees ?? []) as any[];
+    return list
+      .slice()
+      .sort((a, b) => {
+        // ACTIVE first
+        const sa = a.status === "ACTIVE" ? 0 : 1;
+        const sb = b.status === "ACTIVE" ? 0 : 1;
+        if (sa !== sb) return sa - sb;
+        return `${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.firstName} ${b.lastName}`
+        );
+      })
+      .filter((e) => {
+        // If already TL in same division, skip
+        const sameDiv = String(e.division || "") === String(tlDivisionId || "");
+        if (sameDiv && e.level === "TL") return false;
+        return true;
+      });
+  }, [employees, tlDivisionId]);
 
   return (
     <div className="space-y-4">
@@ -188,7 +266,9 @@ export default function DivisionsPage() {
                   <th className="text-left px-4 py-2 font-semibold">Code</th>
                   <th className="text-left px-4 py-2 font-semibold">Manager</th>
                   <th className="text-left px-4 py-2 font-semibold">Active</th>
-                  <th className="text-right px-4 py-2 font-semibold w-48">Actions</th>
+                  <th className="text-right px-4 py-2 font-semibold w-[320px]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -220,9 +300,12 @@ export default function DivisionsPage() {
                               onChange={(e) => setEditName(e.target.value)}
                             />
                           ) : (
-                            <span className="text-slate-800 font-medium">{d.name}</span>
+                            <span className="text-slate-800 font-medium">
+                              {d.name}
+                            </span>
                           )}
                         </td>
+
                         <td className="px-4 py-2">
                           {isEditing ? (
                             <input
@@ -234,6 +317,7 @@ export default function DivisionsPage() {
                             <span className="text-slate-600">{d.code || "—"}</span>
                           )}
                         </td>
+
                         <td className="px-4 py-2">
                           {isEditing ? (
                             <select
@@ -254,6 +338,7 @@ export default function DivisionsPage() {
                             </span>
                           )}
                         </td>
+
                         <td className="px-4 py-2">
                           {isEditing ? (
                             <label className="inline-flex items-center gap-2">
@@ -266,11 +351,18 @@ export default function DivisionsPage() {
                               <span className="text-slate-600">Active</span>
                             </label>
                           ) : (
-                            <span className={d.isActive === false ? "text-rose-600" : "text-emerald-700"}>
+                            <span
+                              className={
+                                d.isActive === false
+                                  ? "text-rose-600"
+                                  : "text-emerald-700"
+                              }
+                            >
                               {d.isActive === false ? "No" : "Yes"}
                             </span>
                           )}
                         </td>
+
                         <td className="px-4 py-2">
                           <div className="flex items-center justify-end gap-2">
                             {isEditing ? (
@@ -292,6 +384,15 @@ export default function DivisionsPage() {
                               </>
                             ) : (
                               <>
+                                {/* ✅ NEW: Add TL */}
+                                <button
+                                  type="button"
+                                  onClick={() => openTLModal(d._id, d.name)}
+                                  className="px-3 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                                >
+                                  + Add TL
+                                </button>
+
                                 <button
                                   type="button"
                                   onClick={() => startEdit(d)}
@@ -299,6 +400,7 @@ export default function DivisionsPage() {
                                 >
                                   Edit
                                 </button>
+
                                 <button
                                   type="button"
                                   disabled={isDeleting}
@@ -324,6 +426,77 @@ export default function DivisionsPage() {
           </div>
         </div>
       </div>
+
+      {/* ✅ NEW: Create TL Modal */}
+      {tlOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[520px] max-w-[92vw] rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-800">
+                  Create TL
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Promote an employee to <b>TL</b> inside division{" "}
+                  <b>{tlDivisionName}</b>.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setTlOpen(false)}
+                className="text-xs px-4 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={labelCls}>Select Employee</label>
+                <select
+                  className={inputCls}
+                  value={tlEmployeeId}
+                  onChange={(e) => setTlEmployeeId(e.target.value)}
+                >
+                  <option value="">-- Select Employee --</option>
+                  {tlCandidateOptions.map((emp: any) => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.firstName} {emp.lastName} ({emp.employeeId}){" "}
+                      {emp.status !== "ACTIVE" ? " • INACTIVE" : ""}
+                      {emp.level ? ` • ${emp.level}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  This will set: <code>level = "TL"</code>,{" "}
+                  <code>division = "{tlDivisionName}"</code>,{" "}
+                  <code>reportsTo = null</code>.
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setTlOpen(false)}
+                  className="px-5 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!tlEmployeeId || isPromoting}
+                  onClick={confirmCreateTL}
+                  className="px-6 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold disabled:opacity-60"
+                >
+                  {isPromoting ? "Saving..." : "Create TL"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -36,6 +36,10 @@ export interface Employee {
   email: string; // primary
   jobTitle?: string;
   department?: string; // used as Sub Unit
+
+  // ✅ NEW: Division assignment
+  division?: string | null;
+
   status: EmployeeStatus;
 
   attachments?: Attachment[];
@@ -80,7 +84,7 @@ export type ApprovalSubmittedResponse = {
 export type UpdateEmployeeResponse = Employee | ApprovalSubmittedResponse;
 
 export function isApprovalSubmittedResponse(
-  x: any
+  x: any,
 ): x is ApprovalSubmittedResponse {
   return !!x && typeof x === "object" && typeof x.changeRequestId === "string";
 }
@@ -177,11 +181,9 @@ export const employeesApi = createApi({
         body: data,
       }),
       invalidatesTags: (res, _err, arg) => {
-        // If HR submitted approval request: employee didn't change yet
         if (isApprovalSubmittedResponse(res)) {
           return [{ type: "Employee" as const, id: "LIST" }];
         }
-        // Admin update: invalidate employee + list
         return [
           { type: "Employee" as const, id: arg.id },
           { type: "Employee" as const, id: "LIST" },

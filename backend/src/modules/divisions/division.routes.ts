@@ -8,6 +8,7 @@ import {
   createDivision,
   updateDivision,
   deleteDivision,
+  getDivisionOrgChart,
 } from "./division.controller";
 
 const router = Router();
@@ -15,7 +16,11 @@ const router = Router();
 router.use(requireAuth);
 
 // View: ADMIN/HR/SUPERVISOR (so you can show it in dropdowns)
-router.get("/", requireRole("ADMIN", "HR", "SUPERVISOR"), asyncHandler(listDivisions));
+router.get(
+  "/",
+  requireRole("ADMIN", "HR", "SUPERVISOR"),
+  asyncHandler(listDivisions),
+);
 
 // Create/Update: ADMIN/HR
 router.post("/", requireRole("ADMIN", "HR"), asyncHandler(createDivision));
@@ -23,5 +28,11 @@ router.put("/:id", requireRole("ADMIN", "HR"), asyncHandler(updateDivision));
 
 // Delete: ADMIN only
 router.delete("/:id", requireRole("ADMIN"), asyncHandler(deleteDivision));
+
+router.get(
+  "/:id/org-chart",
+  requireRole("ADMIN", "HR", "SUPERVISOR"),
+  asyncHandler(getDivisionOrgChart),
+);
 
 export default router;

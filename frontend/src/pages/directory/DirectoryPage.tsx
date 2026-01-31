@@ -2,32 +2,36 @@ import { useMemo, useState } from "react";
 import {
   useSearchEmployeesQuery,
   useGetHierarchyQuery,
-  useGetDepartmentsSummaryQuery,
+  useGetDivisionsSummaryQuery,
 } from "../../features/directory/directoryApi";
+
+import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
 
 export default function DirectoryPage() {
   const [ui, setUi] = useState({
     name: "",
     jobTitle: "",
     location: "",
-    department: "",
+    divisionId: "",
   });
 
   const [applied, setApplied] = useState({
     name: "",
     jobTitle: "",
     location: "",
-    department: "",
+    divisionId: "",
   });
 
   const [activeEmployeeId, setActiveEmployeeId] = useState<string | null>(null);
+
+  const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
 
   const queryArgs = useMemo(() => {
     const has =
       applied.name.trim() ||
       applied.jobTitle.trim() ||
       applied.location.trim() ||
-      applied.department.trim();
+      applied.divisionId.trim();
 
     if (!has) return undefined;
 
@@ -35,14 +39,14 @@ export default function DirectoryPage() {
       q: applied.name.trim() || undefined,
       jobTitle: applied.jobTitle || undefined,
       location: applied.location || undefined,
-      department: applied.department || undefined,
+      divisionId: applied.divisionId || undefined,
     };
   }, [applied]);
 
   const { data: employees = [], isLoading } = useSearchEmployeesQuery(queryArgs);
 
-  // ✅ Department counts (optionally filter by location/jobTitle)
-  const deptArgs = useMemo(() => {
+  // ✅ Division counts (optional filter by location/jobTitle)
+  const summaryArgs = useMemo(() => {
     const has = applied.location.trim() || applied.jobTitle.trim();
     return has
       ? {
@@ -52,8 +56,8 @@ export default function DirectoryPage() {
       : undefined;
   }, [applied.location, applied.jobTitle]);
 
-  const { data: deptSummary = [], isLoading: deptLoading } =
-    useGetDepartmentsSummaryQuery(deptArgs);
+  const { data: divSummary = [], isLoading: summaryLoading } =
+    useGetDivisionsSummaryQuery(summaryArgs);
 
   const { data: hierarchy, isLoading: isHierarchyLoading } = useGetHierarchyQuery(
     activeEmployeeId || "",
@@ -61,8 +65,8 @@ export default function DirectoryPage() {
   );
 
   function onReset() {
-    setUi({ name: "", jobTitle: "", location: "", department: "" });
-    setApplied({ name: "", jobTitle: "", location: "", department: "" });
+    setUi({ name: "", jobTitle: "", location: "", divisionId: "" });
+    setApplied({ name: "", jobTitle: "", location: "", divisionId: "" });
     setActiveEmployeeId(null);
   }
 
@@ -71,9 +75,12 @@ export default function DirectoryPage() {
       name: ui.name,
       jobTitle: ui.jobTitle,
       location: ui.location,
-      department: ui.department,
+      divisionId: ui.divisionId,
     });
   }
+
+  const selectedDivisionName =
+    ui.divisionId && divisions.find((d) => d._id === ui.divisionId)?.name;
 
   return (
     <div className="min-h-screen bg-[#f4f5fb] px-8 py-6">
@@ -140,26 +147,36 @@ export default function DirectoryPage() {
               </div>
             </div>
 
-            {/* ✅ NEW Department */}
+            {/* ✅ Division dropdown */}
             <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Department</label>
+              <label className="text-[11px] text-slate-500">Division</label>
               <div className="relative">
                 <select
-                  value={ui.department}
-                  onChange={(e) => setUi((s) => ({ ...s, department: e.target.value }))}
+                  value={ui.divisionId}
+                  onChange={(e) => setUi((s) => ({ ...s, divisionId: e.target.value }))}
                   className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                 >
-                  <option value="">-- Select --</option>
-                  <option value="HR">HR</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Accounts">Accounts</option>
-                  <option value="IT">IT</option>
+                  <option value="">
+                    {divLoading ? "Loading..." : "-- Select Division --"}
+                  </option>
+                  {divisions
+                    .filter((d) => d.isActive !== false)
+                    .map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.name}
+                      </option>
+                    ))}
                 </select>
                 <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                   ▾
                 </div>
               </div>
+
+              {selectedDivisionName ? (
+                <div className="text-[10px] text-slate-400">
+                  Selected: <span className="font-semibold">{selectedDivisionName}</span>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -184,37 +201,37 @@ export default function DirectoryPage() {
         </div>
       </section>
 
-      {/* ✅ Department counts */}
+      {/* ✅ Division summary */}
       <section className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="text-sm font-semibold text-slate-700">
-            Department Summary
+            Division Summary
           </div>
           <div className="text-[11px] text-slate-400">
-            {deptLoading ? "Loading…" : `${deptSummary.length} departments`}
+            {summaryLoading ? "Loading…" : `${divSummary.length} divisions`}
           </div>
         </div>
 
         <div className="px-6 pb-6">
-          {deptLoading ? (
+          {summaryLoading ? (
             <div className="text-xs text-slate-500">Loading…</div>
-          ) : deptSummary.length === 0 ? (
+          ) : divSummary.length === 0 ? (
             <div className="text-xs text-slate-500">No data</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {deptSummary.slice(0, 10).map((d) => (
+              {divSummary.slice(0, 10).map((d) => (
                 <button
-                  key={d.department}
+                  key={d.divisionId}
                   type="button"
                   onClick={() => {
-                    setUi((s) => ({ ...s, department: d.department }));
-                    setApplied((s) => ({ ...s, department: d.department }));
+                    setUi((s) => ({ ...s, divisionId: d.divisionId }));
+                    setApplied((s) => ({ ...s, divisionId: d.divisionId }));
                   }}
                   className="rounded-xl border border-slate-100 bg-[#f7f9ff] p-3 text-left hover:ring-2 hover:ring-green-100"
                 >
-                  <div className="text-[11px] text-slate-500">Department</div>
+                  <div className="text-[11px] text-slate-500">Division</div>
                   <div className="text-xs font-semibold text-slate-800">
-                    {d.department}
+                    {d.divisionName}
                   </div>
                   <div className="mt-1 text-[11px] text-slate-500">
                     Employees: <span className="font-semibold">{d.count}</span>
@@ -247,7 +264,7 @@ export default function DirectoryPage() {
                   </div>
 
                   <div className="text-[11px] text-slate-500">
-                    {emp.jobTitle || "—"} • {emp.department || "Unassigned"}
+                    {emp.jobTitle || "—"}
                   </div>
 
                   <div className="w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center mt-4">
@@ -301,8 +318,7 @@ export default function DirectoryPage() {
                       {hierarchy.employee.firstName} {hierarchy.employee.lastName}
                     </div>
                     <div className="text-[11px] text-slate-500">
-                      {hierarchy.employee.jobTitle || "—"} •{" "}
-                      {hierarchy.employee.department || "Unassigned"}
+                      {hierarchy.employee.jobTitle || "—"}
                     </div>
                   </div>
 
@@ -358,7 +374,8 @@ export default function DirectoryPage() {
                   </div>
 
                   <div className="text-[11px] text-slate-400">
-                    Tip: Configure from <b>My Info → Report-to</b>.
+                    Tip: We can make this fully division-based (Manager → TL → Grade1/Grade2)
+                    once backend returns division chain.
                   </div>
                 </div>
               )}
@@ -372,4 +389,4 @@ export default function DirectoryPage() {
       )}
     </div>
   );
-} 
+}

@@ -12,6 +12,7 @@ import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { adminOrRequestChange } from "../../middleware/adminOrRequest";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { updateEmployeeOrg } from "./employee.controller";
 
 const router = Router();
 router.use(requireAuth);
@@ -38,9 +39,12 @@ router.post(
   asyncHandler(createEmployee)
 );
 
-// ✅ Update employee:
-// Admin → apply directly
-// HR → request approval
+router.patch(
+  "/:id/org",
+  requireRole("ADMIN", "HR"),
+  asyncHandler(updateEmployeeOrg)
+);
+
 router.put(
   "/:id",
   adminOrRequestChange({

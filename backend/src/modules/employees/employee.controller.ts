@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError";
 import { AuthRequest } from "../../middleware/authMiddleware"; 
 import { User } from "../auth/auth.model";
 import { Counter } from "../pim/pimConfig/models/counter.model";
+import mongoose from "mongoose";
 
 export async function listEmployees(req: Request, res: Response) {
   const {
@@ -59,6 +60,75 @@ export async function listEmployees(req: Request, res: Response) {
 
   const employees = await Employee.find(filter).lean();
   res.json(employees);
+}
+
+function toObjectId(id: unknown): mongoose.Types.ObjectId {
+  if (id instanceof mongoose.Types.ObjectId) return id;
+  if (typeof id === "string" && mongoose.Types.ObjectId.isValid(id)) {
+    return new mongoose.Types.ObjectId(id);
+  }
+  throw ApiError.badRequest("Invalid ObjectId");
+}
+
+export async function updateEmployeeOrg(req: any, res: any) {
+  const empId = toObjectId(req.params.id);
+
+  const level = req.body?.level as
+    | "MANAGER"
+    | "TL"
+    | "GRADE1"
+    | "GRADE2"
+    | undefined;
+
+  const reportsToRaw = req.body?.reportsTo ?? null;
+
+  const employee = await Employee.findById(empId);
+  if (!employee) throw ApiError.notFound("Employee not found");
+
+  // Set level if provided
+  if (level) {
+    employee.level = level;
+  }
+
+  // Normalize reportsTo
+  let reportsTo: mongoose.Types.ObjectId | null = null;
+  if (reportsToRaw) {
+    reportsTo = toObjectId(reportsToRaw);
+    const managerOrTl = await Employee.findById(reportsTo).select("level division");
+    if (!managerOrTl) throw ApiError.badRequest("reportsTo employee not found");
+
+    // If both have divisions, ensure same division (recommended)
+    if (employee.division && managerOrTl.division) {
+      if (String(employee.division) !== String(managerOrTl.division)) {
+        throw ApiError.badRequest("reportsTo must be in the same division");
+      }
+    }
+  }
+
+  // Validate hierarchy rules
+  const finalLevel = employee.level ?? "GRADE1";
+
+  if (finalLevel === "MANAGER") {
+    employee.reportsTo = null;
+  } else if (finalLevel === "TL") {
+    if (!reportsTo) throw ApiError.badRequest("TL must have reportsTo (MANAGER)");
+    const boss = await Employee.findById(reportsTo).select("level");
+    if (!boss || boss.level !== "MANAGER") {
+      throw ApiError.badRequest("TL must report to a MANAGER");
+    }
+    employee.reportsTo = reportsTo;
+  } else {
+    // GRADE1 or GRADE2
+    if (!reportsTo) throw ApiError.badRequest("Grade employees must have reportsTo (TL)");
+    const boss = await Employee.findById(reportsTo).select("level");
+    if (!boss || boss.level !== "TL") {
+      throw ApiError.badRequest("Grade employees must report to a TL");
+    }
+    employee.reportsTo = reportsTo;
+  }
+
+  await employee.save();
+  return res.json({ ok: true, employee });
 }
 
 export async function createEmployee(req: Request, res: Response) {
