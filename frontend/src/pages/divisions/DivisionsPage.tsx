@@ -16,6 +16,18 @@ const labelCls =
 const inputCls =
   "w-full h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
 
+function isSameId(a: any, b: any) {
+  if (!a || !b) return false;
+  return String(a) === String(b);
+}
+
+function formatEmpShort(e: any) {
+  return (
+    `${e.firstName || ""} ${e.lastName || ""}`.trim() +
+    ` (${e.employeeId || ""})`
+  );
+}
+
 export default function DivisionsPage() {
   const { data: divisions, isLoading } = useGetDivisionsQuery();
   const { data: employees } = useGetEmployeesQuery({ include: "all" });
@@ -26,7 +38,7 @@ export default function DivisionsPage() {
   const [deleteDivision, { isLoading: isDeleting }] =
     useDeleteDivisionMutation();
 
-  // ✅ NEW: promote employee to TL
+  // Promote employee to TL
   const [updateEmployee, { isLoading: isPromoting }] =
     useUpdateEmployeeMutation();
 
@@ -39,7 +51,7 @@ export default function DivisionsPage() {
           `${b.firstName} ${b.lastName}`,
         ),
       )
-      .map((e) => ({
+      .map((e: any) => ({
         id: e._id,
         label: `${e.firstName} ${e.lastName} (${e.employeeId})`,
         raw: e,
@@ -51,6 +63,7 @@ export default function DivisionsPage() {
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
   const [managerEmployeeId, setManagerEmployeeId] = useState<string>("");
+  const [tlEmployeeId, setTlEmployeeId] = useState<string>(""); // ✅ NEW: TL like manager
 
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,29 +71,77 @@ export default function DivisionsPage() {
   const [editCode, setEditCode] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editManagerId, setEditManagerId] = useState<string>("");
+  const [editTlId, setEditTlId] = useState<string>(""); // ✅ NEW
   const [editIsActive, setEditIsActive] = useState(true);
 
-  // ✅ NEW: TL modal state
-  const [tlOpen, setTlOpen] = useState(false);
-  const [tlDivisionId, setTlDivisionId] = useState<string>("");
-  const [tlDivisionName, setTlDivisionName] = useState<string>("");
-  const [tlEmployeeId, setTlEmployeeId] = useState<string>("");
+  const getManagerLabel = (id?: string | null) => {
+    if (!id) return "—";
+    const found = employeeOptions.find((x) => x.id === id);
+    return found?.label ?? id;
+  };
+
+  const getTLsForDivision = (divisionId: string) => {
+    const list = (employees ?? []) as any[];
+    return list
+      .filter((e) => isSameId(e.division, divisionId) && e.level === "TL")
+      .filter((e) => e.status !== "INACTIVE")
+      .sort((a, b) =>
+        `${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.firstName} ${b.lastName}`,
+        ),
+      );
+  };
+
+  // ✅ Promote selected employee to TL + assign division
+  async function assignTL(divisionId: string, employeeId: string) {
+    if (!divisionId || !employeeId) return;
+
+    const emp = employeeOptions.find((x) => x.id === employeeId)?.raw as
+      | (Employee & any)
+      | undefined;
+    if (!emp) return;
+
+    // Optional safety: warn if moving division
+    const currentDiv = (emp as any).division;
+    if (currentDiv && String(currentDiv) !== String(divisionId)) {
+      const ok = confirm(
+        "This employee is already assigned to another division. Move them and set as TL?",
+      );
+      if (!ok) return;
+    }
+
+    await updateEmployee({
+      id: employeeId,
+      data: {
+        division: divisionId,
+        level: "TL",
+        reportsTo: null,
+      } as any,
+    }).unwrap();
+  }
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
 
-    await createDivision({
+    const created = await createDivision({
       name: name.trim(),
       code: code.trim() || undefined,
       description: description.trim() || undefined,
       managerEmployeeId: managerEmployeeId || null,
     }).unwrap();
 
+    // ✅ If TL selected during create, assign it to the newly created division
+    const newDivisionId = (created as any)?._id;
+    if (newDivisionId && tlEmployeeId) {
+      await assignTL(newDivisionId, tlEmployeeId);
+    }
+
     setName("");
     setCode("");
     setDescription("");
     setManagerEmployeeId("");
+    setTlEmployeeId("");
   }
 
   function startEdit(d: any) {
@@ -90,6 +151,10 @@ export default function DivisionsPage() {
     setEditDescription(d.description ?? "");
     setEditManagerId(d.managerEmployee ?? "");
     setEditIsActive(d.isActive !== false);
+
+    // ✅ Preselect TL if exists
+    const tls = getTLsForDivision(d._id);
+    setEditTlId(tls[0]?._id ?? "");
   }
 
   async function saveEdit() {
@@ -107,6 +172,11 @@ export default function DivisionsPage() {
       },
     }).unwrap();
 
+    // ✅ Assign TL (if chosen)
+    if (editTlId) {
+      await assignTL(editingId, editTlId);
+    }
+
     setEditingId(null);
   }
 
@@ -115,96 +185,19 @@ export default function DivisionsPage() {
     await deleteDivision(id).unwrap();
   }
 
-  const getManagerLabel = (id?: string | null) => {
-    if (!id) return "—";
-    const found = employeeOptions.find((x) => x.id === id);
-    return found?.label ?? id;
-  };
-
-  // ✅ NEW: open TL modal for a division
-  function openTLModal(divId: string, divName: string) {
-    setTlDivisionId(divId);
-    setTlDivisionName(divName);
-    setTlEmployeeId("");
-    setTlOpen(true);
-  }
-
-  function isSameId(a: any, b: any) {
-    if (!a || !b) return false;
-    return String(a) === String(b);
-  }
-
-  function formatEmpShort(e: any) {
-    return (
-      `${e.firstName || ""} ${e.lastName || ""}`.trim() +
-      ` (${e.employeeId || ""})`
-    );
-  }
-
-  const getTLsForDivision = (divisionId: string) => {
+  // ✅ TL options (same shape as manager, but we can keep everyone selectable)
+  // If you want to hide TLs already in same division etc, we can filter further.
+  const tlSelectOptions = useMemo(() => {
     const list = (employees ?? []) as any[];
-    return list
-      .filter((e) => isSameId(e.division, divisionId) && e.level === "TL")
-      .filter((e) => e.status !== "INACTIVE") // optional: only active TLs
-      .sort((a, b) =>
-        `${a.firstName} ${a.lastName}`.localeCompare(
-          `${b.firstName} ${b.lastName}`,
-        ),
+    return list.slice().sort((a, b) => {
+      const sa = a.status === "ACTIVE" ? 0 : 1;
+      const sb = b.status === "ACTIVE" ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      return `${a.firstName} ${a.lastName}`.localeCompare(
+        `${b.firstName} ${b.lastName}`,
       );
-  };
-
-  // ✅ NEW: promote selected employee to TL + assign division
-  async function confirmCreateTL() {
-    if (!tlDivisionId || !tlEmployeeId) return;
-
-    const emp = employeeOptions.find((x) => x.id === tlEmployeeId)?.raw as
-      | (Employee & any)
-      | undefined;
-
-    if (!emp) return;
-
-    // Optional safety: warn if moving division
-    const currentDiv = (emp as any).division;
-    if (currentDiv && String(currentDiv) !== String(tlDivisionId)) {
-      const ok = confirm(
-        "This employee is already assigned to another division. Move them and set as TL?",
-      );
-      if (!ok) return;
-    }
-
-    await updateEmployee({
-      id: tlEmployeeId,
-      data: {
-        division: tlDivisionId,
-        level: "TL",
-        reportsTo: null,
-      } as any,
-    }).unwrap();
-
-    setTlOpen(false);
-  }
-
-  // ✅ Filter list inside modal: show ACTIVE employees first, and hide those already TL in same division
-  const tlCandidateOptions = useMemo(() => {
-    const list = (employees ?? []) as any[];
-    return list
-      .slice()
-      .sort((a, b) => {
-        // ACTIVE first
-        const sa = a.status === "ACTIVE" ? 0 : 1;
-        const sb = b.status === "ACTIVE" ? 0 : 1;
-        if (sa !== sb) return sa - sb;
-        return `${a.firstName} ${a.lastName}`.localeCompare(
-          `${b.firstName} ${b.lastName}`,
-        );
-      })
-      .filter((e) => {
-        // If already TL in same division, skip
-        const sameDiv = String(e.division || "") === String(tlDivisionId || "");
-        if (sameDiv && e.level === "TL") return false;
-        return true;
-      });
-  }, [employees, tlDivisionId]);
+    });
+  }, [employees]);
 
   return (
     <div className="space-y-4">
@@ -221,7 +214,7 @@ export default function DivisionsPage() {
         {/* Create */}
         <form
           onSubmit={onCreate}
-          className="px-6 pt-4 pb-2 grid grid-cols-1 md:grid-cols-4 gap-4"
+          className="px-6 pt-4 pb-2 grid grid-cols-1 md:grid-cols-5 gap-4"
         >
           <div>
             <label className={labelCls}>Division Name *</label>
@@ -259,6 +252,25 @@ export default function DivisionsPage() {
             </select>
           </div>
 
+          {/* ✅ NEW: TL dropdown right after Manager */}
+          <div>
+            <label className={labelCls}>TL</label>
+            <select
+              className={inputCls}
+              value={tlEmployeeId}
+              onChange={(e) => setTlEmployeeId(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {tlSelectOptions.map((emp: any) => (
+                <option key={emp._id} value={emp._id}>
+                  {emp.firstName} {emp.lastName} ({emp.employeeId})
+                  {emp.status !== "ACTIVE" ? " • INACTIVE" : ""}
+                  {emp.level ? ` • ${emp.level}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className={labelCls}>Description</label>
             <input
@@ -269,13 +281,13 @@ export default function DivisionsPage() {
             />
           </div>
 
-          <div className="md:col-span-4 flex justify-end">
+          <div className="md:col-span-5 flex justify-end">
             <button
               type="submit"
-              disabled={isCreating}
+              disabled={isCreating || isPromoting}
               className="px-4 h-9 rounded-full bg-lime-500 hover:bg-lime-600 text-white text-xs font-semibold disabled:opacity-60"
             >
-              + Add Division
+              {isCreating ? "Saving..." : "+ Add Division"}
             </button>
           </div>
         </form>
@@ -289,8 +301,9 @@ export default function DivisionsPage() {
                   <th className="text-left px-4 py-2 font-semibold">Name</th>
                   <th className="text-left px-4 py-2 font-semibold">Code</th>
                   <th className="text-left px-4 py-2 font-semibold">Manager</th>
+                  <th className="text-left px-4 py-2 font-semibold">TL</th>
                   <th className="text-left px-4 py-2 font-semibold">Active</th>
-                  <th className="text-right px-4 py-2 font-semibold w-[320px]">
+                  <th className="text-right px-4 py-2 font-semibold w-[280px]">
                     Actions
                   </th>
                 </tr>
@@ -298,14 +311,14 @@ export default function DivisionsPage() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center">
+                    <td colSpan={6} className="px-4 py-6 text-center">
                       Loading...
                     </td>
                   </tr>
                 ) : !divisions || divisions.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-4 py-6 text-center text-slate-400"
                     >
                       No Records Found
@@ -314,6 +327,8 @@ export default function DivisionsPage() {
                 ) : (
                   divisions.map((d) => {
                     const isEditing = editingId === d._id;
+                    const tls = getTLsForDivision(d._id);
+
                     return (
                       <tr
                         key={d._id}
@@ -362,25 +377,42 @@ export default function DivisionsPage() {
                               ))}
                             </select>
                           ) : (
-                            <div className="text-slate-600">
-                              <div>{getManagerLabel(d.managerEmployee)}</div>
+                            <span className="text-slate-600">
+                              {getManagerLabel(d.managerEmployee)}
+                            </span>
+                          )}
+                        </td>
 
-                              {/* ✅ NEW: show assigned TLs */}
-                              <div className="mt-1 text-[11px] text-slate-500">
-                                {(() => {
-                                  const tls = getTLsForDivision(d._id);
-                                  if (tls.length === 0)
-                                    return <span>TL: —</span>;
-                                  return (
-                                    <span>
-                                      TL:{" "}
-                                      <span className="text-slate-700">
-                                        {tls.map(formatEmpShort).join(", ")}
-                                      </span>
-                                    </span>
-                                  );
-                                })()}
-                              </div>
+                        {/* ✅ NEW: TL column (editable like manager) */}
+                        <td className="px-4 py-2">
+                          {isEditing ? (
+                            <select
+                              className={inputCls}
+                              value={editTlId}
+                              onChange={(e) => setEditTlId(e.target.value)}
+                            >
+                              <option value="">— None —</option>
+                              {tlSelectOptions.map((emp: any) => (
+                                <option key={emp._id} value={emp._id}>
+                                  {emp.firstName} {emp.lastName} (
+                                  {emp.employeeId})
+                                  {emp.status !== "ACTIVE" ? " • INACTIVE" : ""}
+                                  {emp.level ? ` • ${emp.level}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          ) : tls.length === 0 ? (
+                            <span className="text-slate-400">—</span>
+                          ) : (
+                            <div className="space-y-1">
+                              {tls.map((emp) => (
+                                <div
+                                  key={emp._id}
+                                  className="text-slate-600 leading-tight"
+                                >
+                                  {formatEmpShort(emp)}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </td>
@@ -418,9 +450,10 @@ export default function DivisionsPage() {
                                 <button
                                   type="button"
                                   onClick={saveEdit}
-                                  className="px-3 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                                  disabled={isPromoting}
+                                  className="px-3 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold disabled:opacity-60"
                                 >
-                                  Save
+                                  {isPromoting ? "Saving..." : "Save"}
                                 </button>
                                 <button
                                   type="button"
@@ -432,15 +465,6 @@ export default function DivisionsPage() {
                               </>
                             ) : (
                               <>
-                                {/* ✅ NEW: Add TL */}
-                                <button
-                                  type="button"
-                                  onClick={() => openTLModal(d._id, d.name)}
-                                  className="px-3 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-                                >
-                                  + Add TL
-                                </button>
-
                                 <button
                                   type="button"
                                   onClick={() => startEdit(d)}
@@ -474,77 +498,6 @@ export default function DivisionsPage() {
           </div>
         </div>
       </div>
-
-      {/* ✅ NEW: Create TL Modal */}
-      {tlOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-[520px] max-w-[92vw] rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-slate-800">
-                  Create TL
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  Promote an employee to <b>TL</b> inside division{" "}
-                  <b>{tlDivisionName}</b>.
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setTlOpen(false)}
-                className="text-xs px-4 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className={labelCls}>Select Employee</label>
-                <select
-                  className={inputCls}
-                  value={tlEmployeeId}
-                  onChange={(e) => setTlEmployeeId(e.target.value)}
-                >
-                  <option value="">-- Select Employee --</option>
-                  {tlCandidateOptions.map((emp: any) => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.firstName} {emp.lastName} ({emp.employeeId}){" "}
-                      {emp.status !== "ACTIVE" ? " • INACTIVE" : ""}
-                      {emp.level ? ` • ${emp.level}` : ""}
-                    </option>
-                  ))}
-                </select>
-                <div className="text-[10px] text-slate-400 mt-1">
-                  This will set: <code>level = "TL"</code>,{" "}
-                  <code>division = "{tlDivisionName}"</code>,{" "}
-                  <code>reportsTo = null</code>.
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setTlOpen(false)}
-                  className="px-5 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!tlEmployeeId || isPromoting}
-                  onClick={confirmCreateTL}
-                  className="px-6 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold disabled:opacity-60"
-                >
-                  {isPromoting ? "Saving..." : "Create TL"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

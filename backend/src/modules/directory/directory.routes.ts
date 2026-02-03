@@ -4,7 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import {
   searchDirectory,
   getEmployeeHierarchy,
-  getDepartmentsSummary,
+  getDivisionsSummary,
 } from "./directory.controller";
 
 const router = Router();
@@ -12,11 +12,7 @@ const router = Router();
 router.get("/employees", requireAuth, asyncHandler(searchDirectory));
 router.get("/hierarchy/:employeeId", requireAuth, asyncHandler(getEmployeeHierarchy));
 
-// ✅ NEW
-router.get(
-  "/departments-summary",
-  requireAuth,
-  asyncHandler(getDepartmentsSummary)
-);
+// ✅ NEW: divisions summary (used by frontend)
+router.get("/divisions-summary", requireAuth, asyncHandler(getDivisionsSummary));
 
 export default router;

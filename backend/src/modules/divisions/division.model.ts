@@ -11,6 +11,7 @@ export type DivisionDoc = mongoose.Document & {
 
 const divisionSchema = new Schema<DivisionDoc>(
   {
+
     name: { type: String, required: true, trim: true, unique: true },
     code: { type: String, trim: true },
     description: { type: String, trim: true },
@@ -20,7 +21,6 @@ const divisionSchema = new Schema<DivisionDoc>(
   { timestamps: true }
 );
 
-divisionSchema.index({ name: 1 }, { unique: true });
 divisionSchema.index({ code: 1 });
 
 export const Division = mongoose.model<DivisionDoc>("Division", divisionSchema);
