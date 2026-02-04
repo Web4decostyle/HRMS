@@ -215,7 +215,7 @@ export default function AssignLeavePage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-[14px] font-bold text-slate-900">
-                Assign Leave
+                Special Cases
               </h2>
               <p className="text-[12px] text-slate-500 mt-1">
                 Assign leave to an employee directly (Admin/HR).

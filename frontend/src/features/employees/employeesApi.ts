@@ -37,6 +37,9 @@ export interface Employee {
   jobTitle?: string;
   department?: string; // used as Sub Unit
 
+   // ✅ NEW: Sub-Division assignment
+  subDivision?: string | null;
+
   // ✅ NEW: Division assignment
   division?: string | null;
 

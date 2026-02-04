@@ -6,6 +6,7 @@ import { AuthRequest } from "../../middleware/authMiddleware";
 import { User } from "../auth/auth.model";
 import { Counter } from "../pim/pimConfig/models/counter.model";
 import mongoose from "mongoose";
+import { SubDivision } from "../divisions/subDivision.model";
 
 export async function listEmployees(req: Request, res: Response) {
   const {
@@ -132,7 +133,17 @@ export async function updateEmployeeOrg(req: any, res: any) {
 }
 
 export async function createEmployee(req: Request, res: Response) {
-  const body = req.body;
+  const body = { ...req.body };
+
+  // If a subDivision is provided, force division to match parent division
+  if (body.subDivision) {
+    const subId = toObjectId(body.subDivision);
+    const sub = await SubDivision.findById(subId).select("division").lean();
+    if (!sub) throw ApiError.badRequest("Sub-division not found");
+    body.subDivision = subId;
+    body.division = sub.division;
+  }
+
   const employee = await Employee.create(body);
   res.status(201).json(employee);
 }
@@ -198,7 +209,26 @@ export async function getMyEmployee(req: AuthRequest, res: Response) {
 
 export async function updateEmployee(req: Request, res: Response) {
   const { id } = req.params;
-  const update = req.body;
+  const update = { ...req.body };
+
+  // If a subDivision is provided, force division to match parent division
+  if (update.subDivision !== undefined) {
+    if (!update.subDivision) {
+      update.subDivision = null;
+    } else {
+      const subId = toObjectId(update.subDivision);
+      const sub = await SubDivision.findById(subId).select("division").lean();
+      if (!sub) throw ApiError.badRequest("Sub-division not found");
+      update.subDivision = subId;
+      update.division = sub.division;
+    }
+  }
+
+  // If division is explicitly cleared/changed, and subDivision isn't explicitly set,
+  // clear subDivision to avoid inconsistent state.
+  if (update.division !== undefined && update.subDivision === undefined) {
+    update.subDivision = null;
+  }
 
   const employee = await Employee.findByIdAndUpdate(id, update, {
     new: true,

@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Division } from "./division.model";
+import { SubDivision } from "./subDivision.model";
 import { Employee } from "../employees/employee.model";
 import { ApiError } from "../../utils/ApiError";
 
@@ -14,7 +15,31 @@ function toObjectId(id: unknown): mongoose.Types.ObjectId {
 }
 
 export async function listDivisions(_req: Request, res: Response) {
+  const include = String(((_req.query as any)?.include ?? "") as string);
   const items = await Division.find().sort({ name: 1 }).lean();
+
+  // Optional include: ?include=subDivisions
+  if (include === "subDivisions") {
+    const divisionIds = items.map((d) => d._id);
+    const subDivs = await SubDivision.find({ division: { $in: divisionIds } })
+      .sort({ name: 1 })
+      .lean();
+
+    const byDivision = new Map<string, any[]>();
+    for (const s of subDivs) {
+      const key = String(s.division);
+      if (!byDivision.has(key)) byDivision.set(key, []);
+      byDivision.get(key)!.push(s);
+    }
+
+    return res.json(
+      items.map((d) => ({
+        ...d,
+        subDivisions: byDivision.get(String(d._id)) ?? [],
+      }))
+    );
+  }
+
   return res.json(items);
 }
 
@@ -130,6 +155,14 @@ export async function getDivisionOrgChart(req: any, res: any) {
 
 export async function deleteDivision(req: Request, res: Response) {
   const id = toObjectId(req.params.id);
+
+  // Prevent deletion if sub-divisions exist
+  const subCount = await SubDivision.countDocuments({ division: id });
+  if (subCount > 0) {
+    throw ApiError.badRequest(
+      "Cannot delete division while sub-divisions exist under it",
+    );
+  }
 
   // Prevent deletion if employees are assigned to this division
   const assignedCount = await Employee.countDocuments({ division: id });

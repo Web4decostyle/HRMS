@@ -16,6 +16,9 @@ export interface IEmployee extends Document {
   // ✅ Division-based org
   division?: mongoose.Types.ObjectId | null;
 
+  // ✅ NEW: sub-division under a division
+  subDivision?: mongoose.Types.ObjectId | null;
+
   // ✅ NEW: hierarchy inside division
   level?: EmployeeLevel; // default GRADE1
   reportsTo?: mongoose.Types.ObjectId | null; // points to TL/Manager
@@ -38,6 +41,13 @@ const EmployeeSchema = new Schema<IEmployee>(
     division: {
       type: Schema.Types.ObjectId,
       ref: "Division",
+      default: null,
+      index: true,
+    },
+
+    subDivision: {
+      type: Schema.Types.ObjectId,
+      ref: "SubDivision",
       default: null,
       index: true,
     },

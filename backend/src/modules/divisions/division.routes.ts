@@ -10,10 +10,14 @@ import {
   deleteDivision,
   getDivisionOrgChart,
 } from "./division.controller";
+import subDivisionRouter from "./subDivision.routes";
 
 const router = Router();
 
 router.use(requireAuth);
+
+// Nested: /api/divisions/:divisionId/sub-divisions
+router.use("/:divisionId/sub-divisions", subDivisionRouter);
 
 // View: ADMIN/HR/SUPERVISOR (so you can show it in dropdowns)
 router.get(
