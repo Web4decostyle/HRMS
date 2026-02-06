@@ -2,11 +2,10 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Employee } from "../employees/employee.model";
 import { Supervisor } from "../my-info/reportTo/reportTo.model";
-import { Division } from "../divisions/division.model";
 
-/** ✅ Directory search (synced with divisions) */
+/** ✅ Directory search (synced with divisions + subDivisions) */
 export async function searchDirectory(req: Request, res: Response) {
-  const { q, location, jobTitle, divisionId, limit } = req.query;
+  const { q, location, jobTitle, divisionId, subDivisionId, limit } = req.query;
 
   const filter: any = {};
 
@@ -29,17 +28,25 @@ export async function searchDirectory(req: Request, res: Response) {
     filter.jobTitle = jobTitle.trim();
   }
 
-  // ✅ NEW: division filter
+  // ✅ division filter
   if (divisionId && typeof divisionId === "string" && divisionId.trim()) {
     if (mongoose.Types.ObjectId.isValid(divisionId)) {
       filter.division = new mongoose.Types.ObjectId(divisionId);
     }
   }
 
+  // ✅ NEW: subDivision filter
+  if (subDivisionId && typeof subDivisionId === "string" && subDivisionId.trim()) {
+    if (mongoose.Types.ObjectId.isValid(subDivisionId)) {
+      filter.subDivision = new mongoose.Types.ObjectId(subDivisionId);
+    }
+  }
+
   const max = limit ? Math.min(parseInt(limit as string, 10), 200) : 50;
 
   const employees = await Employee.find(filter)
-    .populate("division", "name") // ✅ so directory can show division name
+    .populate("division", "name") // ✅ division name
+    .populate("subDivision", "name division") // ✅ sub-division name (IMPORTANT)
     .sort({ firstName: 1, lastName: 1 })
     .limit(max)
     .lean();
@@ -47,25 +54,36 @@ export async function searchDirectory(req: Request, res: Response) {
   res.json(employees);
 }
 
-/** existing */
+/** ✅ Hierarchy (shape matches frontend types) */
 export async function getEmployeeHierarchy(req: Request, res: Response) {
   const { employeeId } = req.params;
 
   const employee = await Employee.findById(employeeId)
     .populate("division", "name")
+    .populate("subDivision", "name division")
     .lean();
 
   if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-  const supervisors = await Supervisor.find({ employeeId })
-    .populate("supervisorId", "firstName lastName jobTitle email")
+  // Employee -> Supervisor relationships
+  // This returns docs like: { employeeId, supervisorId, reportingMethod }
+  const relsUp = await Supervisor.find({ employeeId })
+    .populate("supervisorId", "firstName lastName jobTitle email division subDivision")
     .lean();
 
-  const subRels = await Supervisor.find({ supervisorId: employeeId })
-    .populate("employeeId", "firstName lastName jobTitle email")
+  // Supervisor -> Employee relationships (direct reports)
+  const relsDown = await Supervisor.find({ supervisorId: employeeId })
+    .populate("employeeId", "firstName lastName jobTitle email division subDivision")
     .lean();
 
-  const subordinates = subRels.map((r: any) => ({
+  // ✅ IMPORTANT: frontend expects `supervisorId` object and `subordinateId` object keys
+  const supervisors = relsUp.map((r: any) => ({
+    _id: r._id,
+    reportingMethod: r.reportingMethod,
+    supervisorId: r.supervisorId,
+  }));
+
+  const subordinates = relsDown.map((r: any) => ({
     _id: r._id,
     reportingMethod: r.reportingMethod,
     subordinateId: r.employeeId,
@@ -75,7 +93,7 @@ export async function getEmployeeHierarchy(req: Request, res: Response) {
 }
 
 /**
- * ✅ NEW: Divisions summary
+ * ✅ Divisions summary
  * GET /api/directory/divisions-summary?location=&jobTitle=
  */
 export async function getDivisionsSummary(req: Request, res: Response) {
@@ -102,7 +120,7 @@ export async function getDivisionsSummary(req: Request, res: Response) {
 
     {
       $lookup: {
-        from: "divisions", // collection for Division model
+        from: "divisions",
         localField: "_id",
         foreignField: "_id",
         as: "division",

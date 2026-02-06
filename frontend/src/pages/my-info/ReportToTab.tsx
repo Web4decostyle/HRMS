@@ -1,127 +1,129 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   useGetEmployeeByIdQuery,
   useGetEmployeesQuery,
-  useUpdateEmployeeMutation,
   type Employee,
 } from "../../features/employees/employeesApi";
 import { useGetDivisionsQuery, type Division } from "../../features/divisions/divisionsApi";
 
 const labelCls = "block text-[11px] font-semibold text-slate-500 mb-1";
-const inputCls =
-  "w-full h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-700 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
+const boxCls =
+  "w-full min-h-9 rounded border border-[#d5d7e5] bg-[#fbfcff] px-3 py-2 text-[12px] text-slate-700";
+const softCard =
+  "rounded-xl border border-[#e3e5f0] bg-white overflow-hidden";
+const tableHead =
+  "bg-[#f5f6fb] text-slate-500";
+const thCls = "px-3 py-2 text-left font-semibold text-[11px]";
+const tdCls = "px-3 py-2 text-[11px] text-slate-700 border-t border-[#f0f1f7]";
+const muted = "text-slate-400";
+
+function fullName(e?: any) {
+  return `${e?.firstName || ""} ${e?.lastName || ""}`.trim() || "—";
+}
+function safe(v: any) {
+  return v ? String(v) : "—";
+}
 
 type Level = "MANAGER" | "TL" | "GRADE1" | "GRADE2";
 
 export default function ReportToTab({ employeeId }: { employeeId: string }) {
-  const { data: employee, isLoading, isError, refetch } =
-    useGetEmployeeByIdQuery(employeeId);
+  const { data: employee, isLoading, isError } = useGetEmployeeByIdQuery(employeeId);
 
   const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
 
-  // Pull all employees once; filter client-side
-  const { data: allEmployees = [] } = useGetEmployeesQuery({ include: "all" } as any);
+  // We need all employees (to resolve manager/TL names by id)
+  const { data: allEmployees = [], isLoading: empLoading } = useGetEmployeesQuery(
+    { include: "all" } as any
+  );
 
-  const [updateEmployee, { isLoading: saving }] = useUpdateEmployeeMutation();
-
-  const [divisionId, setDivisionId] = useState<string>("");
-  const [level, setLevel] = useState<Level>("GRADE1");
-  const [reportsTo, setReportsTo] = useState<string>("");
-
-  // Initialize local state from employee
-  useEffect(() => {
-    if (!employee) return;
-    setDivisionId(((employee as any).division as string) || "");
-    setLevel((((employee as any).level as Level) || "GRADE1") as Level);
-    setReportsTo((((employee as any).reportsTo as string) || "") as string);
+  const divisionId = useMemo(() => {
+    const d = (employee as any)?.division;
+    return d ? String(d) : "";
   }, [employee]);
 
   const division: Division | null = useMemo(() => {
     if (!divisionId) return null;
-    return divisions.find((d) => d._id === divisionId) || null;
-  }, [divisionId, divisions]);
+    return divisions.find((d) => String(d._id) === String(divisionId)) || null;
+  }, [divisions, divisionId]);
 
-  const managerEmployeeId = (division as any)?.managerEmployee as string | null | undefined;
+  const divisionManagerId = useMemo(() => {
+    const id = (division as any)?.managerEmployee;
+    return id ? String(id) : "";
+  }, [division]);
 
-  const manager = useMemo(() => {
-    if (!managerEmployeeId) return null;
-    return allEmployees.find((e) => e._id === managerEmployeeId) || null;
-  }, [managerEmployeeId, allEmployees]);
+  const divisionManager = useMemo(() => {
+    if (!divisionManagerId) return null;
+    return allEmployees.find((e) => String(e._id) === String(divisionManagerId)) || null;
+  }, [divisionManagerId, allEmployees]);
 
-  const tlOptions = useMemo(() => {
-    if (!divisionId) return [];
-    return allEmployees
-      .filter(
-        (e: any) =>
-          String(e.division || "") === String(divisionId) &&
-          e.level === "TL" &&
-          e.status !== "INACTIVE"
-      )
-      .sort((a, b) => (a.firstName || "").localeCompare(b.firstName || ""));
-  }, [allEmployees, divisionId]);
+  const level = useMemo(() => {
+    return (((employee as any)?.level as Level) || "GRADE1") as Level;
+  }, [employee]);
 
-  const currentTL = useMemo(() => {
-    if (!reportsTo) return null;
-    return allEmployees.find((e) => e._id === reportsTo) || null;
-  }, [reportsTo, allEmployees]);
+  // employee.reportsTo can be TL (for grade) OR manager (for TL)
+  const reportsToId = useMemo(() => {
+    const r = (employee as any)?.reportsTo;
+    return r ? String(r) : "";
+  }, [employee]);
 
-  const mySubordinates = useMemo(() => {
-    if (!employee) return [];
-    if ((employee as any).level !== "TL") return [];
-    return allEmployees.filter(
-      (e: any) =>
-        String(e.division || "") === String(divisionId) &&
-        String(e.reportsTo || "") === String(employee._id) &&
-        (e.level === "GRADE1" || e.level === "GRADE2")
-    );
-  }, [allEmployees, employee, divisionId]);
+  const reportsToEmployee = useMemo(() => {
+    if (!reportsToId) return null;
+    return allEmployees.find((e) => String(e._id) === String(reportsToId)) || null;
+  }, [reportsToId, allEmployees]);
 
-  const myTLs = useMemo(() => {
-    if (!employee) return [];
-    if ((employee as any).level !== "MANAGER") return [];
-    return allEmployees.filter(
-      (e: any) => String(e.division || "") === String(divisionId) && e.level === "TL"
-    );
-  }, [allEmployees, employee, divisionId]);
+  // Determine role states
+  const isManagerOfThisDivision = useMemo(() => {
+    if (!divisionManagerId || !(employee as any)?._id) return false;
+    return String((employee as any)._id) === String(divisionManagerId);
+  }, [divisionManagerId, employee]);
 
-  function onDivisionChange(next: string) {
-    setDivisionId(next);
+  /**
+   * Compute:
+   * - Reporting Manager
+   * - Reporting TL
+   *
+   * Rules:
+   * 1) If no division -> none
+   * 2) If employee is Division Manager -> Reporting Manager = —
+   * 3) If employee level TL -> Reporting Manager = Division Manager
+   * 4) If employee level Grade -> Reporting TL = employee.reportsTo (TL), Reporting Manager = TL.reportsTo (manager) if exists, else Division Manager
+   */
+  const reportingTL = useMemo(() => {
+    if (!divisionId) return null;
+    if (isManagerOfThisDivision) return null;
 
-    // ✅ If division changes, reportsTo must be re-selected from that division
-    setReportsTo("");
-  }
-
-  async function onSave() {
-    if (!employee) return;
-
-    // ✅ enforce rules
-    let nextReportsTo: string | null = reportsTo || null;
-
-    if (level === "MANAGER") nextReportsTo = null;
-    if (level === "TL") nextReportsTo = null;
-
-    if ((level === "GRADE1" || level === "GRADE2") && !divisionId) {
-      alert("Select a Division first.");
-      return;
+    if (level === "GRADE1" || level === "GRADE2") {
+      // should be TL
+      return reportsToEmployee;
     }
-    if ((level === "GRADE1" || level === "GRADE2") && !nextReportsTo) {
-      alert("Select a TL for Grade1/Grade2.");
-      return;
+    return null;
+  }, [divisionId, isManagerOfThisDivision, level, reportsToEmployee]);
+
+  const reportingManager = useMemo(() => {
+    if (!divisionId) return null;
+    if (isManagerOfThisDivision) return null;
+
+    if (level === "TL") {
+      // TL -> manager from division (source of truth)
+      return divisionManager;
     }
 
-    await updateEmployee({
-      id: employeeId,
-      data: {
-        division: divisionId || null,
-        level,
-        reportsTo: nextReportsTo,
-      } as any,
-    }).unwrap();
+    if (level === "GRADE1" || level === "GRADE2") {
+      // Grade -> manager = TL.reportsTo if present, else division manager
+      const tl = reportsToEmployee;
+      const mgrId = tl ? String((tl as any).reportsTo || "") : "";
+      const mgr =
+        mgrId
+          ? allEmployees.find((e) => String(e._id) === String(mgrId)) || null
+          : null;
+      return mgr || divisionManager || null;
+    }
 
-    await refetch();
-  }
+    // MANAGER (not division manager) edge case
+    return null;
+  }, [divisionId, isManagerOfThisDivision, level, divisionManager, reportsToEmployee, allEmployees]);
 
-  if (isLoading) {
+  if (isLoading || divLoading || empLoading) {
     return <div className="px-7 py-6 text-[12px] text-slate-500">Loading...</div>;
   }
 
@@ -133,6 +135,8 @@ export default function ReportToTab({ employeeId }: { employeeId: string }) {
     );
   }
 
+  const notAllocated = !divisionId;
+
   return (
     <>
       {/* Header */}
@@ -140,214 +144,180 @@ export default function ReportToTab({ employeeId }: { employeeId: string }) {
         <div>
           <h2 className="text-[13px] font-semibold text-slate-800">Report To</h2>
           <p className="text-[11px] text-slate-500 mt-1">
-            Division-based hierarchy (Manager → TL → Grade1/Grade2)
+            Auto-synced from division assignment & hierarchy (read-only).
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="px-5 h-8 rounded-full bg-[#8bc34a] text-white text-[11px] font-semibold hover:bg-[#7cb342] disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
+        {/* No save button (read-only) */}
+        <span className="text-[11px] px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">
+          Read only
+        </span>
       </div>
 
       <div className="px-7 py-5 space-y-8">
-        {/* Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* ✅ NEW: Division dropdown */}
-          <div>
-            <label className={labelCls}>Division</label>
-            <select
-              value={divisionId}
-              onChange={(e) => onDivisionChange(e.target.value)}
-              className={inputCls}
-            >
-              <option value="">
-                {divLoading ? "Loading..." : "-- Select Division --"}
-              </option>
-              {divisions
-                .filter((d) => d.isActive !== false)
-                .map((d) => (
-                  <option key={d._id} value={d._id}>
-                    {d.name}
-                  </option>
-                ))}
-            </select>
-            <div className="text-[10px] text-slate-400 mt-1">
-              Changing division will clear Team Lead selection.
-            </div>
-          </div>
-
-          <div>
-            <label className={labelCls}>Level</label>
-            <select
-              value={level}
-              onChange={(e) => {
-                const v = e.target.value as Level;
-                setLevel(v);
-                if (v === "MANAGER" || v === "TL") setReportsTo("");
-              }}
-              className={inputCls}
-            >
-              <option value="MANAGER">MANAGER</option>
-              <option value="TL">TL</option>
-              <option value="GRADE1">GRADE1</option>
-              <option value="GRADE2">GRADE2</option>
-            </select>
-          </div>
-
-          {(level === "GRADE1" || level === "GRADE2") && (
-            <div className="md:col-span-2">
-              <label className={labelCls}>Team Lead (reportsTo)</label>
-              <select
-                value={reportsTo}
-                onChange={(e) => setReportsTo(e.target.value)}
-                className={inputCls}
-                disabled={!divisionId}
-              >
-                <option value="">
-                  {!divisionId ? "Select Division first" : "-- Select TL --"}
-                </option>
-                {tlOptions.map((tl: Employee) => (
-                  <option key={tl._id} value={tl._id}>
-                    {tl.firstName} {tl.lastName} ({tl.employeeId})
-                  </option>
-                ))}
-              </select>
-
-              {currentTL && (
-                <div className="text-[11px] text-slate-500 mt-1">
-                  Selected TL:{" "}
-                  <b>
-                    {currentTL.firstName} {currentTL.lastName}
-                  </b>
+        {/* Allocation status */}
+        <div className="rounded-xl border border-[#e3e5f0] bg-white p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelCls}>Division</label>
+              <div className={boxCls}>
+                {notAllocated ? (
+                  <span className="text-rose-600 font-semibold">
+                    Not allocated to any division
+                  </span>
+                ) : (
+                  <span className="font-semibold text-slate-800">
+                    {division?.name || "—"}
+                  </span>
+                )}
+              </div>
+              {!notAllocated && isManagerOfThisDivision && (
+                <div className="text-[10px] text-emerald-700 mt-1">
+                  ✅ This employee is the manager of this division.
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className={labelCls}>Level</label>
+              <div className={boxCls}>
+                <span className="font-semibold text-slate-800">{safe(level)}</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1">
+                Level is stored on employee (auto rules apply in backend).
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>Employee reportsTo (raw)</label>
+              <div className={boxCls}>
+                {reportsToEmployee ? (
+                  <span className="text-slate-800">
+                    {fullName(reportsToEmployee)}{" "}
+                    <span className="text-slate-400">
+                      ({(reportsToEmployee as any).employeeId || "—"})
+                    </span>
+                  </span>
+                ) : (
+                  <span className={muted}>—</span>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1">
+                (For Grade → TL, For TL → Manager)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reporting badges (what user cares about) */}
+        <div className="rounded-xl border border-[#e3e5f0] bg-white p-4">
+          <div className="text-[12px] font-semibold text-slate-700 mb-3">
+            Reporting (calculated)
+          </div>
+
+          {notAllocated ? (
+            <div className="text-[12px] text-rose-600">
+              Employee is not allocated to any division. Assign a division to enable reporting chain.
+            </div>
+          ) : isManagerOfThisDivision ? (
+            <div className="text-[12px] text-emerald-700">
+              This employee is the <b>Division Manager</b> for <b>{division?.name}</b>.
+              No reporting manager is required.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div className="text-[11px] font-semibold text-slate-500">
+                  Reporting Manager
+                </div>
+                <div className="mt-1 text-[12px] font-semibold text-slate-800">
+                  {reportingManager ? fullName(reportingManager) : "—"}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {reportingManager ? (reportingManager as any).email || "—" : "—"}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div className="text-[11px] font-semibold text-slate-500">
+                  Reporting TL
+                </div>
+                <div className="mt-1 text-[12px] font-semibold text-slate-800">
+                  {reportingTL ? fullName(reportingTL) : "—"}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {reportingTL ? (reportingTL as any).email || "—" : "—"}
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Division manager */}
+        {/* Division Manager (synced) */}
         <div>
           <h3 className="text-[12px] font-semibold text-slate-700 mb-3">
-            Division Manager
+            Division Manager (synced)
           </h3>
 
-          <div className="border border-[#e3e5f0] rounded-lg overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead className="bg-[#f5f6fb] text-slate-500">
+          <div className={softCard}>
+            <table className="w-full">
+              <thead className={tableHead}>
                 <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Name</th>
-                  <th className="px-3 py-2 text-left font-semibold">Employee Id</th>
-                  <th className="px-3 py-2 text-left font-semibold">Email</th>
+                  <th className={thCls}>Name</th>
+                  <th className={thCls}>Employee Id</th>
+                  <th className={thCls}>Email</th>
                 </tr>
               </thead>
               <tbody>
-                {!divisionId ? (
+                {notAllocated ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
-                      No division selected
+                    <td colSpan={3} className="px-3 py-8 text-center text-[11px] text-slate-400">
+                      No division selected (employee not allocated)
                     </td>
                   </tr>
-                ) : !manager ? (
+                ) : !divisionManager ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
-                      No manager set for this division
+                    <td colSpan={3} className="px-3 py-8 text-center text-[11px] text-rose-600">
+                      No manager set for this division (configure it in Divisions)
                     </td>
                   </tr>
                 ) : (
-                  <tr className="border-t border-[#f0f1f7]">
-                    <td className="px-3 py-2">
-                      {manager.firstName} {manager.lastName}
-                    </td>
-                    <td className="px-3 py-2">{manager.employeeId}</td>
-                    <td className="px-3 py-2">{manager.email}</td>
+                  <tr>
+                    <td className={tdCls}>{fullName(divisionManager)}</td>
+                    <td className={tdCls}>{(divisionManager as any).employeeId || "—"}</td>
+                    <td className={tdCls}>{(divisionManager as any).email || "—"}</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {!notAllocated && division && (
+            <div className="text-[10px] text-slate-400 mt-2">
+              Manager is pulled from Division settings and is not editable here.
+            </div>
+          )}
         </div>
 
-        {/* TL team */}
-        {(employee as any).level === "TL" && (
-          <div>
-            <h3 className="text-[12px] font-semibold text-slate-700 mb-3">
-              My Team (Grade1/Grade2)
-            </h3>
-
-            <div className="border border-[#e3e5f0] rounded-lg overflow-hidden">
-              <table className="w-full text-[11px]">
-                <thead className="bg-[#f5f6fb] text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold">Name</th>
-                    <th className="px-3 py-2 text-left font-semibold">Level</th>
-                    <th className="px-3 py-2 text-left font-semibold">Email</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mySubordinates.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
-                        No direct reports
-                      </td>
-                    </tr>
-                  ) : (
-                    mySubordinates.map((s: any) => (
-                      <tr key={s._id} className="border-t border-[#f0f1f7]">
-                        <td className="px-3 py-2">
-                          {s.firstName} {s.lastName}
-                        </td>
-                        <td className="px-3 py-2">{s.level}</td>
-                        <td className="px-3 py-2">{s.email}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+        {/* Optional: Extra debug / future info from division */}
+        {!notAllocated && (
+          <div className="rounded-xl border border-[#e3e5f0] bg-white p-4">
+            <div className="text-[12px] font-semibold text-slate-700 mb-2">
+              Division details
             </div>
-          </div>
-        )}
-
-        {/* Manager TL list */}
-        {(employee as any).level === "MANAGER" && (
-          <div>
-            <h3 className="text-[12px] font-semibold text-slate-700 mb-3">
-              TLs in My Division
-            </h3>
-
-            <div className="border border-[#e3e5f0] rounded-lg overflow-hidden">
-              <table className="w-full text-[11px]">
-                <thead className="bg-[#f5f6fb] text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold">Name</th>
-                    <th className="px-3 py-2 text-left font-semibold">Employee Id</th>
-                    <th className="px-3 py-2 text-left font-semibold">Email</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {myTLs.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
-                        No TLs found in this division
-                      </td>
-                    </tr>
-                  ) : (
-                    myTLs.map((s: any) => (
-                      <tr key={s._id} className="border-t border-[#f0f1f7]">
-                        <td className="px-3 py-2">
-                          {s.firstName} {s.lastName}
-                        </td>
-                        <td className="px-3 py-2">{s.employeeId}</td>
-                        <td className="px-3 py-2">{s.email}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-700">
+              <div>
+                <span className="text-slate-500">Division:</span>{" "}
+                <span className="font-semibold">{division?.name || "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Manager EmployeeId:</span>{" "}
+                <span className="font-semibold">{divisionManagerId || "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Employee DivisionId:</span>{" "}
+                <span className="font-semibold">{divisionId || "—"}</span>
+              </div>
             </div>
           </div>
         )}

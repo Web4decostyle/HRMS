@@ -13,8 +13,8 @@ export interface DirectoryEmployee {
   // division can be ObjectId OR populated
   division?: string | { _id: string; name: string };
 
-  // ✅ NEW: subDivision can be ObjectId OR populated
-  subDivision?: string | { _id: string; name: string };
+  // subDivision can be ObjectId OR populated (optionally includes parent division)
+  subDivision?: string | { _id: string; name: string; division?: string | { _id: string; name: string } };
 }
 
 export interface HierarchyResponse {
@@ -44,7 +44,7 @@ export const directoryApi = createApi({
   baseQuery: authorizedBaseQuery,
   endpoints: (builder) => ({
     /**
-     * ✅ UPDATED: supports subDivisionId too
+     * Supports subDivisionId too
      * Backend should accept: q, location, jobTitle, divisionId, subDivisionId
      */
     searchEmployees: builder.query<
@@ -76,7 +76,7 @@ export const directoryApi = createApi({
     }),
 
     /**
-     * ✅ Division summary endpoint
+     * Division summary endpoint
      * GET /api/directory/divisions-summary?location=&jobTitle=
      */
     getDivisionsSummary: builder.query<

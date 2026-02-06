@@ -1,230 +1,102 @@
 // frontend/src/pages/pim/EmployeeProfilePage.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  useGetEmployeeByIdQuery,
-  useUpdateEmployeeMutation,
-} from "../../features/employees/employeesApi";
-import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
-import TransferDivisionModal from "../../components/employees/TransferDivisionModal";
+import { useSelector } from "react-redux";
+import { ArrowLeft, ShieldAlert, UserRound } from "lucide-react";
 
-function isValidObjectId(id?: string) {
-  return !!id && /^[a-f\d]{24}$/i.test(id);
-}
+import MyInfoPage from "../my-info/MyInfoPage";
+import { selectAuthRole } from "../../features/auth/selectors";
 
-function getDivisionIdFromEmployee(emp: any): string | null {
-  if (!emp) return null;
-
-  const div = emp.division;
-  if (!div) return null;
-
-  // If backend returns ObjectId string
-  if (typeof div === "string") return div;
-
-  // If backend returns populated object
-  if (typeof div === "object" && div._id) return String(div._id);
-
-  return null;
-}
-
-function getDivisionNameFromEmployee(emp: any): string | null {
-  if (!emp) return null;
-
-  const div = emp.division;
-  if (!div) return null;
-
-  // If populated object contains name
-  if (typeof div === "object" && div.name) return String(div.name);
-
-  return null;
+function isAdminOrHr(role?: string | null) {
+  const r = String(role || "").toUpperCase();
+  return r === "ADMIN" || r === "HR";
 }
 
 export default function EmployeeProfilePage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const role = useSelector(selectAuthRole);
 
-  const validId = isValidObjectId(id);
+  const allowed = useMemo(() => isAdminOrHr(role), [role]);
 
-  const {
-    data: employee,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useGetEmployeeByIdQuery(id as string, {
-    skip: !validId,
-  });
-
-  const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
-
-  const [updateEmployee, { isLoading: isUpdating }] =
-    useUpdateEmployeeMutation();
-
-  const [openTransfer, setOpenTransfer] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  const currentDivisionId = useMemo(
-    () => getDivisionIdFromEmployee(employee as any),
-    [employee]
-  );
-
-  const divisionName = useMemo(() => {
-    // Prefer populated division name (fast path)
-    const populatedName = getDivisionNameFromEmployee(employee as any);
-    if (populatedName) return populatedName;
-
-    // Else map by id using divisions list
-    if (!employee) return "—";
-    const divId = getDivisionIdFromEmployee(employee as any);
-    if (!divId) return "—";
-    const found = divisions.find((d) => String(d._id) === String(divId));
-    return found?.name ?? "—";
-  }, [employee, divisions]);
-
-  async function doTransferDivision(nextDivisionId: string | null) {
-    if (!validId || !id) return;
-
-    setLocalError(null);
-    try {
-      await updateEmployee({
-        id,
-        data: { division: nextDivisionId },
-      }).unwrap();
-
-      await refetch();
-    } catch (e: any) {
-      setLocalError(
-        e?.data?.message ||
-          e?.message ||
-          "Failed to transfer division. Please try again."
-      );
-      throw e;
-    }
+  if (!id) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">
+        Missing employee id.
+      </div>
+    );
   }
 
-  // 🔴 This is YOUR current issue: URL is literally /employees/:id
-  if (!validId) {
+  if (!allowed) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-rose-700">
-          Employee not found. (Invalid employee id in URL)
+      <div className="min-h-[70vh] bg-[#f5f6fa] flex items-center justify-center px-6">
+        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-[14px] font-semibold text-slate-800">
+                Access denied
+              </div>
+              <div className="text-[12px] text-slate-500 mt-0.5">
+                This page is only available for Admin and HR.
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="h-10 px-5 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:opacity-95"
+            >
+              Go back
+            </button>
+          </div>
         </div>
-        {/* <div className="mt-2 text-xs text-slate-500">
-          Open an employee using a real id: <code>/employees/&lt;mongoId&gt;</code>
-        </div> */}
-
-        <button
-          className="mt-4 px-4 h-9 rounded-full border border-slate-200 hover:bg-slate-50 text-xs font-semibold"
-          onClick={() => navigate("/employees")}
-        >
-          Back
-        </button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-slate-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (isError || !employee) {
-    const msg =
-      (error as any)?.data?.message ||
-      (error as any)?.error ||
-      "Employee not found.";
-
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="text-sm text-rose-700">{msg}</div>
-        <button
-          className="mt-4 px-4 h-9 rounded-full border border-slate-200 hover:bg-slate-50 text-xs font-semibold"
-          onClick={() => navigate("/employees")}
-        >
-          Back
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900">
-            {employee.firstName} {employee.lastName}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Employee ID: {employee.employeeId}
-          </p>
-        </div>
+    <div className="bg-[#f5f6fa] min-h-screen">
+      {/* Top header bar (small UX improvement) */}
+      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center"
+              title="Back"
+            >
+              <ArrowLeft className="h-4 w-4 text-slate-600" />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => navigate("/employees")}
-          className="px-4 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700"
-        >
-          Back
-        </button>
-      </div>
-
-      {localError && (
-        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg">
-          {localError}
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">
-            Organization Details
-          </h2>
-
-          <button
-            type="button"
-            onClick={() => setOpenTransfer(true)}
-            className="px-4 h-9 rounded-full bg-lime-500 hover:bg-lime-600 text-white text-xs font-semibold disabled:opacity-60"
-            disabled={isUpdating || divLoading}
-          >
-            Transfer Division
-          </button>
-        </div>
-
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-[11px] font-semibold text-slate-500">
-              Division
-            </div>
-            <div className="mt-1 text-slate-800 font-medium">{divisionName}</div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-[11px] font-semibold text-slate-500">
-              Status
-            </div>
-            <div className="mt-1 text-slate-800 font-medium">
-              {employee.status}
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-xl bg-[#fef4ea] text-[#f7941d] flex items-center justify-center">
+                <UserRound className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-[13px] font-semibold text-slate-800">
+                  Employee Profile
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Admin/HR view (PIM)
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-4 md:col-span-2">
-            <div className="text-[11px] font-semibold text-slate-500">Email</div>
-            <div className="mt-1 text-slate-800 font-medium">
-              {employee.email}
-            </div>
+          <div className="text-[11px] text-slate-500">
+            Employee ID: <span className="font-semibold text-slate-700">{id}</span>
           </div>
         </div>
       </div>
 
-      <TransferDivisionModal
-        open={openTransfer}
-        onClose={() => setOpenTransfer(false)}
-        currentDivisionId={currentDivisionId}
-        onConfirm={doTransferDivision}
-      />
+      {/* Reuse your existing MyInfo UI in PIM mode */}
+      <MyInfoPage employeeId={id} />
     </div>
   );
 }

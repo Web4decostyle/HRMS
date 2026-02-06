@@ -1,602 +1,823 @@
-import { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  useSearchEmployeesQuery,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  Loader2,
+  RefreshCw,
+  Search,
+  Users,
+  X,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  ArrowRightLeft,
+} from "lucide-react";
+
+import {
   useGetHierarchyQuery,
   useGetDivisionsSummaryQuery,
+  useSearchEmployeesQuery,
+  type DirectoryEmployee,
 } from "../../features/directory/directoryApi";
-
-import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
-import { useGetSubDivisionsQuery } from "../../features/divisions/subDivisionsApi";
+import {
+  useGetDivisionsTreeQuery,
+  type DivisionTree,
+} from "../../features/divisions/divisionsApi";
 import { useUpdateEmployeeMutation } from "../../features/employees/employeesApi";
 import { selectAuthRole } from "../../features/auth/selectors";
 
+const shell = "min-h-screen bg-[#f4f5fb]";
+const card = "bg-white rounded-2xl border border-slate-100 shadow-sm";
+
+const pill =
+  "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700";
+
+function initials(first?: string, last?: string) {
+  const f = (first || "").trim().slice(0, 1).toUpperCase();
+  const l = (last || "").trim().slice(0, 1).toUpperCase();
+  return `${f}${l}` || "?";
+}
+
+function fullName(e?: Partial<DirectoryEmployee>) {
+  return `${e?.firstName || ""} ${e?.lastName || ""}`.trim() || "—";
+}
+
+function isAdminRole(role?: string | null) {
+  return String(role || "").toUpperCase() === "ADMIN";
+}
+
+function valueToId(v: any): string {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "object" && v._id) return String(v._id);
+  return "";
+}
+
+function valueToName(v: any): string {
+  if (!v) return "";
+  if (typeof v === "object" && v.name) return String(v.name);
+  return "";
+}
+
+function useDebouncedValue<T>(value: T, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function DirectoryPage() {
   const role = useSelector(selectAuthRole);
-  const isAdmin = String(role || "").toUpperCase() === "ADMIN";
+  const isAdmin = isAdminRole(role);
 
-  const [ui, setUi] = useState({
-    name: "",
-    jobTitle: "",
-    location: "",
-    divisionId: "",
-    subDivisionId: "", // ✅ NEW
-  });
+  const { data: divisionsTree = [], isLoading: divLoading } =
+    useGetDivisionsTreeQuery();
 
-  const [applied, setApplied] = useState({
-    name: "",
-    jobTitle: "",
-    location: "",
-    divisionId: "",
-    subDivisionId: "", // ✅ NEW
-  });
-
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [activeEmployeeId, setActiveEmployeeId] = useState<string | null>(null);
 
-  const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
+  // Filters (live)
+  const [filters, setFilters] = useState({
+    q: "",
+    jobTitle: "",
+    location: "",
+    divisionId: "",
+    subDivisionId: "",
+  });
 
-  // ✅ Load sub-divisions for selected division (UI-only)
-  const { data: subDivisions = [], isLoading: subLoading } =
-    useGetSubDivisionsQuery(
-      { divisionId: ui.divisionId },
-      { skip: !ui.divisionId }
-    );
+  const dq = useDebouncedValue(filters.q, 300);
+  const dJob = useDebouncedValue(filters.jobTitle, 250);
+  const dLoc = useDebouncedValue(filters.location, 250);
 
   const queryArgs = useMemo(() => {
     const has =
-      applied.name.trim() ||
-      applied.jobTitle.trim() ||
-      applied.location.trim() ||
-      applied.divisionId.trim() ||
-      applied.subDivisionId.trim();
+      dq.trim() ||
+      dJob.trim() ||
+      dLoc.trim() ||
+      filters.divisionId.trim() ||
+      filters.subDivisionId.trim();
 
     if (!has) return undefined;
-
     return {
-      q: applied.name.trim() || undefined,
-      jobTitle: applied.jobTitle || undefined,
-      location: applied.location || undefined,
-      divisionId: applied.divisionId || undefined,
-      subDivisionId: applied.subDivisionId || undefined,
+      q: dq.trim() || undefined,
+      jobTitle: dJob.trim() || undefined,
+      location: dLoc.trim() || undefined,
+      divisionId: filters.divisionId || undefined,
+      subDivisionId: filters.subDivisionId || undefined,
     };
-  }, [applied]);
+  }, [dq, dJob, dLoc, filters.divisionId, filters.subDivisionId]);
 
-  const { data: employees = [], isLoading } = useSearchEmployeesQuery(queryArgs);
-
-  const summaryArgs = useMemo(() => {
-    const has = applied.location.trim() || applied.jobTitle.trim();
-    return has
-      ? {
-          location: applied.location || undefined,
-          jobTitle: applied.jobTitle || undefined,
-        }
-      : undefined;
-  }, [applied.location, applied.jobTitle]);
+  const { data: employees = [], isLoading: empLoading } =
+    useSearchEmployeesQuery(queryArgs);
 
   const { data: divSummary = [], isLoading: summaryLoading } =
-    useGetDivisionsSummaryQuery(summaryArgs);
+    useGetDivisionsSummaryQuery(
+      dLoc.trim() || dJob.trim()
+        ? { location: dLoc.trim() || undefined, jobTitle: dJob.trim() || undefined }
+        : undefined
+    );
 
-  const { data: hierarchy, isLoading: isHierarchyLoading } = useGetHierarchyQuery(
+  const summaryByDivision = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const row of divSummary) m.set(String(row.divisionId || ""), row.count);
+    return m;
+  }, [divSummary]);
+
+  const activeEmployee = useMemo(
+    () => employees.find((e) => e._id === activeEmployeeId),
+    [employees, activeEmployeeId]
+  );
+
+  const { data: hierarchy, isLoading: hierLoading } = useGetHierarchyQuery(
     activeEmployeeId || "",
     { skip: !activeEmployeeId }
   );
 
-  const [updateEmployee, { isLoading: isTransferring }] =
+  // Transfer (admin)
+  const [updateEmployee, { isLoading: transferring }] =
     useUpdateEmployeeMutation();
+  const [transfer, setTransfer] = useState({
+    divisionId: "",
+    subDivisionId: "",
+  });
 
-  // ✅ Transfer state
-  const [transferDivisionId, setTransferDivisionId] = useState<string>("");
-  const [transferSubDivisionId, setTransferSubDivisionId] = useState<string>("");
-
-  const { data: transferSubDivisions = [] } = useGetSubDivisionsQuery(
-    { divisionId: transferDivisionId },
-    { skip: !transferDivisionId }
-  );
-
-  function onReset() {
-    setUi({ name: "", jobTitle: "", location: "", divisionId: "", subDivisionId: "" });
-    setApplied({ name: "", jobTitle: "", location: "", divisionId: "", subDivisionId: "" });
-    setActiveEmployeeId(null);
-    setTransferDivisionId("");
-    setTransferSubDivisionId("");
-  }
-
-  function onSearch() {
-    setApplied({
-      name: ui.name,
-      jobTitle: ui.jobTitle,
-      location: ui.location,
-      divisionId: ui.divisionId,
-      subDivisionId: ui.subDivisionId,
+  useEffect(() => {
+    // prefill transfer when opening drawer
+    if (!activeEmployee) return;
+    setTransfer({
+      divisionId: valueToId(activeEmployee.division) || "",
+      subDivisionId: valueToId(activeEmployee.subDivision) || "",
     });
+  }, [activeEmployeeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectedDivision = useMemo(() => {
+    return divisionsTree.find((d) => String(d._id) === String(filters.divisionId));
+  }, [divisionsTree, filters.divisionId]);
+
+  const activeTitle = useMemo(() => {
+    const dName = selectedDivision?.name || "All divisions";
+    const sName =
+      filters.subDivisionId && selectedDivision
+        ? selectedDivision.subDivisions?.find(
+            (s) => String(s._id) === String(filters.subDivisionId)
+          )?.name
+        : "";
+    return sName ? `${dName} • ${sName}` : dName;
+  }, [selectedDivision, filters.subDivisionId]);
+
+  function resetAll() {
+    setFilters({ q: "", jobTitle: "", location: "", divisionId: "", subDivisionId: "" });
+    setActiveEmployeeId(null);
   }
 
-  const selectedDivisionName =
-    ui.divisionId && divisions.find((d: any) => d._id === ui.divisionId)?.name;
-
-  function getDivisionNameFromEmployee(emp: any) {
-    if (!emp?.division) return "Unassigned";
-    if (typeof emp.division === "object" && emp.division?.name) return emp.division.name;
-    const found = divisions.find((d: any) => String(d._id) === String(emp.division));
-    return found?.name || "Unassigned";
+  function pickDivision(divisionId: string) {
+    setFilters((s) => ({ ...s, divisionId, subDivisionId: "" }));
+    setExpanded((p) => ({ ...p, [divisionId]: true }));
   }
 
-  function getSubDivisionNameFromEmployee(emp: any) {
-    if (!emp?.subDivision) return "—";
-    if (typeof emp.subDivision === "object" && emp.subDivision?.name) return emp.subDivision.name;
-
-    // try lookup in currently loaded subDivisions
-    const found = subDivisions.find((s: any) => String(s._id) === String(emp.subDivision));
-    return found?.name || "—";
+  function pickSubDivision(divisionId: string, subDivisionId: string) {
+    setFilters((s) => ({ ...s, divisionId, subDivisionId }));
+    setExpanded((p) => ({ ...p, [divisionId]: true }));
   }
 
   async function confirmTransfer() {
     if (!isAdmin) return;
     if (!activeEmployeeId) return;
-    if (!transferDivisionId) return;
+    if (!transfer.divisionId) return;
 
     await updateEmployee({
       id: activeEmployeeId,
       data: {
-        // ✅ Transfer
-        division: transferDivisionId,
-
-        // ✅ IMPORTANT: if you change division, clear old subDivision (prevents invalid links)
-        subDivision: transferSubDivisionId || null,
+        division: transfer.divisionId,
+        subDivision: transfer.subDivisionId || null,
       } as any,
     }).unwrap();
-
-    setActiveEmployeeId(null);
-    setTransferDivisionId("");
-    setTransferSubDivisionId("");
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5fb] px-8 py-6">
-      {/* FILTER CARD */}
-      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div className="px-6 pt-6 flex items-center justify-between">
-          <h1 className="text-sm font-semibold text-slate-700">Directory</h1>
-          <button
-            type="button"
-            className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"
-            title="Collapse"
-          >
-            ▴
-          </button>
-        </div>
-
-        <div className="px-6 pb-6 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Employee Name</label>
-              <input
-                value={ui.name}
-                onChange={(e) => setUi((s) => ({ ...s, name: e.target.value }))}
-                placeholder="Type for hints..."
-                className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Job Title</label>
-              <div className="relative">
-                <select
-                  value={ui.jobTitle}
-                  onChange={(e) =>
-                    setUi((s) => ({ ...s, jobTitle: e.target.value }))
-                  }
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
-                >
-                  <option value="">-- Select --</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Team Lead">Team Lead</option>
-                  <option value="Staff">Staff</option>
-                </select>
-                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  ▾
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Location</label>
-              <div className="relative">
-                <select
-                  value={ui.location}
-                  onChange={(e) =>
-                    setUi((s) => ({ ...s, location: e.target.value }))
-                  }
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
-                >
-                  <option value="">-- Select --</option>
-                  <option value="Indore">Indore</option>
-                  <option value="Mumbai">Mumbai</option>
-                  <option value="Delhi">Delhi</option>
-                </select>
-                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  ▾
-                </div>
-              </div>
-            </div>
-
-            {/* Division dropdown */}
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Division</label>
-              <div className="relative">
-                <select
-                  value={ui.divisionId}
-                  onChange={(e) => {
-                    const divisionId = e.target.value;
-                    // ✅ reset subDivision when division changes
-                    setUi((s) => ({ ...s, divisionId, subDivisionId: "" }));
-                  }}
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
-                >
-                  <option value="">
-                    {divLoading ? "Loading..." : "-- Select Division --"}
-                  </option>
-                  {divisions
-                    .filter((d: any) => d.isActive !== false)
-                    .map((d: any) => (
-                      <option key={d._id} value={d._id}>
-                        {d.name}
-                      </option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  ▾
-                </div>
-              </div>
-
-              {selectedDivisionName ? (
-                <div className="text-[10px] text-slate-400">
-                  Selected: <span className="font-semibold">{selectedDivisionName}</span>
-                </div>
-              ) : null}
-            </div>
-
-            {/* ✅ NEW: Sub-Division dropdown */}
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-500">Sub-Division</label>
-              <div className="relative">
-                <select
-                  value={ui.subDivisionId}
-                  onChange={(e) =>
-                    setUi((s) => ({ ...s, subDivisionId: e.target.value }))
-                  }
-                  disabled={!ui.divisionId}
-                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200 disabled:opacity-60"
-                >
-                  <option value="">
-                    {!ui.divisionId
-                      ? "Select division first"
-                      : subLoading
-                      ? "Loading..."
-                      : "-- Select Sub-Division --"}
-                  </option>
-                  {subDivisions
-                    .filter((s: any) => s.isActive !== false)
-                    .map((s: any) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  ▾
-                </div>
-              </div>
-            </div>
+    <div className={shell}>
+      <div className="px-6 py-6">
+        {/* Header */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-[15px] font-semibold text-slate-800">Directory</h1>
+            <p className="text-[12px] text-slate-500">
+              Browse employees by division, sub-division and quick filters.
+            </p>
           </div>
 
-          <div className="mt-6 border-t border-slate-100" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                value={filters.q}
+                onChange={(e) => setFilters((s) => ({ ...s, q: e.target.value }))}
+                placeholder="Search name, email, phone…"
+                className="h-10 w-full sm:w-[340px] rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a]"
+              />
+              {!!filters.q && (
+                <button
+                  type="button"
+                  onClick={() => setFilters((s) => ({ ...s, q: "" }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+                  title="Clear"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
 
-          <div className="mt-4 flex justify-end gap-3">
             <button
               type="button"
-              onClick={onReset}
-              className="h-9 px-10 rounded-full border border-[#76c043] text-[#76c043] text-xs font-semibold bg-white hover:bg-[#f6fff0]"
+              onClick={resetAll}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 hover:bg-slate-50"
+              title="Reset"
             >
+              <RefreshCw className="h-4 w-4" />
               Reset
             </button>
-            <button
-              type="button"
-              onClick={onSearch}
-              className="h-9 px-10 rounded-full bg-[#76c043] text-white text-xs font-semibold hover:opacity-95"
-            >
-              Search
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Division summary */}
-      <section className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="text-sm font-semibold text-slate-700">
-            Division Summary
-          </div>
-          <div className="text-[11px] text-slate-400">
-            {summaryLoading ? "Loading…" : `${divSummary.length} divisions`}
           </div>
         </div>
 
-        <div className="px-6 pb-6">
-          {summaryLoading ? (
-            <div className="text-xs text-slate-500">Loading…</div>
-          ) : divSummary.length === 0 ? (
-            <div className="text-xs text-slate-500">No data</div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {divSummary.slice(0, 10).map((d: any) => (
-                <button
-                  key={d.divisionId}
-                  type="button"
-                  onClick={() => {
-                    setUi((s) => ({ ...s, divisionId: d.divisionId, subDivisionId: "" }));
-                    setApplied((s) => ({ ...s, divisionId: d.divisionId, subDivisionId: "" }));
-                  }}
-                  className="rounded-xl border border-slate-100 bg-[#f7f9ff] p-3 text-left hover:ring-2 hover:ring-green-100"
-                >
-                  <div className="text-[11px] text-slate-500">Division</div>
-                  <div className="text-xs font-semibold text-slate-800">
-                    {d.divisionName}
+        {/* Body grid */}
+        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {/* Sidebar */}
+          <aside className={`lg:col-span-4 xl:col-span-3 ${card} overflow-hidden`}>
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-slate-600" />
+                <div>
+                  <div className="text-[12px] font-semibold text-slate-800">
+                    Divisions
                   </div>
-                  <div className="mt-1 text-[11px] text-slate-500">
-                    Employees: <span className="font-semibold">{d.count}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* RESULTS */}
-      <section className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div className="px-6 py-4 text-slate-600 text-sm">
-          ({isLoading ? "…" : employees.length}) Records Found
-        </div>
-
-        <div className="px-6 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {!isLoading &&
-              employees.map((emp: any) => (
-                <button
-                  type="button"
-                  key={emp._id}
-                  onClick={() => {
-                    setActiveEmployeeId(emp._id);
-                    setTransferDivisionId("");
-                    setTransferSubDivisionId("");
-                  }}
-                  className="text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center hover:ring-2 hover:ring-green-100"
-                >
-                  <div className="text-sm font-semibold text-slate-700 capitalize mb-2">
-                    {(emp.firstName || "") + " " + (emp.lastName || "")}
-                  </div>
-
                   <div className="text-[11px] text-slate-500">
-                    {emp.jobTitle || "—"}
+                    Click to filter
                   </div>
-
-                  <div className="mt-2 text-[11px] text-slate-500">
-                    Division:{" "}
-                    <span className="font-semibold text-slate-700">
-                      {getDivisionNameFromEmployee(emp)}
-                    </span>
-                  </div>
-
-                  <div className="mt-1 text-[11px] text-slate-500">
-                    Sub-Division:{" "}
-                    <span className="font-semibold text-slate-700">
-                      {getSubDivisionNameFromEmployee(emp)}
-                    </span>
-                  </div>
-
-                  <div className="w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center mt-4">
-                    <div className="w-16 h-16 rounded-full bg-slate-300" />
-                  </div>
-
-                  <div className="mt-4 text-[11px] text-slate-400">
-                    Click to view hierarchy
-                  </div>
-                </button>
-              ))}
-
-            {isLoading && (
-              <div className="col-span-full text-xs text-slate-500">Loading…</div>
-            )}
-
-            {!isLoading && employees.length === 0 && (
-              <div className="col-span-full text-center text-sm text-slate-500 py-10">
-                No Records Found
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      </section>
 
-      {/* HIERARCHY MODAL */}
-      {activeEmployeeId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-[760px] max-w-[92vw] rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="text-sm font-semibold text-slate-800">
-                Employee Hierarchy
-              </div>
-              <button
-                onClick={() => setActiveEmployeeId(null)}
-                className="text-xs px-4 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-              >
-                Close
-              </button>
+              {(divLoading || summaryLoading) && (
+                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              )}
             </div>
 
-            <div className="p-6">
-              {isHierarchyLoading && (
-                <div className="text-xs text-slate-500">Loading hierarchy…</div>
-              )}
-
-              {!isHierarchyLoading && hierarchy && (
-                <div className="space-y-5">
-                  <div>
-                    <div className="text-[12px] font-semibold text-slate-800">
-                      {hierarchy.employee.firstName} {hierarchy.employee.lastName}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {hierarchy.employee.jobTitle || "—"}
-                    </div>
-
-                    <div className="mt-1 text-[11px] text-slate-500">
-                      Division:{" "}
-                      <span className="font-semibold text-slate-700">
-                        {getDivisionNameFromEmployee(hierarchy.employee)}
-                      </span>
-                    </div>
-
-                    <div className="mt-1 text-[11px] text-slate-500">
-                      Sub-Division:{" "}
-                      <span className="font-semibold text-slate-700">
-                        {getSubDivisionNameFromEmployee(hierarchy.employee)}
-                      </span>
-                    </div>
+            <div className="max-h-[calc(100vh-210px)] overflow-auto p-2">
+              <button
+                type="button"
+                onClick={() => setFilters((s) => ({ ...s, divisionId: "", subDivisionId: "" }))}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50 ${
+                  !filters.divisionId ? "bg-[#fff4e8] border border-[#f8b46a]" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-slate-500" />
+                    <span className="font-medium text-slate-800">All employees</span>
                   </div>
+                  <span className="text-xs text-slate-500">{employees.length}</span>
+                </div>
+              </button>
 
-                  {/* ADMIN ONLY: Transfer UI */}
-                  {isAdmin && (
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                      <div className="text-[12px] font-semibold text-slate-700">
-                        Transfer (Admin only)
-                      </div>
+              <div className="mt-2 space-y-1">
+                {divisionsTree.map((d) => (
+                  <DivisionNode
+                    key={d._id}
+                    division={d}
+                    expanded={!!expanded[d._id]}
+                    onToggle={() =>
+                      setExpanded((p) => ({ ...p, [d._id]: !p[d._id] }))
+                    }
+                    onPickDivision={() => pickDivision(String(d._id))}
+                    onPickSubDivision={(sid) =>
+                      pickSubDivision(String(d._id), String(sid))
+                    }
+                    selectedDivisionId={filters.divisionId}
+                    selectedSubDivisionId={filters.subDivisionId}
+                    count={summaryByDivision.get(String(d._id))}
+                  />
+                ))}
 
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                        <div className="space-y-1">
-                          <label className="text-[11px] text-slate-500">
-                            Division
-                          </label>
-                          <select
-                            value={transferDivisionId}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setTransferDivisionId(v);
-                              setTransferSubDivisionId(""); // reset
-                            }}
-                            className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
-                          >
-                            <option value="">-- Select --</option>
-                            {divisions
-                              .filter((d: any) => d.isActive !== false)
-                              .map((d: any) => (
-                                <option key={d._id} value={d._id}>
-                                  {d.name}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
+                {!divLoading && divisionsTree.length === 0 && (
+                  <div className="p-4 text-sm text-slate-500">No divisions found.</div>
+                )}
+              </div>
+            </div>
+          </aside>
 
-                        <div className="space-y-1">
-                          <label className="text-[11px] text-slate-500">
-                            Sub-Division
-                          </label>
-                          <select
-                            value={transferSubDivisionId}
-                            onChange={(e) => setTransferSubDivisionId(e.target.value)}
-                            disabled={!transferDivisionId}
-                            className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200 disabled:opacity-60"
-                          >
-                            <option value="">
-                              {!transferDivisionId
-                                ? "Select division first"
-                                : "-- Optional --"}
-                            </option>
-                            {transferSubDivisions
-                              .filter((s: any) => s.isActive !== false)
-                              .map((s: any) => (
-                                <option key={s._id} value={s._id}>
-                                  {s.name}
-                                </option>
-                              ))}
-                          </select>
-                          <div className="text-[10px] text-slate-400">
-                            If not selected, sub-division will be cleared.
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={!transferDivisionId || isTransferring}
-                          onClick={confirmTransfer}
-                          className="h-10 px-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold disabled:opacity-60"
-                        >
-                          {isTransferring ? "Transferring..." : "Transfer"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border border-slate-100 rounded-xl p-4">
-                      <div className="text-[12px] font-semibold text-slate-700 mb-3">
-                        Reports To
-                      </div>
-                      {hierarchy.supervisors.length === 0 ? (
-                        <div className="text-[11px] text-slate-400">
-                          No supervisor assigned
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {hierarchy.supervisors.map((s: any) => (
-                            <div key={s._id} className="text-[11px] text-slate-700">
-                              <span className="font-semibold">
-                                {s.supervisorId?.firstName} {s.supervisorId?.lastName}
-                              </span>{" "}
-                              <span className="text-slate-400">
-                                ({s.reportingMethod || "Direct"})
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border border-slate-100 rounded-xl p-4">
-                      <div className="text-[12px] font-semibold text-slate-700 mb-3">
-                        Direct Reports
-                      </div>
-                      {hierarchy.subordinates.length === 0 ? (
-                        <div className="text-[11px] text-slate-400">
-                          No subordinates assigned
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {hierarchy.subordinates.map((s: any) => (
-                            <div key={s._id} className="text-[11px] text-slate-700">
-                              <span className="font-semibold">
-                                {s.subordinateId?.firstName} {s.subordinateId?.lastName}
-                              </span>{" "}
-                              <span className="text-slate-400">
-                                ({s.reportingMethod || "Direct"})
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+          {/* Main */}
+          <main className={`lg:col-span-8 xl:col-span-9 ${card} overflow-hidden`}>
+            <div className="border-b border-slate-100 px-6 py-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-[12px] font-semibold text-slate-800">
+                    {activeTitle}
                   </div>
-
-                  <div className="text-[11px] text-slate-400">
-                    Next step: we can make hierarchy fully division-driven (Manager → TL → Staff)
-                    once backend returns division chain.
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    Showing {employees.length} employee{employees.length === 1 ? "" : "s"}
                   </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      value={filters.jobTitle}
+                      onChange={(e) =>
+                        setFilters((s) => ({ ...s, jobTitle: e.target.value }))
+                      }
+                      placeholder="Job title"
+                      className="h-10 w-full sm:w-[170px] rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a]"
+                    />
+                  </div>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      value={filters.location}
+                      onChange={(e) =>
+                        setFilters((s) => ({ ...s, location: e.target.value }))
+                      }
+                      placeholder="Location"
+                      className="h-10 w-full sm:w-[170px] rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Active filter pills */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!!filters.divisionId && (
+                  <span className={pill}>
+                    <Building2 className="h-3.5 w-3.5 text-slate-500" />
+                    {selectedDivision?.name || "Division"}
+                    <button
+                      type="button"
+                      onClick={() => setFilters((s) => ({ ...s, divisionId: "", subDivisionId: "" }))}
+                      className="ml-1 rounded-full p-0.5 text-slate-500 hover:bg-slate-100"
+                      title="Clear division"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {!!filters.subDivisionId && (
+                  <span className={pill}>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                    {selectedDivision?.subDivisions?.find(
+                      (s) => String(s._id) === String(filters.subDivisionId)
+                    )?.name || "Sub-division"}
+                    <button
+                      type="button"
+                      onClick={() => setFilters((s) => ({ ...s, subDivisionId: "" }))}
+                      className="ml-1 rounded-full p-0.5 text-slate-500 hover:bg-slate-100"
+                      title="Clear sub-division"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {!!filters.jobTitle.trim() && (
+                  <span className={pill}>
+                    <Briefcase className="h-3.5 w-3.5 text-slate-500" />
+                    {filters.jobTitle}
+                    <button
+                      type="button"
+                      onClick={() => setFilters((s) => ({ ...s, jobTitle: "" }))}
+                      className="ml-1 rounded-full p-0.5 text-slate-500 hover:bg-slate-100"
+                      title="Clear job title"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {!!filters.location.trim() && (
+                  <span className={pill}>
+                    <MapPin className="h-3.5 w-3.5 text-slate-500" />
+                    {filters.location}
+                    <button
+                      type="button"
+                      onClick={() => setFilters((s) => ({ ...s, location: "" }))}
+                      className="ml-1 rounded-full p-0.5 text-slate-500 hover:bg-slate-100"
+                      title="Clear location"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="relative">
+              {(empLoading || divLoading) && (
+                <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-slate-100 bg-white/80 px-6 py-3 text-xs text-slate-600 backdrop-blur">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading…
                 </div>
               )}
 
-              {!isHierarchyLoading && !hierarchy && (
-                <div className="text-xs text-slate-500">No hierarchy data.</div>
-              )}
+              <div className="max-h-[calc(100vh-250px)] overflow-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b border-slate-100 text-left text-[11px] font-semibold text-slate-500">
+                      <th className="px-6 py-3">Employee</th>
+                      <th className="px-3 py-3">Job</th>
+                      <th className="px-3 py-3">Location</th>
+                      <th className="px-3 py-3">Division</th>
+                      <th className="px-6 py-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((e) => (
+                      <tr
+                        key={e._id}
+                        className="border-b border-slate-50 hover:bg-slate-50/70"
+                      >
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-[#fff4e8] text-[#f7941d] flex items-center justify-center text-xs font-semibold">
+                              {initials(e.firstName, e.lastName)}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-slate-800">
+                                {fullName(e)}
+                              </div>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                {e.email && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Mail className="h-3.5 w-3.5" /> {e.email}
+                                  </span>
+                                )}
+                                {e.phone && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Phone className="h-3.5 w-3.5" /> {e.phone}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-700">
+                          {e.jobTitle || "—"}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-700">
+                          {e.location || "—"}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm text-slate-700">
+                              {valueToName(e.division) || "Unassigned"}
+                            </span>
+                            {valueToName(e.subDivision) ? (
+                              <span className="text-[11px] text-slate-500">
+                                {valueToName(e.subDivision)}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">—</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setActiveEmployeeId(e._id)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                          >
+                            View
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {!empLoading && employees.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-10 text-center">
+                          <div className="mx-auto max-w-md">
+                            <div className="text-sm font-semibold text-slate-800">
+                              No employees found
+                            </div>
+                            <div className="mt-1 text-sm text-slate-500">
+                              Try clearing filters or searching with a different keyword.
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </main>
+        </div>
+      </div>
+
+      {/* Drawer */}
+      <AnimatePresence>
+        {!!activeEmployeeId && (
+          <motion.div
+            className="fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/30"
+              onClick={() => setActiveEmployeeId(null)}
+            />
+
+            <motion.div
+              className="absolute right-0 top-0 h-full w-full max-w-[520px] bg-white shadow-2xl"
+              initial={{ x: 40, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div>
+                  <div className="text-[12px] font-semibold text-slate-800">
+                    Employee details
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">
+                    Hierarchy + quick actions
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveEmployeeId(null)}
+                  className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                  title="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="h-[calc(100vh-70px)] overflow-auto px-6 py-5">
+                {/* Profile */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-[#fff4e8] text-[#f7941d] flex items-center justify-center text-sm font-semibold">
+                      {initials(activeEmployee?.firstName, activeEmployee?.lastName)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[15px] font-semibold text-slate-800">
+                        {fullName(activeEmployee)}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-[12px] text-slate-600">
+                        {activeEmployee?.jobTitle && (
+                          <span className="inline-flex items-center gap-1">
+                            <Briefcase className="h-4 w-4" /> {activeEmployee.jobTitle}
+                          </span>
+                        )}
+                        {activeEmployee?.location && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-4 w-4" /> {activeEmployee.location}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 text-[12px] text-slate-600">
+                        <span className="font-medium text-slate-700">Division:</span>{" "}
+                        {valueToName(activeEmployee?.division) || "Unassigned"}
+                        {valueToName(activeEmployee?.subDivision)
+                          ? ` • ${valueToName(activeEmployee?.subDivision)}`
+                          : ""}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hierarchy */}
+                <div className="mt-4">
+                  <div className="text-[12px] font-semibold text-slate-800">
+                    Reporting
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <div className="text-[11px] font-semibold text-slate-500">
+                        Supervisors
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {hierLoading ? (
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                          </div>
+                        ) : (hierarchy?.supervisors || []).length ? (
+                          hierarchy!.supervisors.map((s) => (
+                            <PersonRow
+                              key={s._id}
+                              name={fullName(s.supervisorId)}
+                              subtitle={s.supervisorId.jobTitle || "—"}
+                            />
+                          ))
+                        ) : (
+                          <div className="text-sm text-slate-500">—</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <div className="text-[11px] font-semibold text-slate-500">
+                        Subordinates
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {hierLoading ? (
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                          </div>
+                        ) : (hierarchy?.subordinates || []).length ? (
+                          hierarchy!.subordinates.map((s) => (
+                            <PersonRow
+                              key={s._id}
+                              name={fullName(s.subordinateId)}
+                              subtitle={s.subordinateId.jobTitle || "—"}
+                            />
+                          ))
+                        ) : (
+                          <div className="text-sm text-slate-500">—</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Admin transfer */}
+                {isAdmin && (
+                  <div className="mt-4 rounded-2xl border border-[#f8b46a] bg-[#fffaf3] p-4">
+                    <div className="flex items-center gap-2">
+                      <ArrowRightLeft className="h-4 w-4 text-[#f7941d]" />
+                      <div className="text-[12px] font-semibold text-slate-800">
+                        Transfer employee
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                          Division
+                        </label>
+                        <select
+                          value={transfer.divisionId}
+                          onChange={(e) =>
+                            setTransfer({ divisionId: e.target.value, subDivisionId: "" })
+                          }
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a]"
+                        >
+                          <option value="">-- Select division --</option>
+                          {divisionsTree.map((d) => (
+                            <option key={d._id} value={d._id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                          Sub-division
+                        </label>
+                        <select
+                          value={transfer.subDivisionId}
+                          onChange={(e) =>
+                            setTransfer((s) => ({ ...s, subDivisionId: e.target.value }))
+                          }
+                          disabled={!transfer.divisionId}
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a] disabled:bg-slate-50 disabled:text-slate-400"
+                        >
+                          <option value="">-- (Optional) --</option>
+                          {divisionsTree
+                            .find((d) => String(d._id) === String(transfer.divisionId))
+                            ?.subDivisions?.map((s) => (
+                              <option key={s._id} value={s._id}>
+                                {s.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={confirmTransfer}
+                        disabled={!transfer.divisionId || transferring}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#f7941d] px-4 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-50"
+                      >
+                        {transferring ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Saving…
+                          </>
+                        ) : (
+                          "Save transfer"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function PersonRow({ name, subtitle }: { name: string; subtitle: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+      <div>
+        <div className="text-sm font-medium text-slate-800">{name}</div>
+        <div className="text-[11px] text-slate-500">{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+function DivisionNode(props: {
+  division: DivisionTree;
+  expanded: boolean;
+  onToggle: () => void;
+  onPickDivision: () => void;
+  onPickSubDivision: (subDivisionId: string) => void;
+  selectedDivisionId: string;
+  selectedSubDivisionId: string;
+  count?: number;
+}) {
+  const {
+    division,
+    expanded,
+    onToggle,
+    onPickDivision,
+    onPickSubDivision,
+    selectedDivisionId,
+    selectedSubDivisionId,
+    count,
+  } = props;
+
+  const isSelectedDivision = String(selectedDivisionId) === String(division._id);
+
+  return (
+    <div className="rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50">
+      <div className="flex items-center gap-1 px-2 py-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="rounded-lg p-1 text-slate-500 hover:bg-white"
+          title={expanded ? "Collapse" : "Expand"}
+        >
+          {expanded ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onPickDivision}
+          className={`flex-1 rounded-xl px-2 py-2 text-left text-sm ${
+            isSelectedDivision && !selectedSubDivisionId
+              ? "bg-[#fff4e8] border border-[#f8b46a]"
+              : ""
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-slate-500" />
+              <span className="font-medium text-slate-800">{division.name}</span>
+            </div>
+            <span className="text-xs text-slate-500">{count ?? "—"}</span>
+          </div>
+        </button>
+      </div>
+
+      {expanded && !!division.subDivisions?.length && (
+        <div className="pb-2 pl-9 pr-2">
+          <div className="space-y-1">
+            {division.subDivisions.map((s) => {
+              const isSelectedSub =
+                isSelectedDivision &&
+                String(selectedSubDivisionId) === String(s._id);
+              return (
+                <button
+                  key={s._id}
+                  type="button"
+                  onClick={() => onPickSubDivision(String(s._id))}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-white ${
+                    isSelectedSub ? "bg-[#fff4e8] border border-[#f8b46a]" : ""
+                  }`}
+                >
+                  {s.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

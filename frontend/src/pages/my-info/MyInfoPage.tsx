@@ -13,11 +13,11 @@ import { useGetMineQuery } from "../../features/changeRequests/changeRequestsApi
 import PersonalDetailsTab from "./PersonalDetailsTab";
 import ContactDetailsTab from "./ContactDetailsTab";
 import EmergencyContactsTab from "./EmergencyContactsTab";
-import DependentsTab from "./DependentsTab";
-import ImmigrationTab from "./ImmigrationTab";
+// import DependentsTab from "./DependentsTab"; // ✅ commented
+// import ImmigrationTab from "./ImmigrationTab"; // ✅ commented
 import JobTab from "./JobTab";
 import SalaryTab from "./SalaryTab";
-import TaxExemptionsTab from "./TaxExemptionsTab";
+// import TaxExemptionsTab from "./TaxExemptionsTab"; // ✅ commented
 import ReportToTab from "./ReportToTab";
 import LeaveTab from "../leave/LeaveTab";
 
@@ -25,11 +25,11 @@ type TabKey =
   | "personal"
   | "contact"
   | "emergency"
-  | "dependents"
-  | "immigration"
+  // | "dependents" // ✅ commented
+  // | "immigration" // ✅ commented
   | "job"
   | "salary"
-  | "tax"
+  // | "tax" // ✅ commented
   | "report"
   | "leave";
 
@@ -37,11 +37,11 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "personal", label: "Personal Details" },
   { key: "contact", label: "Contact Details" },
   { key: "emergency", label: "Emergency Contacts" },
-  { key: "dependents", label: "Dependents" },
-  { key: "immigration", label: "Immigration" },
+  // { key: "dependents", label: "Dependents" }, // ✅ commented
+  // { key: "immigration", label: "Immigration" }, // ✅ commented
   { key: "job", label: "Job" },
   { key: "salary", label: "Salary" },
-  { key: "tax", label: "Tax Exemptions" },
+  // { key: "tax", label: "Tax Exemptions" }, // ✅ commented
   { key: "report", label: "Report-to" },
   { key: "leave", label: "Leave" },
 ];
@@ -213,18 +213,14 @@ const MyInfoPage = ({ employeeId }: MyInfoPageProps) => {
             <EmergencyContactsTab employeeId={employee._id} />
           )}
 
-          {/* DEPENDENTS */}
-          {active === "dependents" && <DependentsTab employeeId={employee._id} />}
+          {/* ✅ COMMENTED OUT TABS */}
+          {/* {active === "dependents" && <DependentsTab employeeId={employee._id} />} */}
+          {/* {active === "immigration" && <ImmigrationTab employeeId={employee._id} />} */}
+          {/* {active === "tax" && <TaxExemptionsTab employeeId={employee._id} />} */}
 
-          {/* IMMIGRATION */}
-          {active === "immigration" && (
-            <ImmigrationTab employeeId={employee._id} />
-          )}
-
-          {/* JOB / SALARY / TAX / REPORT-TO */}
+          {/* JOB / SALARY / REPORT-TO / LEAVE */}
           {active === "job" && <JobTab employeeId={employee._id} />}
           {active === "salary" && <SalaryTab employeeId={employee._id} />}
-          {active === "tax" && <TaxExemptionsTab employeeId={employee._id} />}
           {active === "report" && <ReportToTab employeeId={employee._id} />}
           {active === "leave" && (
             <LeaveTab employeeId={isPimMode ? employee._id : undefined} />
