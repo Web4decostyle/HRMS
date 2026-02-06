@@ -18,8 +18,9 @@ import { Counter } from "../pim/pimConfig/models/counter.model";
 
 function toObjectId(id: unknown): mongoose.Types.ObjectId {
   if (id instanceof mongoose.Types.ObjectId) return id;
-  if (typeof id === "string" && mongoose.Types.ObjectId.isValid(id))
+  if (typeof id === "string" && mongoose.Types.ObjectId.isValid(id)) {
     return new mongoose.Types.ObjectId(id);
+  }
   throw ApiError.badRequest("Invalid ObjectId");
 }
 
@@ -35,13 +36,27 @@ function toObjectIdOrNull(id: unknown): mongoose.Types.ObjectId | null {
 
 function mapLeave(doc: any) {
   const plain = doc?.toObject ? doc.toObject() : doc;
+  const approval = plain?.approval || {};
+
+  // ✅ pendingWith logic:
+  // - If supervisorEmployee exists and supervisorAction is pending => SUPERVISOR
+  // - Else if adminAction is pending => ADMIN
+  // - Else null
+  const pendingWith =
+    plain.status !== "PENDING"
+      ? null
+      : approval.supervisorEmployee && approval.supervisorAction === "PENDING"
+      ? "SUPERVISOR"
+      : approval.adminAction === "PENDING"
+      ? "ADMIN"
+      : null;
 
   return {
     ...plain,
     _id: String(plain._id),
     fromDate: plain.startDate,
     toDate: plain.endDate,
-    pendingWith: plain.status === "PENDING" ? "SUPERVISOR" : null,
+    pendingWith,
   };
 }
 
@@ -60,7 +75,7 @@ async function nextEmployeeId(prefix = "", pad = 4) {
   const c = await Counter.findOneAndUpdate(
     { key: "employeeId" },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true },
+    { new: true, upsert: true }
   );
   return `${prefix}${String(c.seq).padStart(pad, "0")}`;
 }
@@ -79,7 +94,7 @@ async function findDirectSupervisorEmployeeId(employeeId: unknown) {
     .lean();
 
   return toObjectIdOrNull(
-    (rel as any)?.supervisorId || (rel as any)?.supervisor,
+    (rel as any)?.supervisorId || (rel as any)?.supervisor
   );
 }
 
@@ -93,42 +108,6 @@ async function findUserIdByEmployeeEmail(email?: string | null) {
     .lean();
 
   return u?._id ? String(u._id) : null;
-}
-
-/**
- * ✅ NEW: Hierarchy approver logic
- * - Grade1/Grade2 -> reportsTo (TL)
- * - TL -> Division.managerEmployee (Manager)
- * - Manager -> null
- */
-async function findApproverEmployeeIdByHierarchy(
-  employeeId: mongoose.Types.ObjectId,
-): Promise<mongoose.Types.ObjectId | null> {
-  const emp = await Employee.findById(employeeId)
-    .select("level reportsTo division")
-    .lean();
-
-  if (!emp) return null;
-
-  const level = (emp as any).level ?? "GRADE1";
-
-  if (level === "GRADE1" || level === "GRADE2") {
-    return (emp as any).reportsTo ? toObjectId((emp as any).reportsTo) : null;
-  }
-
-  if (level === "TL") {
-    if (!(emp as any).division) return null;
-    const div = await Division.findById((emp as any).division)
-      .select("managerEmployee")
-      .lean();
-
-    return (div as any)?.managerEmployee
-      ? toObjectId((div as any).managerEmployee)
-      : null;
-  }
-
-  // MANAGER -> no one above
-  return null;
 }
 
 /**
@@ -154,10 +133,7 @@ async function ensureEmployeeForUser(userId: string) {
     username ||
     (email ? email.split("@")[0] : "New Employee");
 
-  const parts = base
-    .replace(/[._-]+/g, " ")
-    .trim()
-    .split(/\s+/);
+  const parts = base.replace(/[._-]+/g, " ").trim().split(/\s+/);
   const firstName = parts[0] || "New";
   const lastName = parts.slice(1).join(" ") || "Employee";
   const employeeId = await nextEmployeeId("", 4);
@@ -171,6 +147,31 @@ async function ensureEmployeeForUser(userId: string) {
   });
 
   return employee;
+}
+
+/* ============================= Division routing ============================= */
+
+/**
+ * ✅ Division-based approver:
+ * - If employee has division and division.managerEmployee exists AND it's not employee itself -> supervisorEmployee = managerEmployee
+ * - Else -> null (means Admin/HR will handle)
+ */
+async function findDivisionManagerApprover(employeeId: mongoose.Types.ObjectId) {
+  const emp = await Employee.findById(employeeId).select("division").lean();
+  if (!emp) return null;
+
+  const divId = toObjectIdOrNull((emp as any).division);
+  if (!divId) return null;
+
+  const div = await Division.findById(divId).select("managerEmployee").lean();
+  const managerId = toObjectIdOrNull((div as any)?.managerEmployee);
+
+  if (!managerId) return null;
+
+  // Prevent self approval
+  if (String(managerId) === String(employeeId)) return null;
+
+  return managerId;
 }
 
 /* ============================= LEAVE TYPES ============================= */
@@ -191,13 +192,13 @@ export async function createLeaveType(req: AuthRequest, res: Response) {
     String(name).trim().toUpperCase().replace(/\s+/g, "_");
 
   const existing = await LeaveType.findOne({ code: finalCode }).exec();
-  if (existing)
-    throw new ApiError(409, "Leave type with this code already exists");
+  if (existing) throw new ApiError(409, "Leave type with this code already exists");
 
   const type = await LeaveType.create({
     name: String(name).trim(),
     code: finalCode,
   });
+
   res.status(201).json(type);
 }
 
@@ -216,14 +217,17 @@ export async function deleteLeaveType(req: AuthRequest, res: Response) {
 /* ============================= LEAVE REQUESTS ============================= */
 
 /**
- * Employee applies leave -> can be approved by hierarchy approver OR fallback supervisor OR Admin/HR.
- * If ONE of them approves/rejects, the request is completed (no second approval required).
+ * ✅ Division-based leave routing:
+ * - if employee has division -> supervisorEmployee = division.managerEmployee
+ * - if no division OR employee is division manager -> admin/hr only
+ *
+ * Approval behavior:
+ * - One approval is enough: Supervisor OR Admin/HR
  */
 export async function createLeaveRequest(req: AuthRequest, res: Response) {
   if (!req.user?.id) throw ApiError.unauthorized("Not authenticated");
 
-  const { typeId, fromDate, toDate, reason, startDate, endDate } =
-    req.body || {};
+  const { typeId, fromDate, toDate, reason, startDate, endDate } = req.body || {};
   const effectiveFrom = fromDate || startDate;
   const effectiveTo = toDate || endDate;
 
@@ -236,8 +240,7 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
 
   if (isNaN(start.getTime()) || isNaN(end.getTime()))
     throw ApiError.badRequest("Invalid date format");
-  if (end < start)
-    throw ApiError.badRequest("toDate cannot be before fromDate");
+  if (end < start) throw ApiError.badRequest("toDate cannot be before fromDate");
 
   const days = calcDaysInclusive(start, end);
 
@@ -245,17 +248,15 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
   const employeeId = toObjectId(employee._id);
   const leaveTypeObjId = toObjectId(typeId);
 
-  // ✅ Decide approver employeeId (Hierarchy first, fallback to old supervisor mapping)
-  const hierarchyApproverEmployeeId = await findApproverEmployeeIdByHierarchy(
-    employeeId,
-  );
-  const fallbackSupervisorEmployeeId = await findDirectSupervisorEmployeeId(
-    employee._id,
-  );
-  const finalSupervisorEmployeeId =
-    hierarchyApproverEmployeeId ?? fallbackSupervisorEmployeeId ?? null;
+  // ✅ Primary approver: division manager
+  const divisionManagerApprover = await findDivisionManagerApprover(employeeId);
 
-  // Supervisor user is optional. If missing/mismatched, Admin/HR can still approve.
+  // ✅ Optional fallback: old Supervisor mapping (only if you still want it)
+  // If you want STRICT division-only, comment these 2 lines:
+  const fallbackSupervisorEmployeeId = await findDirectSupervisorEmployeeId(employee._id);
+  const finalSupervisorEmployeeId = divisionManagerApprover ?? fallbackSupervisorEmployeeId ?? null;
+
+  // Supervisor user is optional (if mismatch/no user, admin/hr can still approve)
   let supUserId: string | null = null;
   if (finalSupervisorEmployeeId) {
     const supEmployee = await Employee.findById(finalSupervisorEmployeeId)
@@ -276,7 +277,7 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
     status: "PENDING",
     approval: {
       supervisorEmployee: finalSupervisorEmployeeId || undefined,
-      supervisorAction: "PENDING",
+      supervisorAction: finalSupervisorEmployeeId ? "PENDING" : undefined,
       adminAction: "PENDING",
     },
     history: [
@@ -290,7 +291,6 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
     ],
   });
 
-  // ✅ Admin History (Audit)
   await createAuditLog({
     req,
     action: "LEAVE_REQUEST_CREATED",
@@ -306,6 +306,9 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
       days,
       typeId: String(typeId),
       reason: (reason || "").toString(),
+      supervisorEmployee: finalSupervisorEmployeeId
+        ? String(finalSupervisorEmployeeId)
+        : null,
     },
     meta: {
       requestedBy: req.user.id,
@@ -313,7 +316,7 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
     },
   });
 
-  // 🔔 Notify Approver (if mapped to a User)
+  // 🔔 Notify supervisor if mapped to User, else Admin+HR
   if (supUserId) {
     await notifyUsers({
       userIds: [supUserId],
@@ -324,7 +327,6 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
       meta: { leaveId: request._id },
     });
   } else {
-    // 🔔 Fallback: Notify Admin + HR (both)
     await notifyRoles({
       roles: ["ADMIN", "HR"],
       title: "Leave Request Submitted",
@@ -362,7 +364,7 @@ export async function listMyLeave(req: AuthRequest, res: Response) {
 
 /**
  * HR/Admin: see all
- * Supervisor: see only leaves assigned to them
+ * Supervisor: see only leaves assigned to them (division manager)
  */
 export async function listAllLeave(req: AuthRequest, res: Response) {
   const { fromDate, toDate, status, typeId, employeeId } = req.query as any;
@@ -387,6 +389,7 @@ export async function listAllLeave(req: AuthRequest, res: Response) {
     .populate("employee")
     .populate("type")
     .lean();
+
   res.json(items.map(mapLeave));
 }
 
@@ -403,14 +406,11 @@ export async function getLeaveById(req: AuthRequest, res: Response) {
 
   const role = req.user.role;
 
-  if (role === "ADMIN" || role === "HR") {
-    return res.json(leave);
-  }
+  if (role === "ADMIN" || role === "HR") return res.json(leave);
 
   if (role === "SUPERVISOR") {
     const actingEmployee = await ensureEmployeeForUser(req.user.id);
-    const assignedSupervisorEmployeeId = (leave as any)?.approval
-      ?.supervisorEmployee;
+    const assignedSupervisorEmployeeId = (leave as any)?.approval?.supervisorEmployee;
 
     if (!assignedSupervisorEmployeeId) {
       throw ApiError.forbidden("You are not assigned to this leave request");
@@ -458,28 +458,28 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     .populate("employee")
     .populate("type")
     .exec();
+
   if (!leave) throw ApiError.notFound("Leave request not found");
 
   const now = new Date();
   const employeeDoc: any = leave.employee as any;
   const employeeUserId = await findUserIdByEmployeeEmail(employeeDoc?.email);
 
-  const prevStatus = leave.status;
+  const prevStatus = (leave as any).status;
 
   // Employee cancel
   if (status === "CANCELLED") {
-    if (leave.status !== "PENDING")
+    if ((leave as any).status !== "PENDING") {
       throw ApiError.badRequest("Only pending leave requests can be cancelled");
+    }
 
     const actingEmployee = await ensureEmployeeForUser(req.user.id);
-    if (
-      String(employeeDoc?._id || leave.employee) !== String(actingEmployee._id)
-    ) {
+    if (String(employeeDoc?._id || leave.employee) !== String(actingEmployee._id)) {
       throw ApiError.forbidden("You can only cancel your own leave request");
     }
 
-    leave.status = "CANCELLED";
-    leave.history.push({
+    (leave as any).status = "CANCELLED";
+    (leave as any).history.push({
       action: "CANCELLED",
       byUser: toObjectId(req.user.id),
       byRole: req.user.role,
@@ -487,7 +487,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
       remarks,
     });
 
-    await leave.save();
+    await (leave as any).save();
 
     await createAuditLog({
       req,
@@ -495,55 +495,44 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
       module: "Leave",
       modelName: "LeaveRequest",
       actionType: "UPDATE",
-      targetId: String(leave._id),
+      targetId: String((leave as any)._id),
       before: { status: prevStatus },
       after: { status: "CANCELLED" },
       decisionReason: (remarks || "").toString(),
-      meta: { leaveId: String(leave._id), requestedBy: req.user.id },
+      meta: { leaveId: String((leave as any)._id), requestedBy: req.user.id },
     });
 
-    res.json(mapLeave(leave));
-    return;
+    return res.json(mapLeave(leave));
   }
 
   // Approve/reject: Supervisor OR Admin/HR
-  if (leave.status !== "PENDING")
-    throw ApiError.badRequest(
-      "Only pending leave requests can be approved/rejected",
-    );
+  if ((leave as any).status !== "PENDING") {
+    throw ApiError.badRequest("Only pending leave requests can be approved/rejected");
+  }
+
   if (!["SUPERVISOR", "ADMIN", "HR"].includes(req.user.role)) {
     throw ApiError.forbidden(
-      "Only the assigned supervisor, HR, or an admin can approve/reject leave",
+      "Only the assigned supervisor, HR, or an admin can approve/reject leave"
     );
   }
 
-  const approval = ((leave as any).approval ??= {} as any);
+  const approval = (((leave as any).approval ??= {}) as any);
   const isSupervisorActing = req.user.role === "SUPERVISOR";
 
   if (isSupervisorActing) {
     const actingEmployee = await ensureEmployeeForUser(req.user.id);
-    const assignedSupervisorEmployeeId = (leave as any)?.approval
-      ?.supervisorEmployee;
+    const assignedSupervisorEmployeeId = (leave as any)?.approval?.supervisorEmployee;
 
     if (!assignedSupervisorEmployeeId) {
       throw ApiError.badRequest(
-        "This leave request has no supervisor assigned (admin/HR can still approve)",
+        "This leave request has no supervisor assigned (admin/HR can still approve)"
       );
     }
 
-    if (
-      String(assignedSupervisorEmployeeId) !==
-      String(toObjectId(actingEmployee._id))
-    ) {
-      throw ApiError.forbidden(
-        "Only the assigned supervisor can act on this request",
-      );
+    if (String(assignedSupervisorEmployeeId) !== String(toObjectId(actingEmployee._id))) {
+      throw ApiError.forbidden("Only the assigned supervisor can act on this request");
     }
-  }
 
-  (leave as any).status = status as any;
-
-  if (isSupervisorActing) {
     approval.supervisorAction = status === "APPROVED" ? "APPROVED" : "REJECTED";
     approval.supervisorActedBy = toObjectId(req.user.id);
     approval.supervisorActedAt = now;
@@ -554,6 +543,8 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     approval.adminActedAt = now;
     approval.adminRemarks = remarks;
   }
+
+  (leave as any).status = status;
 
   (leave as any).history.push({
     action: status === "APPROVED" ? "APPROVED" : "REJECTED",
@@ -568,9 +559,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
   await createAuditLog({
     req,
     action:
-      status === "APPROVED"
-        ? "LEAVE_REQUEST_APPROVED"
-        : "LEAVE_REQUEST_REJECTED",
+      status === "APPROVED" ? "LEAVE_REQUEST_APPROVED" : "LEAVE_REQUEST_REJECTED",
     module: "Leave",
     modelName: "LeaveRequest",
     actionType: "UPDATE",
@@ -598,8 +587,8 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
       title: status === "APPROVED" ? "Leave Approved" : "Leave Rejected",
       message:
         status === "APPROVED"
-          ? `Your leave request was approved by ${isSupervisorActing ? "your supervisor" : "HR/Admin"}.`
-          : `Your leave request was rejected by ${isSupervisorActing ? "your supervisor" : "HR/Admin"}.`,
+          ? `Your leave request was approved by ${isSupervisorActing ? "your manager" : "HR/Admin"}.`
+          : `Your leave request was rejected by ${isSupervisorActing ? "your manager" : "HR/Admin"}.`,
       type: "LEAVE",
       link: "/leave/my-leave",
       meta: { leaveId: (leave as any)._id },
@@ -614,14 +603,13 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     await notifyRoles({
       roles: ["ADMIN", "HR"],
       title: status === "APPROVED" ? "Leave Approved" : "Leave Rejected",
-      message: `${employeeDoc?.firstName || "Employee"} ${employeeDoc?.lastName || ""} leave (${startStr} to ${endStr}) was ${status.toLowerCase()} by the supervisor.`,
+      message: `${employeeDoc?.firstName || "Employee"} ${employeeDoc?.lastName || ""} leave (${startStr} to ${endStr}) was ${status.toLowerCase()} by the manager.`,
       type: "LEAVE",
       link: "/leave",
       meta: { leaveId: (leave as any)._id },
     });
   } else {
-    const assignedSupervisorEmployeeId = (leave as any)?.approval
-      ?.supervisorEmployee;
+    const assignedSupervisorEmployeeId = (leave as any)?.approval?.supervisorEmployee;
     if (assignedSupervisorEmployeeId) {
       const supEmployee = await Employee.findById(assignedSupervisorEmployeeId)
         .select("email")
@@ -640,7 +628,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     }
   }
 
-  res.json(mapLeave(leave));
+  return res.json(mapLeave(leave));
 }
 
 /**
@@ -648,18 +636,16 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
  */
 export async function assignLeave(req: AuthRequest, res: Response) {
   if (!req.user?.id) throw ApiError.unauthorized("Not authenticated");
-  if (req.user.role !== "ADMIN" && req.user.role !== "HR")
+  if (req.user.role !== "ADMIN" && req.user.role !== "HR") {
     throw ApiError.forbidden("Only HR/Admin can assign leave");
+  }
 
-  const { employeeId, typeId, fromDate, toDate, reason, startDate, endDate } =
-    req.body || {};
+  const { employeeId, typeId, fromDate, toDate, reason, startDate, endDate } = req.body || {};
   const effectiveFrom = fromDate || startDate;
   const effectiveTo = toDate || endDate;
 
   if (!employeeId || !typeId || !effectiveFrom || !effectiveTo) {
-    throw ApiError.badRequest(
-      "employeeId, typeId, fromDate and toDate are required",
-    );
+    throw ApiError.badRequest("employeeId, typeId, fromDate and toDate are required");
   }
 
   const employee = await Employee.findById(employeeId).exec();
@@ -669,8 +655,7 @@ export async function assignLeave(req: AuthRequest, res: Response) {
   const end = new Date(effectiveTo);
   if (isNaN(start.getTime()) || isNaN(end.getTime()))
     throw ApiError.badRequest("Invalid date format");
-  if (end < start)
-    throw ApiError.badRequest("toDate cannot be before fromDate");
+  if (end < start) throw ApiError.badRequest("toDate cannot be before fromDate");
 
   const days = calcDaysInclusive(start, end);
   const now = new Date();
@@ -684,10 +669,10 @@ export async function assignLeave(req: AuthRequest, res: Response) {
     days,
     status: "APPROVED",
     approval: {
-      supervisorAction: "APPROVED",
-      supervisorActedBy: toObjectId(req.user.id),
-      supervisorActedAt: now,
-      supervisorRemarks: "Assigned by HR/Admin",
+      adminAction: "APPROVED",
+      adminActedBy: toObjectId(req.user.id),
+      adminActedAt: now,
+      adminRemarks: "Assigned by HR/Admin",
     },
     history: [
       {
@@ -706,7 +691,7 @@ export async function assignLeave(req: AuthRequest, res: Response) {
     module: "Leave",
     modelName: "LeaveRequest",
     actionType: "CREATE",
-    targetId: String(leave._id),
+    targetId: String((leave as any)._id),
     after: {
       status: (leave as any).status,
       employeeId: String((employee as any)._id),
@@ -722,9 +707,7 @@ export async function assignLeave(req: AuthRequest, res: Response) {
     meta: { leaveId: String((leave as any)._id) },
   });
 
-  const employeeUserId = await findUserIdByEmployeeEmail(
-    (employee as any)?.email,
-  );
+  const employeeUserId = await findUserIdByEmployeeEmail((employee as any)?.email);
   if (employeeUserId) {
     await notifyUsers({
       userIds: [employeeUserId],
@@ -736,5 +719,5 @@ export async function assignLeave(req: AuthRequest, res: Response) {
     });
   }
 
-  res.status(201).json(mapLeave(leave));
+  return res.status(201).json(mapLeave(leave));
 }

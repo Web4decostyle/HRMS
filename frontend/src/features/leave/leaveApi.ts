@@ -5,6 +5,15 @@ import { authorizedBaseQuery } from "../../app/apiBase";
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type WorkDayKind = "FULL" | "HALF" | "NONE";
 
+// ✅ support both old + new backend values
+export type PendingWith =
+  | "MANAGER"
+  | "ADMIN"
+  | "SUPERVISOR"
+  | "HR"
+  | null
+  | undefined;
+
 export interface LeaveType {
   _id: string;
   name: string;
@@ -17,12 +26,23 @@ export interface LeaveRequest {
   _id: string;
   employee: any;
   type: LeaveType | string;
+
+  // frontend expects fromDate/toDate in list
   fromDate: string;
   toDate: string;
+
+  // sometimes detail API may return startDate/endDate too
+  startDate?: string;
+  endDate?: string;
+
   days: number;
   reason?: string;
+
   status: LeaveStatus;
-  pendingWith?: "SUPERVISOR" | "HR";
+
+  // ✅ now supports Manager/Admin (and legacy)
+  pendingWith?: PendingWith;
+
   createdAt?: string;
   approval?: any;
   history?: Array<{

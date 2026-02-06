@@ -8,13 +8,15 @@ import {
   useUpdateLeaveStatusMutation,
   LeaveFilters,
   LeaveStatus,
+  PendingWith,
 } from "../../features/leave/leaveApi";
 import { selectAuthRole } from "../../features/auth/selectors";
 
 /* ------------------------------------------------------------------
    Style helpers
 ------------------------------------------------------------------ */
-const labelCls = "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
+const labelCls =
+  "block text-[11px] font-semibold text-slate-500 mb-1 tracking-wide";
 const inputCls =
   "w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-800 outline-none focus:border-[#f7941d] focus:ring-2 focus:ring-[#f8b46a]/40";
 const selectCls = inputCls;
@@ -24,8 +26,10 @@ const chipBase =
 const btnBase =
   "px-4 h-9 rounded-full text-[12px] font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed";
 const btnPrimary = "bg-[#8bc34a] text-white hover:bg-[#7cb342]";
-const btnOutlinered = "border border-[#8bc34a] text-[#7cb342] bg-white hover:bg-[#f4fbec]";
-const btnGhost = "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
+const btnOutlinered =
+  "border border-[#8bc34a] text-[#7cb342] bg-white hover:bg-[#f4fbec]";
+const btnGhost =
+  "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
 
 /* ------------------------------------------------------------------
    Tabs config
@@ -50,7 +54,6 @@ const TABS = [
   { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
 ] as const;
 
-
 /* ------------------------------------------------------------------
    Status filter helpers
 ------------------------------------------------------------------ */
@@ -69,15 +72,24 @@ function fmtDateRange(from: string, to: string) {
   return `${a} → ${b}`;
 }
 
+function mapPendingWithLabel(pw: PendingWith) {
+  // ✅ accept legacy backend values too
+  if (pw === "MANAGER" || pw === "SUPERVISOR") return "Manager";
+  if (pw === "ADMIN" || pw === "HR") return "Admin";
+  return null;
+}
+
 function StatusPill({
   status,
   pendingWith,
 }: {
   status: LeaveStatus;
-  pendingWith?: string | null;
+  pendingWith?: PendingWith;
 }) {
+  const pendingLabel = status === "PENDING" ? mapPendingWithLabel(pendingWith) : null;
+
   const label =
-    status === "PENDING" && pendingWith ? `PENDING (${pendingWith})` : status;
+    status === "PENDING" && pendingLabel ? `PENDING • ${pendingLabel}` : status;
 
   const cls =
     status === "APPROVED"
@@ -86,13 +98,36 @@ function StatusPill({
       ? "bg-rose-50 text-rose-700 border-rose-200"
       : status === "CANCELLED"
       ? "bg-slate-100 text-slate-700 border-slate-200"
-      : "bg-amber-50 text-amber-700 border-amber-200";
+      : "bg-amber-50 text-amber-800 border-amber-200";
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border font-semibold ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border font-semibold ${cls}`}
+      title={
+        status === "PENDING" && pendingLabel
+          ? `Pending with: ${pendingLabel}`
+          : undefined
+      }
+    >
       {label}
     </span>
   );
+}
+
+/**
+ * ✅ Button visibility should match "who can act"
+ * - ADMIN/HR can act on ANY pending request
+ * - SUPERVISOR can act only when pending is with Manager/Supervisor
+ *   (backend will still enforce assignment)
+ */
+function canUserActOnLeave(role: string, status: LeaveStatus, pendingWith?: PendingWith) {
+  if (status !== "PENDING") return false;
+  if (role === "ADMIN" || role === "HR") return true;
+
+  const pendingLabel = mapPendingWithLabel(pendingWith);
+  if (role === "SUPERVISOR" && pendingLabel === "Manager") return true;
+
+  return false;
 }
 
 export default function LeaveListPage() {
@@ -119,10 +154,13 @@ export default function LeaveListPage() {
   const [subUnit, setSubUnit] = useState("");
   const [includePastEmployees, setIncludePastEmployees] = useState(false);
 
-  const [activeFilters, setActiveFilters] = useState<LeaveFilters | undefined>(undefined);
+  const [activeFilters, setActiveFilters] = useState<LeaveFilters | undefined>(
+    undefined
+  );
 
   const { data: leaveTypes = [] } = useGetLeaveTypesQuery();
-  const { data: leaves = [], isLoading, isFetching } = useGetAllLeavesQuery(activeFilters);
+  const { data: leaves = [], isLoading, isFetching } =
+    useGetAllLeavesQuery(activeFilters);
 
   const activeTabKey = "leave-list";
 
@@ -147,22 +185,20 @@ export default function LeaveListPage() {
     });
   }
 
-  async function handleDecision(leaveId: string, nextStatus: "APPROVED" | "REJECTED") {
+  async function handleDecision(
+    leaveId: string,
+    nextStatus: "APPROVED" | "REJECTED"
+  ) {
     setActionError(null);
     setActionSuccess(null);
     try {
-      const updated = await updateLeaveStatus({
+      await updateLeaveStatus({
         id: leaveId,
         status: nextStatus,
         remarks: "",
       }).unwrap();
 
-      // (Your old logic had HR routing text. If you still want it, keep it.)
-      if (nextStatus === "APPROVED" && (updated as any).status === "PENDING") {
-        setActionSuccess("Approval recorded. Request remains pending.");
-      } else {
-        setActionSuccess(`Leave ${nextStatus.toLowerCase()} successfully.`);
-      }
+      setActionSuccess(`Leave ${nextStatus.toLowerCase()} successfully.`);
     } catch (e: any) {
       setActionError(e?.data?.message || "Failed to update leave status.");
     }
@@ -170,7 +206,12 @@ export default function LeaveListPage() {
 
   // Counts for chips (from currently loaded leaves)
   const chipCounts = useMemo(() => {
-    const counts: Record<string, number> = { REJECTED: 0, CANCELLED: 0, PENDING: 0, APPROVED: 0 };
+    const counts: Record<string, number> = {
+      REJECTED: 0,
+      CANCELLED: 0,
+      PENDING: 0,
+      APPROVED: 0,
+    };
     for (const l of leaves) {
       if (counts[l.status] !== undefined) counts[l.status] += 1;
     }
@@ -198,7 +239,9 @@ export default function LeaveListPage() {
                 type="button"
                 onClick={() => {
                   if (isMenuTab && menuItems) {
-                    setOpenMenu((prev) => (prev === tab.key ? null : (tab.key as MenuKey)));
+                    setOpenMenu((prev) =>
+                      prev === tab.key ? null : (tab.key as MenuKey)
+                    );
                   } else if ("path" in tab) {
                     navigate(tab.path);
                   }
@@ -211,7 +254,9 @@ export default function LeaveListPage() {
                 ].join(" ")}
               >
                 <span>{tab.label}</span>
-                {isMenuTab && <span className="ml-1 text-[10px] align-middle">▼</span>}
+                {isMenuTab && (
+                  <span className="ml-1 text-[10px] align-middle">▼</span>
+                )}
               </button>
 
               {isMenuTab && openMenu === tab.key && menuItems && (
@@ -240,17 +285,22 @@ export default function LeaveListPage() {
       <div className="mb-4 rounded-[18px] border border-[#e5e7f0] bg-gradient-to-r from-white to-[#fff7ee] shadow-sm">
         <div className="px-7 py-5 flex items-start justify-between gap-4">
           <div>
-            <div className="text-[15px] font-extrabold text-slate-900">Leave List</div>
+            <div className="text-[15px] font-extrabold text-slate-900">
+              Leave List
+            </div>
             <div className="text-[12px] text-slate-500 mt-1">{headerSummary}</div>
+
             <div className="mt-3 flex flex-wrap gap-2">
               {STATUS_CHIPS.map((c) => {
                 const active = status === c.value;
-                const count = c.value ? (chipCounts[c.value] || 0) : leaves.length;
+                const count = c.value ? chipCounts[c.value] || 0 : leaves.length;
                 return (
                   <button
                     key={c.label}
                     type="button"
-                    onClick={() => setStatus((prev) => (prev === c.value ? "" : c.value))}
+                    onClick={() =>
+                      setStatus((prev) => (prev === c.value ? "" : c.value))
+                    }
                     className={[
                       chipBase,
                       active
@@ -292,12 +342,16 @@ export default function LeaveListPage() {
         <div className="mb-4 space-y-2">
           {actionError && (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
-              <p className="text-[12px] text-rose-700 font-semibold">{actionError}</p>
+              <p className="text-[12px] text-rose-700 font-semibold">
+                {actionError}
+              </p>
             </div>
           )}
           {actionSuccess && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-[12px] text-emerald-700 font-semibold">{actionSuccess}</p>
+              <p className="text-[12px] text-emerald-700 font-semibold">
+                {actionSuccess}
+              </p>
             </div>
           )}
         </div>
@@ -309,7 +363,7 @@ export default function LeaveListPage() {
           <div>
             <div className="text-[13px] font-bold text-slate-900">Filters</div>
             <div className="text-[11px] text-slate-500 mt-0.5">
-              Refine results by date range, status, type, and optional fields.
+              Refine results by date range, status, and type.
             </div>
           </div>
 
@@ -327,17 +381,31 @@ export default function LeaveListPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div>
               <label className={labelCls}>From Date</label>
-              <input type="date" className={inputCls} value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <input
+                type="date"
+                className={inputCls}
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
             </div>
 
             <div>
               <label className={labelCls}>To Date</label>
-              <input type="date" className={inputCls} value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <input
+                type="date"
+                className={inputCls}
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
             </div>
 
             <div>
               <label className={labelCls}>Status</label>
-              <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value as LeaveStatusFilter)}>
+              <select
+                className={selectCls}
+                value={status}
+                onChange={(e) => setStatus(e.target.value as LeaveStatusFilter)}
+              >
                 <option value="">All</option>
                 <option value="PENDING">Pending</option>
                 <option value="APPROVED">Approved</option>
@@ -348,7 +416,11 @@ export default function LeaveListPage() {
 
             <div>
               <label className={labelCls}>Leave Type</label>
-              <select className={selectCls} value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)}>
+              <select
+                className={selectCls}
+                value={leaveTypeId}
+                onChange={(e) => setLeaveTypeId(e.target.value)}
+              >
                 <option value="">All</option>
                 {leaveTypes.map((t) => (
                   <option key={t._id} value={t._id}>
@@ -358,6 +430,7 @@ export default function LeaveListPage() {
               </select>
             </div>
 
+            {/* These are UI-only in your current file */}
             <div>
               <label className={labelCls}>Employee Name</label>
               <input
@@ -366,25 +439,37 @@ export default function LeaveListPage() {
                 value={employeeName}
                 onChange={(e) => setEmployeeName(e.target.value)}
               />
-              <div className="text-[10px] text-slate-400 mt-1">(Optional UI filter only)</div>
+              <div className="text-[10px] text-slate-400 mt-1">
+                (Optional UI filter only)
+              </div>
             </div>
 
             <div>
               <label className={labelCls}>Sub Unit</label>
-              <select className={selectCls} value={subUnit} onChange={(e) => setSubUnit(e.target.value)}>
+              <select
+                className={selectCls}
+                value={subUnit}
+                onChange={(e) => setSubUnit(e.target.value)}
+              >
                 <option value="">All</option>
               </select>
-              <div className="text-[10px] text-slate-400 mt-1">(Optional UI filter only)</div>
+              <div className="text-[10px] text-slate-400 mt-1">
+                (Optional UI filter only)
+              </div>
             </div>
 
             <div className="md:col-span-2 flex items-end justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="text-[12px] text-slate-700 font-semibold">Include Past Employees</div>
+                <div className="text-[12px] text-slate-700 font-semibold">
+                  Include Past Employees
+                </div>
                 <button
                   type="button"
                   onClick={() => setIncludePastEmployees((v) => !v)}
                   className={`w-12 h-6 rounded-full flex items-center px-1 border transition ${
-                    includePastEmployees ? "bg-[#8bc34a] border-[#8bc34a]" : "bg-slate-200 border-slate-200"
+                    includePastEmployees
+                      ? "bg-[#8bc34a] border-[#8bc34a]"
+                      : "bg-slate-200 border-slate-200"
                   }`}
                   title="Toggle past employees"
                 >
@@ -397,10 +482,16 @@ export default function LeaveListPage() {
               </div>
 
               <div className="hidden md:flex items-center gap-2">
-                <button className={`${btnBase} ${btnOutlinered}`} onClick={handleReset}>
+                <button
+                  className={`${btnBase} ${btnOutlinered}`}
+                  onClick={handleReset}
+                >
                   Reset
                 </button>
-                <button className={`${btnBase} ${btnPrimary}`} onClick={handleSearch}>
+                <button
+                  className={`${btnBase} ${btnPrimary}`}
+                  onClick={handleSearch}
+                >
                   Search
                 </button>
               </div>
@@ -441,37 +532,43 @@ export default function LeaveListPage() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                    <td
+                      colSpan={9}
+                      className="px-4 py-10 text-center text-slate-500"
+                    >
                       Loading leave requests…
                     </td>
                   </tr>
                 ) : leaves.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                    <td
+                      colSpan={9}
+                      className="px-4 py-10 text-center text-slate-500"
+                    >
                       No records found for selected filters.
                     </td>
                   </tr>
                 ) : (
                   leaves.map((l, idx) => {
-                    const typeName = typeof l.type === "string" ? l.type : (l.type?.name ?? "");
-                    const pendingWith = (l as any).pendingWith;
+                    const typeName =
+                      typeof l.type === "string" ? l.type : l.type?.name ?? "";
+                    const pendingWith = (l as any).pendingWith as PendingWith;
+
                     const fullName =
                       l.employee && typeof l.employee === "object"
                         ? `${l.employee.firstName ?? ""} ${l.employee.lastName ?? ""}`.trim()
                         : "--";
-                    const dateText = `${l.fromDate.slice(0, 10)} - ${l.toDate.slice(0, 10)}`;
 
-                    const canSupervisorAct =
-                      l.status === "PENDING" &&
-                      pendingWith === "SUPERVISOR" &&
-                      (role === "SUPERVISOR" || role === "ADMIN");
+                    const dateText = `${(l.fromDate || l.startDate || "").slice(
+                      0,
+                      10
+                    )} - ${(l.toDate || l.endDate || "").slice(0, 10)}`;
 
-                    const canHrAct =
-                      l.status === "PENDING" &&
-                      pendingWith === "HR" &&
-                      (role === "HR" || role === "ADMIN");
-
-                    const canAct = canSupervisorAct || canHrAct;
+                    const canAct = canUserActOnLeave(
+                      role,
+                      l.status,
+                      pendingWith
+                    );
 
                     return (
                       <tr
@@ -486,25 +583,41 @@ export default function LeaveListPage() {
                         </td>
 
                         <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="text-[12px] font-semibold text-slate-800">{dateText}</div>
+                          <div className="text-[12px] font-semibold text-slate-800">
+                            {dateText}
+                          </div>
                         </td>
 
                         <td className="px-3 py-3">
-                          <div className="text-[12px] font-semibold text-slate-900">{fullName}</div>
+                          <div className="text-[12px] font-semibold text-slate-900">
+                            {fullName}
+                          </div>
+                          {l.status === "PENDING" && mapPendingWithLabel(pendingWith) && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              Pending with:{" "}
+                              <span className="font-semibold text-slate-700">
+                                {mapPendingWithLabel(pendingWith)}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-3 py-3">{typeName || "--"}</td>
 
                         <td className="px-3 py-3 text-slate-500">--</td>
 
-                        <td className="px-3 py-3 font-semibold text-slate-800">{l.days ?? "--"}</td>
+                        <td className="px-3 py-3 font-semibold text-slate-800">
+                          {l.days ?? "--"}
+                        </td>
 
                         <td className="px-3 py-3">
                           <StatusPill status={l.status} pendingWith={pendingWith} />
                         </td>
 
                         <td className="px-3 py-3 max-w-[260px]">
-                          <div className="truncate text-slate-600">{l.reason || "--"}</div>
+                          <div className="truncate text-slate-600">
+                            {l.reason || "--"}
+                          </div>
                         </td>
 
                         <td className="px-3 py-3">
@@ -549,9 +662,9 @@ export default function LeaveListPage() {
             </table>
           </div>
 
-          {/* Small footer note */}
           <div className="mt-3 text-[11px] text-slate-400">
-            Tip: Click <span className="font-semibold text-slate-500">View</span> to see full details + history.
+            Tip: Click <span className="font-semibold text-slate-500">View</span>{" "}
+            to see full details + timeline.
           </div>
         </div>
       </div>
