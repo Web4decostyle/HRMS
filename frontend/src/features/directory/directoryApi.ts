@@ -1,4 +1,3 @@
-// frontend/src/features/directory/directoryApi.ts
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { authorizedBaseQuery } from "../../app/apiBase";
 
@@ -11,20 +10,22 @@ export interface DirectoryEmployee {
   jobTitle?: string;
   location?: string;
 
-  // ✅ NEW: division (can be ObjectId string OR populated object)
+  // division can be ObjectId OR populated
   division?: string | { _id: string; name: string };
+
+  // ✅ NEW: subDivision can be ObjectId OR populated
+  subDivision?: string | { _id: string; name: string };
 }
 
 export interface HierarchyResponse {
   employee: DirectoryEmployee;
 
-  // NOTE: Keep these shapes if your backend already returns this.
-  // If you later change backend to return division-based chain, we can update UI accordingly.
   supervisors: Array<{
     _id: string;
     reportingMethod?: string;
     supervisorId: DirectoryEmployee;
   }>;
+
   subordinates: Array<{
     _id: string;
     reportingMethod?: string;
@@ -43,12 +44,19 @@ export const directoryApi = createApi({
   baseQuery: authorizedBaseQuery,
   endpoints: (builder) => ({
     /**
-     * ✅ Updated: filter by divisionId instead of department
-     * Backend should accept: q, location, jobTitle, divisionId
+     * ✅ UPDATED: supports subDivisionId too
+     * Backend should accept: q, location, jobTitle, divisionId, subDivisionId
      */
     searchEmployees: builder.query<
       DirectoryEmployee[],
-      { q?: string; location?: string; jobTitle?: string; divisionId?: string } | void
+      | {
+          q?: string;
+          location?: string;
+          jobTitle?: string;
+          divisionId?: string;
+          subDivisionId?: string;
+        }
+      | void
     >({
       query: (params) => {
         const sp = new URLSearchParams();
@@ -56,6 +64,7 @@ export const directoryApi = createApi({
         if (params?.location) sp.set("location", params.location);
         if (params?.jobTitle) sp.set("jobTitle", params.jobTitle);
         if (params?.divisionId) sp.set("divisionId", params.divisionId);
+        if (params?.subDivisionId) sp.set("subDivisionId", params.subDivisionId);
 
         const qs = sp.toString();
         return qs ? `directory/employees?${qs}` : "directory/employees";
@@ -67,8 +76,7 @@ export const directoryApi = createApi({
     }),
 
     /**
-     * ✅ NEW: Division summary endpoint
-     * Backend should implement:
+     * ✅ Division summary endpoint
      * GET /api/directory/divisions-summary?location=&jobTitle=
      */
     getDivisionsSummary: builder.query<

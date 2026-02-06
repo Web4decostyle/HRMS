@@ -7,6 +7,7 @@ import {
 } from "../../features/directory/directoryApi";
 
 import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
+import { useGetSubDivisionsQuery } from "../../features/divisions/subDivisionsApi";
 import { useUpdateEmployeeMutation } from "../../features/employees/employeesApi";
 import { selectAuthRole } from "../../features/auth/selectors";
 
@@ -19,6 +20,7 @@ export default function DirectoryPage() {
     jobTitle: "",
     location: "",
     divisionId: "",
+    subDivisionId: "", // ✅ NEW
   });
 
   const [applied, setApplied] = useState({
@@ -26,18 +28,27 @@ export default function DirectoryPage() {
     jobTitle: "",
     location: "",
     divisionId: "",
+    subDivisionId: "", // ✅ NEW
   });
 
   const [activeEmployeeId, setActiveEmployeeId] = useState<string | null>(null);
 
   const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
 
+  // ✅ Load sub-divisions for selected division (UI-only)
+  const { data: subDivisions = [], isLoading: subLoading } =
+    useGetSubDivisionsQuery(
+      { divisionId: ui.divisionId },
+      { skip: !ui.divisionId }
+    );
+
   const queryArgs = useMemo(() => {
     const has =
       applied.name.trim() ||
       applied.jobTitle.trim() ||
       applied.location.trim() ||
-      applied.divisionId.trim();
+      applied.divisionId.trim() ||
+      applied.subDivisionId.trim();
 
     if (!has) return undefined;
 
@@ -46,6 +57,7 @@ export default function DirectoryPage() {
       jobTitle: applied.jobTitle || undefined,
       location: applied.location || undefined,
       divisionId: applied.divisionId || undefined,
+      subDivisionId: applied.subDivisionId || undefined,
     };
   }, [applied]);
 
@@ -66,7 +78,7 @@ export default function DirectoryPage() {
 
   const { data: hierarchy, isLoading: isHierarchyLoading } = useGetHierarchyQuery(
     activeEmployeeId || "",
-    { skip: !activeEmployeeId },
+    { skip: !activeEmployeeId }
   );
 
   const [updateEmployee, { isLoading: isTransferring }] =
@@ -74,12 +86,19 @@ export default function DirectoryPage() {
 
   // ✅ Transfer state
   const [transferDivisionId, setTransferDivisionId] = useState<string>("");
+  const [transferSubDivisionId, setTransferSubDivisionId] = useState<string>("");
+
+  const { data: transferSubDivisions = [] } = useGetSubDivisionsQuery(
+    { divisionId: transferDivisionId },
+    { skip: !transferDivisionId }
+  );
 
   function onReset() {
-    setUi({ name: "", jobTitle: "", location: "", divisionId: "" });
-    setApplied({ name: "", jobTitle: "", location: "", divisionId: "" });
+    setUi({ name: "", jobTitle: "", location: "", divisionId: "", subDivisionId: "" });
+    setApplied({ name: "", jobTitle: "", location: "", divisionId: "", subDivisionId: "" });
     setActiveEmployeeId(null);
     setTransferDivisionId("");
+    setTransferSubDivisionId("");
   }
 
   function onSearch() {
@@ -88,6 +107,7 @@ export default function DirectoryPage() {
       jobTitle: ui.jobTitle,
       location: ui.location,
       divisionId: ui.divisionId,
+      subDivisionId: ui.subDivisionId,
     });
   }
 
@@ -95,11 +115,19 @@ export default function DirectoryPage() {
     ui.divisionId && divisions.find((d: any) => d._id === ui.divisionId)?.name;
 
   function getDivisionNameFromEmployee(emp: any) {
-    // backend may return populated division object { _id, name } or raw id
     if (!emp?.division) return "Unassigned";
     if (typeof emp.division === "object" && emp.division?.name) return emp.division.name;
     const found = divisions.find((d: any) => String(d._id) === String(emp.division));
     return found?.name || "Unassigned";
+  }
+
+  function getSubDivisionNameFromEmployee(emp: any) {
+    if (!emp?.subDivision) return "—";
+    if (typeof emp.subDivision === "object" && emp.subDivision?.name) return emp.subDivision.name;
+
+    // try lookup in currently loaded subDivisions
+    const found = subDivisions.find((s: any) => String(s._id) === String(emp.subDivision));
+    return found?.name || "—";
   }
 
   async function confirmTransfer() {
@@ -110,13 +138,17 @@ export default function DirectoryPage() {
     await updateEmployee({
       id: activeEmployeeId,
       data: {
+        // ✅ Transfer
         division: transferDivisionId,
+
+        // ✅ IMPORTANT: if you change division, clear old subDivision (prevents invalid links)
+        subDivision: transferSubDivisionId || null,
       } as any,
     }).unwrap();
 
-    // Close modal after transfer (optional)
     setActiveEmployeeId(null);
     setTransferDivisionId("");
+    setTransferSubDivisionId("");
   }
 
   return (
@@ -135,7 +167,7 @@ export default function DirectoryPage() {
         </div>
 
         <div className="px-6 pb-6 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="space-y-1">
               <label className="text-[11px] text-slate-500">Employee Name</label>
               <input
@@ -194,9 +226,11 @@ export default function DirectoryPage() {
               <div className="relative">
                 <select
                   value={ui.divisionId}
-                  onChange={(e) =>
-                    setUi((s) => ({ ...s, divisionId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const divisionId = e.target.value;
+                    // ✅ reset subDivision when division changes
+                    setUi((s) => ({ ...s, divisionId, subDivisionId: "" }));
+                  }}
                   className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                 >
                   <option value="">
@@ -217,10 +251,42 @@ export default function DirectoryPage() {
 
               {selectedDivisionName ? (
                 <div className="text-[10px] text-slate-400">
-                  Selected:{" "}
-                  <span className="font-semibold">{selectedDivisionName}</span>
+                  Selected: <span className="font-semibold">{selectedDivisionName}</span>
                 </div>
               ) : null}
+            </div>
+
+            {/* ✅ NEW: Sub-Division dropdown */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-500">Sub-Division</label>
+              <div className="relative">
+                <select
+                  value={ui.subDivisionId}
+                  onChange={(e) =>
+                    setUi((s) => ({ ...s, subDivisionId: e.target.value }))
+                  }
+                  disabled={!ui.divisionId}
+                  className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs appearance-none outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200 disabled:opacity-60"
+                >
+                  <option value="">
+                    {!ui.divisionId
+                      ? "Select division first"
+                      : subLoading
+                      ? "Loading..."
+                      : "-- Select Sub-Division --"}
+                  </option>
+                  {subDivisions
+                    .filter((s: any) => s.isActive !== false)
+                    .map((s: any) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  ▾
+                </div>
+              </div>
             </div>
           </div>
 
@@ -268,8 +334,8 @@ export default function DirectoryPage() {
                   key={d.divisionId}
                   type="button"
                   onClick={() => {
-                    setUi((s) => ({ ...s, divisionId: d.divisionId }));
-                    setApplied((s) => ({ ...s, divisionId: d.divisionId }));
+                    setUi((s) => ({ ...s, divisionId: d.divisionId, subDivisionId: "" }));
+                    setApplied((s) => ({ ...s, divisionId: d.divisionId, subDivisionId: "" }));
                   }}
                   className="rounded-xl border border-slate-100 bg-[#f7f9ff] p-3 text-left hover:ring-2 hover:ring-green-100"
                 >
@@ -278,8 +344,7 @@ export default function DirectoryPage() {
                     {d.divisionName}
                   </div>
                   <div className="mt-1 text-[11px] text-slate-500">
-                    Employees:{" "}
-                    <span className="font-semibold">{d.count}</span>
+                    Employees: <span className="font-semibold">{d.count}</span>
                   </div>
                 </button>
               ))}
@@ -289,7 +354,7 @@ export default function DirectoryPage() {
       </section>
 
       {/* RESULTS */}
-      <section className="mt-6 bg-[#e9ec1] rounded-2xl border border-slate-100 shadow-sm">
+      <section className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="px-6 py-4 text-slate-600 text-sm">
           ({isLoading ? "…" : employees.length}) Records Found
         </div>
@@ -303,7 +368,8 @@ export default function DirectoryPage() {
                   key={emp._id}
                   onClick={() => {
                     setActiveEmployeeId(emp._id);
-                    setTransferDivisionId(""); // reset transfer state
+                    setTransferDivisionId("");
+                    setTransferSubDivisionId("");
                   }}
                   className="text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center hover:ring-2 hover:ring-green-100"
                 >
@@ -315,11 +381,17 @@ export default function DirectoryPage() {
                     {emp.jobTitle || "—"}
                   </div>
 
-                  {/* ✅ NEW: show division here as well */}
                   <div className="mt-2 text-[11px] text-slate-500">
                     Division:{" "}
                     <span className="font-semibold text-slate-700">
                       {getDivisionNameFromEmployee(emp)}
+                    </span>
+                  </div>
+
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    Sub-Division:{" "}
+                    <span className="font-semibold text-slate-700">
+                      {getSubDivisionNameFromEmployee(emp)}
                     </span>
                   </div>
 
@@ -377,33 +449,43 @@ export default function DirectoryPage() {
                       {hierarchy.employee.jobTitle || "—"}
                     </div>
 
-                    {/* ✅ NEW: show division in modal too */}
                     <div className="mt-1 text-[11px] text-slate-500">
                       Division:{" "}
                       <span className="font-semibold text-slate-700">
                         {getDivisionNameFromEmployee(hierarchy.employee)}
                       </span>
                     </div>
+
+                    <div className="mt-1 text-[11px] text-slate-500">
+                      Sub-Division:{" "}
+                      <span className="font-semibold text-slate-700">
+                        {getSubDivisionNameFromEmployee(hierarchy.employee)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* ✅ ADMIN ONLY: Transfer UI */}
+                  {/* ADMIN ONLY: Transfer UI */}
                   {isAdmin && (
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                       <div className="text-[12px] font-semibold text-slate-700">
-                        Transfer to another Division (Admin only)
+                        Transfer (Admin only)
                       </div>
 
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                         <div className="space-y-1">
                           <label className="text-[11px] text-slate-500">
-                            Select Division
+                            Division
                           </label>
                           <select
                             value={transferDivisionId}
-                            onChange={(e) => setTransferDivisionId(e.target.value)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setTransferDivisionId(v);
+                              setTransferSubDivisionId(""); // reset
+                            }}
                             className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200"
                           >
-                            <option value="">-- Select Division --</option>
+                            <option value="">-- Select --</option>
                             {divisions
                               .filter((d: any) => d.isActive !== false)
                               .map((d: any) => (
@@ -412,8 +494,33 @@ export default function DirectoryPage() {
                                 </option>
                               ))}
                           </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-slate-500">
+                            Sub-Division
+                          </label>
+                          <select
+                            value={transferSubDivisionId}
+                            onChange={(e) => setTransferSubDivisionId(e.target.value)}
+                            disabled={!transferDivisionId}
+                            className="w-full h-10 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:ring-2 focus:ring-green-100 focus:border-green-200 disabled:opacity-60"
+                          >
+                            <option value="">
+                              {!transferDivisionId
+                                ? "Select division first"
+                                : "-- Optional --"}
+                            </option>
+                            {transferSubDivisions
+                              .filter((s: any) => s.isActive !== false)
+                              .map((s: any) => (
+                                <option key={s._id} value={s._id}>
+                                  {s.name}
+                                </option>
+                              ))}
+                          </select>
                           <div className="text-[10px] text-slate-400">
-                            This will update the employee’s <code>division</code>.
+                            If not selected, sub-division will be cleared.
                           </div>
                         </div>
 
@@ -480,7 +587,7 @@ export default function DirectoryPage() {
                   </div>
 
                   <div className="text-[11px] text-slate-400">
-                    Tip: We can make this fully division-based (Manager → TL → Grade1/Grade2)
+                    Next step: we can make hierarchy fully division-driven (Manager → TL → Staff)
                     once backend returns division chain.
                   </div>
                 </div>
