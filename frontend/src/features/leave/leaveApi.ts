@@ -43,6 +43,10 @@ export interface LeaveRequest {
   // ✅ now supports Manager/Admin (and legacy)
   pendingWith?: PendingWith;
 
+  // ✅ backend-calculated permissions for the CURRENT logged-in user
+  canAct?: boolean; // can approve/reject
+  canCancel?: boolean; // employee can cancel own pending request
+
   createdAt?: string;
   approval?: any;
   history?: Array<{

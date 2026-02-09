@@ -41,9 +41,6 @@ export default function PimReportsPage() {
 
   return (
     <div className="flex min-h-screen bg-[#f4f5fb]">
-      {/* Left main sidebar (white) */}
-      <Sidebar />
-
       <div className="flex-1 flex flex-col">
         {/* Top red gradient bar with user menu */}
         <Topbar />

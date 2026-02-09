@@ -49,19 +49,19 @@ function mapPendingWithLabel(pw: PendingWith) {
 }
 
 function canUserActOnLeave(
+  leave: any,
   role: string,
   status: LeaveStatus,
   pendingWith?: PendingWith
 ) {
+  // Prefer backend-calculated permission (works even when manager role is ESS)
+  if (typeof leave?.canAct === "boolean") return leave.canAct;
+
+  // Fallback (older backend)
   if (status !== "PENDING") return false;
-
-  // Admin/HR can act on any pending
   if (role === "ADMIN" || role === "HR") return true;
-
-  // Supervisor can act only when pending is with Manager/Supervisor
   const pw = mapPendingWithLabel(pendingWith);
   if (role === "SUPERVISOR" && pw === "Manager") return true;
-
   return false;
 }
 
@@ -166,8 +166,8 @@ export default function LeaveRequestViewPage() {
   const pendingLabel = leave?.status === "PENDING" ? mapPendingWithLabel(pendingWith) : null;
 
   const canAct = useMemo(() => {
-    return canUserActOnLeave(role, leave?.status, pendingWith);
-  }, [role, leave?.status, pendingWith]);
+    return canUserActOnLeave(leave, role, leave?.status, pendingWith);
+  }, [leave, role, leave?.status, pendingWith]);
 
   async function handleDecision(status: LeaveStatus) {
     if (!id) return;

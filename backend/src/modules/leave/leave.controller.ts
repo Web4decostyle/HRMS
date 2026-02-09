@@ -34,19 +34,19 @@ function toObjectIdOrNull(id: unknown): mongoose.Types.ObjectId | null {
 
 /* ============================= Mapping helpers ============================= */
 
-function mapLeave(doc: any) {
+function mapLeaveBase(doc: any) {
   const plain = doc?.toObject ? doc.toObject() : doc;
   const approval = plain?.approval || {};
 
   // ✅ pendingWith logic:
-  // - If supervisorEmployee exists and supervisorAction is pending => SUPERVISOR
+  // - If manager/supervisorEmployee exists and action is pending => MANAGER
   // - Else if adminAction is pending => ADMIN
   // - Else null
   const pendingWith =
     plain.status !== "PENDING"
       ? null
       : approval.supervisorEmployee && approval.supervisorAction === "PENDING"
-      ? "SUPERVISOR"
+      ? "MANAGER"
       : approval.adminAction === "PENDING"
       ? "ADMIN"
       : null;
@@ -58,6 +58,42 @@ function mapLeave(doc: any) {
     toDate: plain.endDate,
     pendingWith,
   };
+}
+
+async function mapLeaveForUser(doc: any, req: AuthRequest) {
+  const base = mapLeaveBase(doc);
+  const role = req.user?.role;
+  if (!req.user?.id || !role) {
+    return { ...base, canAct: false, canCancel: false };
+  }
+
+  // default capabilities
+  let canAct = false;
+  let canCancel = false;
+
+  // Admin/HR can act on any pending request
+  if (base.status === "PENDING" && (role === "ADMIN" || role === "HR")) {
+    canAct = true;
+  }
+
+  // Assigned manager (division manager / supervisorEmployee) can act even if their role is ESS/SUPERVISOR
+  if (base.status === "PENDING" && base.approval?.supervisorEmployee) {
+    const actingEmployee = await ensureEmployeeForUser(req.user.id);
+    if (String(base.approval.supervisorEmployee) === String(actingEmployee._id)) {
+      canAct = true;
+    }
+  }
+
+  // Employee can cancel own pending request
+  if (base.status === "PENDING") {
+    const actingEmployee = await ensureEmployeeForUser(req.user.id);
+    const reqEmployeeId = String((base.employee as any)?._id || base.employee);
+    if (reqEmployeeId === String(actingEmployee._id)) {
+      canCancel = true;
+    }
+  }
+
+  return { ...base, canAct, canCancel };
 }
 
 function calcDaysInclusive(start: Date, end: Date) {
@@ -251,10 +287,9 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
   // ✅ Primary approver: division manager
   const divisionManagerApprover = await findDivisionManagerApprover(employeeId);
 
-  // ✅ Optional fallback: old Supervisor mapping (only if you still want it)
-  // If you want STRICT division-only, comment these 2 lines:
-  const fallbackSupervisorEmployeeId = await findDirectSupervisorEmployeeId(employee._id);
-  const finalSupervisorEmployeeId = divisionManagerApprover ?? fallbackSupervisorEmployeeId ?? null;
+  // ✅ Strict routing (per your requirement):
+  // If division manager is not set, request goes to Admin/HR only.
+  const finalSupervisorEmployeeId = divisionManagerApprover ?? null;
 
   // Supervisor user is optional (if mismatch/no user, admin/hr can still approve)
   let supUserId: string | null = null;
@@ -316,20 +351,21 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
     },
   });
 
-  // 🔔 Notify supervisor if mapped to User, else Admin+HR
+  // 🔔 Always notify Admin/HR (admin can approve without manager approval)
+  await notifyRoles({
+    roles: ["ADMIN", "HR"],
+    title: "Leave Request Submitted",
+    message: `${employee.firstName || "Employee"} ${employee.lastName || ""} applied for leave (${days} day(s)).`,
+    type: "LEAVE",
+    link: "/leave",
+    meta: { leaveId: request._id },
+  });
+
+  // 🔔 Also notify manager/supervisor if mapped to a User
   if (supUserId) {
     await notifyUsers({
       userIds: [supUserId],
-      title: "Leave Request Needs Approval",
-      message: `${employee.firstName || "Employee"} ${employee.lastName || ""} applied for leave (${days} day(s)).`,
-      type: "LEAVE",
-      link: "/leave",
-      meta: { leaveId: request._id },
-    });
-  } else {
-    await notifyRoles({
-      roles: ["ADMIN", "HR"],
-      title: "Leave Request Submitted",
+      title: "Leave Request Needs Your Approval",
       message: `${employee.firstName || "Employee"} ${employee.lastName || ""} applied for leave (${days} day(s)).`,
       type: "LEAVE",
       link: "/leave",
@@ -337,7 +373,7 @@ export async function createLeaveRequest(req: AuthRequest, res: Response) {
     });
   }
 
-  res.status(201).json(mapLeave(request));
+  res.status(201).json(await mapLeaveForUser(request, req));
 }
 
 export async function listMyLeave(req: AuthRequest, res: Response) {
@@ -359,7 +395,8 @@ export async function listMyLeave(req: AuthRequest, res: Response) {
   }
 
   const items = await LeaveRequest.find(query).populate("type").lean();
-  res.json(items.map(mapLeave));
+  const mapped = await Promise.all(items.map((d) => mapLeaveForUser(d, req)));
+  res.json(mapped);
 }
 
 /**
@@ -380,8 +417,11 @@ export async function listAllLeave(req: AuthRequest, res: Response) {
     if (toDate) query.startDate.$lte = new Date(toDate);
   }
 
-  if (req.user?.role === "SUPERVISOR") {
-    const actingEmployee = await ensureEmployeeForUser(req.user.id);
+  // Access rules:
+  // - ADMIN/HR: all
+  // - anyone else: only requests assigned to them as manager (approval.supervisorEmployee)
+  if (req.user?.role !== "ADMIN" && req.user?.role !== "HR") {
+    const actingEmployee = await ensureEmployeeForUser(req.user!.id);
     query["approval.supervisorEmployee"] = toObjectId(actingEmployee._id);
   }
 
@@ -390,7 +430,8 @@ export async function listAllLeave(req: AuthRequest, res: Response) {
     .populate("type")
     .lean();
 
-  res.json(items.map(mapLeave));
+  const mapped = await Promise.all(items.map((d) => mapLeaveForUser(d, req)));
+  res.json(mapped);
 }
 
 export async function getLeaveById(req: AuthRequest, res: Response) {
@@ -406,33 +447,21 @@ export async function getLeaveById(req: AuthRequest, res: Response) {
 
   const role = req.user.role;
 
-  if (role === "ADMIN" || role === "HR") return res.json(leave);
+  if (role === "ADMIN" || role === "HR") return res.json(await mapLeaveForUser(leave, req));
 
-  if (role === "SUPERVISOR") {
-    const actingEmployee = await ensureEmployeeForUser(req.user.id);
-    const assignedSupervisorEmployeeId = (leave as any)?.approval?.supervisorEmployee;
-
-    if (!assignedSupervisorEmployeeId) {
-      throw ApiError.forbidden("You are not assigned to this leave request");
-    }
-
-    if (String(assignedSupervisorEmployeeId) !== String(actingEmployee._id)) {
-      throw ApiError.forbidden("You are not assigned to this leave request");
-    }
-
-    return res.json(leave);
+  // Manager (assigned via approval.supervisorEmployee) can view
+  const actingEmployee = await ensureEmployeeForUser(req.user.id);
+  const assignedManagerEmployeeId = (leave as any)?.approval?.supervisorEmployee;
+  if (assignedManagerEmployeeId && String(assignedManagerEmployeeId) === String(actingEmployee._id)) {
+    return res.json(await mapLeaveForUser(leave, req));
   }
 
-  // ESS / ESS_VIEWER => own only
-  const actingEmployee = await ensureEmployeeForUser(req.user.id);
-  if (
-    String((leave as any).employee?._id || (leave as any).employee) !==
-    String(actingEmployee._id)
-  ) {
+  // Everyone else: can only view their own
+  if (String((leave as any).employee?._id || (leave as any).employee) !== String(actingEmployee._id)) {
     throw ApiError.forbidden("You can only view your own leave request");
   }
 
-  return res.json(leave);
+  return res.json(await mapLeaveForUser(leave, req));
 }
 
 /**
@@ -502,7 +531,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
       meta: { leaveId: String((leave as any)._id), requestedBy: req.user.id },
     });
 
-    return res.json(mapLeave(leave));
+    return res.json(await mapLeaveForUser(leave, req));
   }
 
   // Approve/reject: Supervisor OR Admin/HR
@@ -510,29 +539,28 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     throw ApiError.badRequest("Only pending leave requests can be approved/rejected");
   }
 
-  if (!["SUPERVISOR", "ADMIN", "HR"].includes(req.user.role)) {
-    throw ApiError.forbidden(
-      "Only the assigned supervisor, HR, or an admin can approve/reject leave"
-    );
+  const approval = (((leave as any).approval ??= {}) as any);
+
+  // ✅ Who is acting?
+  // - ADMIN/HR can always act
+  // - Otherwise, only the assigned manager (approval.supervisorEmployee) can act
+  const isAdminActing = req.user.role === "ADMIN" || req.user.role === "HR";
+  let isManagerActing = false;
+
+  if (!isAdminActing) {
+    const assignedManagerEmployeeId = (leave as any)?.approval?.supervisorEmployee;
+    if (!assignedManagerEmployeeId) {
+      throw ApiError.forbidden("Only admin/HR can approve/reject (no manager assigned)");
+    }
+
+    const actingEmployee = await ensureEmployeeForUser(req.user.id);
+    if (String(assignedManagerEmployeeId) !== String(toObjectId(actingEmployee._id))) {
+      throw ApiError.forbidden("Only the assigned manager can act on this request");
+    }
+    isManagerActing = true;
   }
 
-  const approval = (((leave as any).approval ??= {}) as any);
-  const isSupervisorActing = req.user.role === "SUPERVISOR";
-
-  if (isSupervisorActing) {
-    const actingEmployee = await ensureEmployeeForUser(req.user.id);
-    const assignedSupervisorEmployeeId = (leave as any)?.approval?.supervisorEmployee;
-
-    if (!assignedSupervisorEmployeeId) {
-      throw ApiError.badRequest(
-        "This leave request has no supervisor assigned (admin/HR can still approve)"
-      );
-    }
-
-    if (String(assignedSupervisorEmployeeId) !== String(toObjectId(actingEmployee._id))) {
-      throw ApiError.forbidden("Only the assigned supervisor can act on this request");
-    }
-
+  if (isManagerActing) {
     approval.supervisorAction = status === "APPROVED" ? "APPROVED" : "REJECTED";
     approval.supervisorActedBy = toObjectId(req.user.id);
     approval.supervisorActedAt = now;
@@ -587,8 +615,8 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
       title: status === "APPROVED" ? "Leave Approved" : "Leave Rejected",
       message:
         status === "APPROVED"
-          ? `Your leave request was approved by ${isSupervisorActing ? "your manager" : "HR/Admin"}.`
-          : `Your leave request was rejected by ${isSupervisorActing ? "your manager" : "HR/Admin"}.`,
+          ? `Your leave request was approved by ${isManagerActing ? "your manager" : "HR/Admin"}.`
+          : `Your leave request was rejected by ${isManagerActing ? "your manager" : "HR/Admin"}.`,
       type: "LEAVE",
       link: "/leave/my-leave",
       meta: { leaveId: (leave as any)._id },
@@ -599,7 +627,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
   const startStr = new Date((leave as any).startDate).toISOString().slice(0, 10);
   const endStr = new Date((leave as any).endDate).toISOString().slice(0, 10);
 
-  if (isSupervisorActing) {
+  if (isManagerActing) {
     await notifyRoles({
       roles: ["ADMIN", "HR"],
       title: status === "APPROVED" ? "Leave Approved" : "Leave Rejected",
@@ -628,7 +656,7 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
     }
   }
 
-  return res.json(mapLeave(leave));
+  return res.json(await mapLeaveForUser(leave, req));
 }
 
 /**
@@ -719,5 +747,5 @@ export async function assignLeave(req: AuthRequest, res: Response) {
     });
   }
 
-  return res.status(201).json(mapLeave(leave));
+  return res.status(201).json(await mapLeaveForUser(leave, req));
 }

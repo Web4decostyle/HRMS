@@ -74,12 +74,11 @@ router.delete(
 router.post("/", requireAuth, asyncHandler(createLeaveRequest));
 router.get("/my", requireAuth, asyncHandler(listMyLeave));
 
-router.get(
-  "/",
-  requireAuth,
-  requireRole("ADMIN", "HR", "SUPERVISOR"),
-  asyncHandler(listAllLeave)
-);
+// Leave list:
+// - ADMIN/HR sees all
+// - Division manager (assigned in approval.supervisorEmployee) sees only assigned items
+// - Everyone else will effectively see nothing / be constrained by controller rules
+router.get("/", requireAuth, asyncHandler(listAllLeave));
 
 // ✅ THIS is what your frontend needs for View page
 router.get("/:id", requireAuth, asyncHandler(getLeaveById));

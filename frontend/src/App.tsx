@@ -117,6 +117,7 @@ import AdminAuditHistoryPage from "./pages/admin/AdminAuditHistoryPage";
 import LeaveRequestViewPage from "./pages/leave/LeaveRequestViewPage";
 import DivisionsPage from "./pages/divisions/DivisionsPage";
 import EmployeeProfilePage from "./pages/pim/EmployeeProfilePage";
+import EditJobTitlePage from "./pages/admin/job/EditJobTitlePage";
 
 export default function App() {
   return (
@@ -722,6 +723,8 @@ export default function App() {
         {/* Job */}
         <Route path="job/job-titles" element={<JobTitlesPage />} />
         <Route path="job/job-titles/add" element={<AddJobTitlePage />} />
+        <Route path="job/job-titles/:id/edit" element={<EditJobTitlePage />} />
+
         <Route path="job/pay-grades" element={<PayGradesPage />} />
         <Route
           path="job/employment-status"

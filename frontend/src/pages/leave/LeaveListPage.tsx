@@ -120,13 +120,20 @@ function StatusPill({
  * - SUPERVISOR can act only when pending is with Manager/Supervisor
  *   (backend will still enforce assignment)
  */
-function canUserActOnLeave(role: string, status: LeaveStatus, pendingWith?: PendingWith) {
+function canUserActOnLeave(
+  leave: any,
+  role: string,
+  status: LeaveStatus,
+  pendingWith?: PendingWith
+) {
+  // Prefer backend-calculated permission (works even when manager role is ESS)
+  if (typeof leave?.canAct === "boolean") return leave.canAct;
+
+  // Fallback (older backend):
   if (status !== "PENDING") return false;
   if (role === "ADMIN" || role === "HR") return true;
-
   const pendingLabel = mapPendingWithLabel(pendingWith);
   if (role === "SUPERVISOR" && pendingLabel === "Manager") return true;
-
   return false;
 }
 
@@ -564,11 +571,7 @@ export default function LeaveListPage() {
                       10
                     )} - ${(l.toDate || l.endDate || "").slice(0, 10)}`;
 
-                    const canAct = canUserActOnLeave(
-                      role,
-                      l.status,
-                      pendingWith
-                    );
+                    const canAct = canUserActOnLeave(l as any, role, l.status, pendingWith);
 
                     return (
                       <tr
