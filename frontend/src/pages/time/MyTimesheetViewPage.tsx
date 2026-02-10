@@ -1,125 +1,8 @@
 import { useState } from "react";
-import {
-  NavLink,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-import {
-  FiChevronDown,
-  FiChevronLeft,
-  FiChevronRight,
-  FiCalendar,
-} from "react-icons/fi";
+import { useNavigate, useParams } from "react-router-dom";
+import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 
-/* ------------------------------------------------------------------
- * Time module top tabs (same look as other Time pages)
- * ------------------------------------------------------------------ */
-
-type MenuKey = "timesheets" | "attendance" | "reports" | "projects";
-
-const pillBase =
-  "inline-flex items-center gap-1 px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
-
-const dropdownItemClasses =
-  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-green-50";
-
-const TimeTopTabs: React.FC = () => {
-  const location = useLocation();
-  const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
-
-  const menus: {
-    key: MenuKey;
-    label: string;
-    items: { label: string; to: string }[];
-  }[] = [
-    {
-      key: "timesheets",
-      label: "Timesheets",
-      items: [
-        { label: "My Timesheets", to: "/time/timesheets/my" },
-        { label: "Employee Timesheets", to: "/time/timesheets/employee" },
-      ],
-    },
-    {
-      key: "attendance",
-      label: "Attendance",
-      items: [
-        { label: "My Records", to: "/time/attendance/my-records" },
-        { label: "Punch In/Out", to: "/time/attendance/punch" },
-        { label: "Employee Records", to: "/time/attendance/employee-records" },
-        { label: "Configuration", to: "/time/attendance/config" },
-      ],
-    },
-    {
-      key: "reports",
-      label: "Reports",
-      items: [
-        { label: "Project Reports", to: "/time/reports/projects" },
-        { label: "Employee Reports", to: "/time/reports/employees" },
-        { label: "Attendance Summary", to: "/time/reports/attendance-summary" },
-      ],
-    },
-    {
-      key: "projects",
-      label: "Project Info",
-      items: [
-        { label: "Customers", to: "/time/project-info/customers" },
-        { label: "Projects", to: "/time/project-info/projects" },
-      ],
-    },
-  ];
-
-  return (
-    <div className="mb-4">
-      <div className="inline-flex gap-2 bg-green-500/90 rounded-full px-2 py-1 shadow-sm">
-        {menus.map((menu) => {
-          const isGroupActive = menu.items.some((item) =>
-            location.pathname.startsWith(item.to)
-          );
-
-          const pillClasses = isGroupActive
-            ? `${pillBase} bg-white text-green-600 shadow-sm`
-            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-green-700`;
-
-          return (
-            <div
-              key={menu.key}
-              className="relative"
-              onMouseEnter={() => setOpenMenu(menu.key)}
-              onMouseLeave={() =>
-                setOpenMenu((prev) => (prev === menu.key ? null : prev))
-              }
-            >
-              <button type="button" className={pillClasses}>
-                <span>{menu.label}</span>
-                <FiChevronDown className="text-[10px]" />
-              </button>
-
-              {openMenu === menu.key && (
-                <div className="absolute left-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 z-20 py-1">
-                  {menu.items.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      className={({ isActive }) =>
-                        isActive
-                          ? `${dropdownItemClasses} bg-green-50 font-semibold text-green-600`
-                          : dropdownItemClasses
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+import TimeTopBar from "./TimeTopBar";
 
 /* ------------------------------------------------------------------
  * My Timesheet view (UI clone of the screenshot)
@@ -146,7 +29,7 @@ export default function MyTimesheetViewPage() {
   return (
     <div className="space-y-6">
       {/* module top bar */}
-      <TimeTopTabs />
+      <TimeTopBar />
 
       {/* Timesheet card */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

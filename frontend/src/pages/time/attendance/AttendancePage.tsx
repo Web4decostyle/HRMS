@@ -4,6 +4,8 @@ import {
   useClockOutMutation,
 } from "../../../features/time/timeApi";
 
+import TimeTopBar from "../TimeTopBar";
+
 export default function AttendancePage() {
   const { data: records = [], isLoading } = useGetMyAttendanceQuery();
   const [clockIn, { isLoading: clockingIn }] = useClockInMutation();
@@ -18,6 +20,7 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
+      <TimeTopBar />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">

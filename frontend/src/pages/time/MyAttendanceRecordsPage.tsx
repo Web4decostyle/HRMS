@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Calendar, ChevronDown } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useGetMyAttendanceRecordsByDateQuery } from "../../features/time/attendanceApi";
+
+import TimeTopBar from "./TimeTopBar";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -37,11 +39,6 @@ function tzLabelFromLocal() {
   return `GMT ${sign}${hh}:${mm}`;
 }
 
-const pillBase =
-  "px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1";
-const pillInactive = "bg-slate-100 text-slate-500 hover:bg-slate-200/60";
-const pillActive = "bg-green-100 text-green-600";
-
 export default function MyAttendanceRecordsPage() {
   const today = useMemo(() => new Date(), []);
   const [date, setDate] = useState<string>(toInputDate(today));
@@ -63,34 +60,8 @@ export default function MyAttendanceRecordsPage() {
   const tz = rows[0]?.tzLabel || tzLabelFromLocal();
 
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-[#f6f6fb]">
-      {/* top gradient strip */}
-      <div className="w-full bg-gradient-to-r from-green-500 via-green-600 to-green-500">
-        <div className="px-6 md:px-8 py-4">
-          <div className="text-white/90 text-sm font-medium">
-            Attendance / Attendance
-          </div>
-
-          {/* Pills row */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Timesheets <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillActive}`}>
-              Attendance <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Reports <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Project Info <ChevronDown className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <TimeTopBar />
 
       {/* main */}
       <div className="px-4 md:px-8 py-8">

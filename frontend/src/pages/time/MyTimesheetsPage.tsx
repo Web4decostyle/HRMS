@@ -1,141 +1,11 @@
 // frontend/src/pages/time/MyTimesheetsPage.tsx
-import { FormEvent, useState, useEffect, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { FiChevronDown } from "react-icons/fi";
+import { FormEvent, useState } from "react";
 import {
   useGetMyTimesheetsQuery,
   useCreateTimesheetMutation,
 } from "../../features/time/timeApi";
 
-/** -------- Time module top tabs (Timesheets / Attendance / Reports / Project Info) -------- */
-
-type MenuKey = "timesheets" | "attendance" | "reports" | "projects";
-
-const pillBase =
-  "inline-flex items-center gap-1 px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
-
-const dropdownItemClasses =
-  "block w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-green-50";
-
-const TimeTopTabs: React.FC = () => {
-  const location = useLocation();
-  const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-
-  const menus: {
-    key: MenuKey;
-    label: string;
-    items: { label: string; to: string }[];
-  }[] = [
-    {
-      key: "timesheets",
-      label: "Timesheets",
-      items: [
-        { label: "My Timesheets", to: "/time/timesheets/my" },
-        { label: "Employee Timesheets", to: "/time/timesheets/employee" },
-      ],
-    },
-    {
-      key: "attendance",
-      label: "Attendance",
-      items: [
-        { label: "My Records", to: "/time/attendance/my-records" },
-        { label: "Punch In/Out", to: "/time/attendance/punch-in" },
-        { label: "Employee Records", to: "/time/attendance/employee-records" },
-        { label: "Configuration", to: "/time/attendance/config" },
-      ],
-    },
-    {
-      key: "reports",
-      label: "Reports",
-      items: [
-        { label: "Project Reports", to: "/time/reports/projects" },
-        { label: "Employee Reports", to: "/time/reports/employees" },
-        { label: "Attendance Summary", to: "/time/reports/attendance-summary" },
-      ],
-    },
-    {
-      key: "projects",
-      label: "Project Info",
-      items: [
-        { label: "Customers", to: "/time/project-info/customers" },
-        { label: "Projects", to: "/time/project-info/projects" },
-      ],
-    },
-  ];
-
-  // Close dropdowns when clicking outside the red bar
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
-        setOpenMenu(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="mb-4" ref={wrapperRef}>
-      <div className="inline-flex gap-2 bg-green-500/90 rounded-full px-2 py-1 shadow-sm">
-        {menus.map((menu) => {
-          const isGroupActive = menu.items.some((item) =>
-            location.pathname.startsWith(item.to)
-          );
-
-          const pillClasses = isGroupActive
-            ? `${pillBase} bg-white text-green-600 shadow-sm`
-            : `${pillBase} text-white/90 hover:bg-white/60 hover:text-green-700`;
-
-          const isOpen = openMenu === menu.key;
-
-          return (
-            <div key={menu.key} className="relative">
-              <button
-                type="button"
-                className={pillClasses}
-                onClick={() =>
-                  setOpenMenu((prev) =>
-                    prev === menu.key ? null : menu.key
-                  )
-                }
-              >
-                <span>{menu.label}</span>
-                <FiChevronDown
-                  className={`text-[10px] transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {isOpen && (
-                <div className="absolute left-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 z-20 py-1">
-                  {menu.items.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setOpenMenu(null)} // close on select
-                      className={({ isActive }) =>
-                        isActive
-                          ? `${dropdownItemClasses} bg-green-50 font-semibold text-green-600`
-                          : dropdownItemClasses
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+import TimeTopBar from "./TimeTopBar";
 
 /** ---------------------------- My Timesheets page content ---------------------------- */
 
@@ -163,7 +33,7 @@ export default function MyTimesheetsPage() {
 
   return (
     <div className="space-y-6">
-      <TimeTopTabs />
+      <TimeTopBar />
 
       {/* Page heading */}
       <div>

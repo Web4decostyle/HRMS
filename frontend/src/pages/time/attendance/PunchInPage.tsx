@@ -1,10 +1,13 @@
+// frontend/src/pages/time/attendance/PunchInPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, Clock, ChevronDown } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import {
   useGetMyTodayAttendanceQuery,
   usePunchInMutation,
   usePunchOutMutation,
 } from "../../../features/time/attendanceApi";
+
+import TimeTopBar from "../TimeTopBar";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -24,10 +27,30 @@ function toInputTime12h(d: Date) {
   return `${pad2(h)}:${pad2(m)} ${ampm}`;
 }
 
-const pillBase =
-  "px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1";
-const pillInactive = "bg-slate-100 text-slate-500 hover:bg-slate-200/60";
-const pillActive = "bg-green-100 text-green-600";
+/**
+ * Parses "hh:mm AM/PM" to { hours24, minutes }.
+ * Returns null if invalid.
+ */
+function parseTime12h(input: string): { hours: number; minutes: number } | null {
+  const s = input.trim().toUpperCase();
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/.exec(s);
+  if (!m) return null;
+
+  let hh = Number(m[1]);
+  const mm = Number(m[2]);
+  const ap = m[3];
+
+  if (hh < 1 || hh > 12) return null;
+  if (mm < 0 || mm > 59) return null;
+
+  if (ap === "AM") {
+    if (hh === 12) hh = 0;
+  } else {
+    if (hh !== 12) hh += 12;
+  }
+
+  return { hours: hh, minutes: mm };
+}
 
 export default function PunchInPage() {
   const now = useMemo(() => new Date(), []);
@@ -35,7 +58,6 @@ export default function PunchInPage() {
   const [time, setTime] = useState<string>(toInputTime12h(now));
   const [note, setNote] = useState<string>("");
 
-  // backend hooks
   const {
     data: today,
     isLoading: isLoadingToday,
@@ -48,79 +70,61 @@ export default function PunchInPage() {
 
   const isBusy = isLoadingToday || isPunchingIn || isPunchingOut;
 
-  // Decide button label based on today's status
   const isCurrentlyIn = today?.status === "IN";
   const title = isCurrentlyIn ? "Punch Out" : "Punch In";
   const buttonLabel = isCurrentlyIn ? "Out" : "In";
 
-  // keep time fresh on first mount (optional)
+  // ✅ keep time fresh on first mount (optional)
   useEffect(() => {
     const t = setTimeout(() => {
       const d = new Date();
       setDate(toInputDate(d));
       setTime(toInputTime12h(d));
     }, 250);
+
+    // ✅ cleanup must return a function, NOT JSX
     return () => clearTimeout(t);
   }, []);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isBusy) return;
 
-    const payload = {
-      date,
-      time,
-      note: note?.trim() || undefined,
-      tzOffsetMinutes: -new Date().getTimezoneOffset(), // optional
-    };
+    // Basic validation (date input is already ISO yyyy-mm-dd)
+    const parsed = parseTime12h(time);
+    if (!parsed) {
+      alert("Please enter time in format: 03:37 PM");
+      return;
+    }
+
+    // Create a datetime ISO string using local date + parsed time
+    const [yyyy, mm, dd] = date.split("-").map(Number);
+    const dt = new Date(yyyy, (mm || 1) - 1, dd || 1, parsed.hours, parsed.minutes, 0, 0);
 
     try {
       if (isCurrentlyIn) {
-        await punchOut(payload).unwrap();
+        await punchOut({
+          time: dt.toISOString(),
+          note: note?.trim() || undefined,
+        } as any).unwrap();
       } else {
-        await punchIn(payload).unwrap();
+        await punchIn({
+          time: dt.toISOString(),
+          note: note?.trim() || undefined,
+        } as any).unwrap();
       }
 
-      setNote("");
       await refetch();
+      setNote("");
     } catch (err: any) {
-      const msg =
-        err?.data?.message ||
-        err?.error ||
-        err?.message ||
-        "Something went wrong";
-      alert(msg);
+      // show something helpful
+      alert(err?.data?.message || "Failed to save. Please try again.");
     }
-  };
+  }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-[#f6f6fb]">
-      {/* red gradient strip + breadcrumb */}
-      <div className="w-full bg-gradient-to-r from-green-500 via-green-600 to-green-500">
-        <div className="px-6 md:px-8 py-4">
-          <div className="text-white/90 text-sm font-medium">
-            Attendance / Attendance
-          </div>
-
-          {/* Pills row */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Timesheets <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillActive}`}>
-              Attendance <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Reports <ChevronDown className="w-4 h-4" />
-            </button>
-
-            <button type="button" className={`${pillBase} ${pillInactive}`}>
-              Project Info <ChevronDown className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <TimeTopBar />
 
       {/* Main content */}
       <div className="px-4 md:px-8 py-8">
@@ -212,9 +216,7 @@ export default function PunchInPage() {
 
               {/* Note */}
               <div className="mt-6">
-                <label className="block text-sm font-medium text-slate-700">
-                  Note
-                </label>
+                <label className="block text-sm font-medium text-slate-700">Note</label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}

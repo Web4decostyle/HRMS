@@ -16,7 +16,6 @@ export function connectSocket(userId: string) {
 
   return socket;
 }
-
 export function getSocket() {
   return socket;
 }
