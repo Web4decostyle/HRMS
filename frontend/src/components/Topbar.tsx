@@ -122,7 +122,7 @@ export default function Topbar({ active }: TopbarProps) {
       skip: !data?.user,
       refetchOnFocus: true,
       refetchOnReconnect: true,
-    }
+    },
   );
 
   const unreadCount = unreadData?.count ?? 0;
@@ -220,7 +220,9 @@ export default function Topbar({ active }: TopbarProps) {
   return (
     <header className="h-14 px-5 border-b bg-white flex items-center justify-between">
       <div>
-        <h1 className="text-base font-semibold text-slate-800">{getPageTitle()}</h1>
+        <h1 className="text-base font-semibold text-slate-800">
+          {getPageTitle()}
+        </h1>
         <p className="text-[11px] text-slate-400">DecoStyle · {roleLabel}</p>
       </div>
 
@@ -292,7 +294,7 @@ export default function Topbar({ active }: TopbarProps) {
                       <div className="pt-1">
                         <span
                           className={`inline-block w-2.5 h-2.5 rounded-full ${typeDot(
-                            n.type
+                            n.type,
                           )}`}
                         />
                       </div>
@@ -368,12 +370,21 @@ export default function Topbar({ active }: TopbarProps) {
           <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-semibold">
             {initials}
           </div>
-          <div className="leading-tight">
-            <div className="text-xs font-medium text-slate-800">{fullName}</div>
+
+          <div className="flex flex-col leading-tight min-w-[120px]">
+            <button
+              type="button"
+              onClick={() => navigate("/profile")}
+              className="text-xs font-medium text-slate-800 hover:underline text-left whitespace-nowrap"
+              title="Open Profile"
+            >
+              {fullName}
+            </button>
+
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[11px] text-green-600 hover:text-green-700"
+              className="text-[11px] text-green-600 hover:text-green-700 text-left"
             >
               Logout
             </button>

@@ -119,6 +119,9 @@ import DivisionsPage from "./pages/divisions/DivisionsPage";
 import EmployeeProfilePage from "./pages/pim/EmployeeProfilePage";
 import EditJobTitlePage from "./pages/admin/job/EditJobTitlePage";
 
+// Profile page
+import ProfilePage from "./pages/profile/ProfilePage";
+
 export default function App() {
   return (
     <Routes>
@@ -224,6 +227,9 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      {/* ===================== Profile Page ===================== */}
+      <Route path="/profile" element={<ProfilePage />} />
 
       {/* ===================== RECRUITMENT ===================== */}
       <Route
