@@ -253,7 +253,7 @@ export default function App() {
         }
       />
       <Route
-        path="/recruitment/candidates"
+        path="/recruitment/candidates/add"
         element={
           <RequireAuth>
             <Layout>
