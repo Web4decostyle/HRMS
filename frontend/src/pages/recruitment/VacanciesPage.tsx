@@ -1,28 +1,29 @@
 // frontend/src/pages/recruitment/VacanciesPage.tsx
 import { FormEvent, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   useGetJobsQuery,
   useGetVacanciesQuery,
   useCreateVacancyMutation,
 } from "../../features/recruitment/recruitmentApi";
-import { FiChevronDown, FiPlus } from "react-icons/fi";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
+import { FiPlus } from "react-icons/fi";
 
-/** Local top tabs for Recruitment (same as in RecruitmentPage) */
+// ✅ Fetch employees for Hiring Manager dropdown
+import { useGetEmployeesQuery } from "../../features/employees/employeesApi";
+
+/* ================= Tabs ================= */
+
 const RecruitmentTopTabs: React.FC = () => {
   const base = "/recruitment";
 
-  const pill =
-    "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
+  const pill = "px-4 py-1.5 text-xs font-medium rounded-full transition-colors";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-green-600 shadow-sm`
-      : `${pill} text-slate-600 hover:bg-white/70`;
+      ? `${pill} bg-lime-500 text-white shadow-sm`
+      : `${pill} text-slate-600 hover:bg-white hover:shadow-sm`;
 
   return (
-    <div className="mb-4 flex items-center gap-2">
+    <div className="mb-4 flex gap-2">
       <NavLink to={base} end className={getClass}>
         Candidates
       </NavLink>
@@ -33,15 +34,45 @@ const RecruitmentTopTabs: React.FC = () => {
   );
 };
 
+function toFullName(e: any) {
+  const first = (e?.firstName ?? "").trim();
+  const last = (e?.lastName ?? "").trim();
+  const full = `${first} ${last}`.trim();
+  return full || e?.name || e?.email || "—";
+}
+
+/* ================= Page ================= */
+
 export default function VacanciesPage() {
+  const navigate = useNavigate();
+
   const { data: jobs } = useGetJobsQuery();
   const { data: vacancies } = useGetVacanciesQuery();
   const [createVacancy, { isLoading: creating }] = useCreateVacancyMutation();
 
-  // ── Filter form state ─────────────────────────────────────────────
+  // ✅ Employees (for hiring manager dropdown)
+  // If your API requires params, adjust accordingly:
+  // useGetEmployeesQuery({ include: "all" })
+  const { data: employees = [] } = useGetEmployeesQuery({ include: "all" } as any);
+
+  // Build unique manager name list (clean + sorted)
+  const managerNames = useMemo(() => {
+    const names = (employees as any[])
+      .map(toFullName)
+      .filter((n) => n && n !== "—");
+
+    // unique + sort
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  }, [employees]);
+
+  /* ================= Filters ================= */
+
   const [jobIdFilter, setJobIdFilter] = useState("");
   const [vacancyNameFilter, setVacancyNameFilter] = useState("");
+
+  // ✅ Now a dropdown value (employee name)
   const [hiringManagerFilter, setHiringManagerFilter] = useState("");
+
   const [statusFilter, setStatusFilter] = useState("");
 
   const [appliedFilters, setAppliedFilters] = useState({
@@ -89,31 +120,30 @@ export default function VacanciesPage() {
       }
 
       if (appliedFilters.vacancyName) {
-        if (
-          !v.name
-            ?.toLowerCase()
-            .includes(appliedFilters.vacancyName.toLowerCase().trim())
-        ) {
-          return false;
-        }
+        const q = appliedFilters.vacancyName.toLowerCase().trim();
+        if (!v.name?.toLowerCase().includes(q)) return false;
       }
 
+      // ✅ Hiring manager dropdown filter (exact match OR contains; we’ll do contains-safe)
       if (appliedFilters.hiringManager) {
-        const hm = (v.hiringManagerName ?? "").toLowerCase();
-        if (!hm.includes(appliedFilters.hiringManager.toLowerCase().trim())) {
-          return false;
-        }
+        const hm = (v.hiringManagerName ?? "").toLowerCase().trim();
+        const sel = appliedFilters.hiringManager.toLowerCase().trim();
+        if (!hm.includes(sel)) return false;
       }
 
       return true;
     });
   }, [vacancies, appliedFilters]);
 
-  // ── Add vacancy inline form ───────────────────────────────────────
+  /* ================= Add Vacancy ================= */
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newJobId, setNewJobId] = useState("");
   const [newName, setNewName] = useState("");
+
+  // ✅ Now a dropdown value (employee name)
   const [newHiringManager, setNewHiringManager] = useState("");
+
   const [newStatus, setNewStatus] = useState<"OPEN" | "CLOSED">("OPEN");
 
   async function handleCreate(e: FormEvent) {
@@ -134,281 +164,253 @@ export default function VacanciesPage() {
     setShowAddForm(false);
   }
 
+  /* ================= UI ================= */
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Right side: topbar + page content */}
-      <div className="flex-1 flex flex-col">
-        <main className="p-6 space-y-4">
-          <h1 className="text-2xl font-semibold text-slate-800">
-            Recruitment
-          </h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-2xl bg-gradient-to-r from-lime-50 to-white border border-slate-200 p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold text-slate-800">
+          Vacancies Management
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Manage and track open recruitment vacancies
+        </p>
+      </div>
 
-          <RecruitmentTopTabs />
+      <RecruitmentTopTabs />
 
-          {/* Filters card */}
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between px-6 pt-5 pb-3">
-              <h2 className="text-sm font-semibold text-slate-800">
-                Vacancies
-              </h2>
-            </div>
+      {/* Filters */}
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-4">
+          <select
+            value={jobIdFilter}
+            onChange={(e) => setJobIdFilter(e.target.value)}
+            className="input"
+          >
+            <option value="">All Jobs</option>
+            {jobs?.map((j: any) => (
+              <option key={j._id} value={j._id}>
+                {j.title}
+              </option>
+            ))}
+          </select>
 
-            <form
-              onSubmit={handleSearch}
-              className="px-6 pb-5 space-y-4 text-xs"
+          <input
+            value={vacancyNameFilter}
+            onChange={(e) => setVacancyNameFilter(e.target.value)}
+            className="input"
+            placeholder="Vacancy Name"
+          />
+
+          {/* ✅ Hiring Manager Dropdown */}
+          <select
+            value={hiringManagerFilter}
+            onChange={(e) => setHiringManagerFilter(e.target.value)}
+            className="input"
+          >
+            <option value="">All Hiring Managers</option>
+            {managerNames.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input"
+          >
+            <option value="">All Status</option>
+            <option value="OPEN">Open</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+
+          <div className="md:col-span-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Job Title */}
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-semibold text-slate-500">
-                    Job Title
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={jobIdFilter}
-                      onChange={(e) => setJobIdFilter(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                    >
-                      <option value="">-- Select --</option>
-                      {jobs?.map((j: any) => (
-                        <option key={j._id} value={j._id}>
-                          {j.title}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                  </div>
-                </div>
+              Reset
+            </button>
+            <button
+              type="submit"
+              className="rounded-full bg-lime-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
+            >
+              Search
+            </button>
+          </div>
+        </form>
+      </section>
 
-                {/* Vacancy */}
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-semibold text-slate-500">
-                    Vacancy
-                  </label>
-                  <input
-                    value={vacancyNameFilter}
-                    onChange={(e) => setVacancyNameFilter(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
-                    placeholder="Type to filter..."
-                  />
-                </div>
+      {/* Vacancies Table */}
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex justify-between items-center px-6 py-4">
+          <h3 className="font-semibold text-slate-700">Vacancies</h3>
 
-                {/* Hiring Manager */}
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-semibold text-slate-500">
-                    Hiring Manager
-                  </label>
-                  <input
-                    value={hiringManagerFilter}
-                    onChange={(e) => setHiringManagerFilter(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
-                    placeholder="Type to filter..."
-                  />
-                </div>
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
+          >
+            <FiPlus className="text-sm" />
+            Add Vacancy
+          </button>
+        </div>
 
-                {/* Status */}
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-semibold text-slate-500">
-                    Status
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                    >
-                      <option value="">-- Select --</option>
-                      <option value="OPEN">Open</option>
-                      <option value="CLOSED">Closed</option>
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                  </div>
-                </div>
-              </div>
+        {showAddForm && (
+          <div className="px-6 pb-6 border-t border-slate-100">
+            <form
+              onSubmit={handleCreate}
+              className="mt-4 grid md:grid-cols-4 gap-4"
+            >
+              <select
+                value={newJobId}
+                onChange={(e) => setNewJobId(e.target.value)}
+                className="input"
+              >
+                <option value="">Select Job *</option>
+                {jobs?.map((j: any) => (
+                  <option key={j._id} value={j._id}>
+                    {j.title}
+                  </option>
+                ))}
+              </select>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="rounded-full border border-slate-200 px-5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Reset
-                </button>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="input"
+                placeholder="Vacancy Name *"
+              />
+
+              {/* ✅ Hiring Manager Dropdown */}
+              <select
+                value={newHiringManager}
+                onChange={(e) => setNewHiringManager(e.target.value)}
+                className="input"
+              >
+                <option value="">Select Hiring Manager</option>
+                {managerNames.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={newStatus}
+                onChange={(e) =>
+                  setNewStatus(e.target.value as "OPEN" | "CLOSED")
+                }
+                className="input"
+              >
+                <option value="OPEN">Open</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+
+              <div className="md:col-span-4 flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center rounded-full bg-lime-500 px-6 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
+                  disabled={creating}
+                  className="rounded-full bg-lime-500 px-6 py-1.5 text-xs font-semibold text-white hover:bg-lime-600 disabled:opacity-60"
                 >
-                  Search
+                  {creating ? "Saving..." : "Save Vacancy"}
                 </button>
               </div>
             </form>
-          </section>
+          </div>
+        )}
 
-          {/* Vacancies list card */}
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowAddForm((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
-              >
-                <FiPlus className="text-sm" />
-                <span>Add</span>
-              </button>
-            </div>
+        <div className="border-t border-slate-100" />
 
-            {showAddForm && (
-              <div className="px-6 pb-3">
-                <form
-                  onSubmit={handleCreate}
-                  className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-xs items-end bg-slate-50/60 rounded-xl border border-slate-200 px-4 py-3"
-                >
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-500">
-                      Job Title *
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={newJobId}
-                        onChange={(e) => setNewJobId(e.target.value)}
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                      >
-                        <option value="">-- Select --</option>
-                        {jobs?.map((j: any) => (
-                          <option key={j._id} value={j._id}>
-                            {j.title}
-                          </option>
-                        ))}
-                      </select>
-                      <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                    </div>
-                  </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-6 py-3 text-left">Vacancy</th>
+                <th className="px-6 py-3 text-left">Job</th>
+                <th className="px-6 py-3 text-left">Hiring Manager</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVacancies.length > 0 ? (
+                filteredVacancies.map((v: any) => {
+                  const jobTitle =
+                    typeof v.job === "string" ? "" : v.job?.title ?? "";
 
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-500">
-                      Vacancy Name *
-                    </label>
-                    <input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                      placeholder="e.g. Senior Designer"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-500">
-                      Hiring Manager
-                    </label>
-                    <input
-                      value={newHiringManager}
-                      onChange={(e) => setNewHiringManager(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                      placeholder="Manager name"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 space-y-1">
-                      <label className="block text-[11px] font-semibold text-slate-500">
-                        Status
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={newStatus}
-                          onChange={(e) =>
-                            setNewStatus(e.target.value as "OPEN" | "CLOSED")
-                          }
-                          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                        >
-                          <option value="OPEN">Open</option>
-                          <option value="CLOSED">Closed</option>
-                        </select>
-                        <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={creating}
-                      className="mt-4 rounded-full bg-green-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-60"
+                  return (
+                    <tr
+                      key={v._id}
+                      className="border-t hover:bg-slate-50 transition"
                     >
-                      {creating ? "Saving..." : "Save"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            <div className="border-t border-slate-100" />
-
-            <div className="px-6 pb-4 pt-2">
-              <div className="overflow-x-auto rounded-xl border border-slate-100">
-                <table className="min-w-full text-xs">
-                  <thead className="bg-slate-50 text-[11px] text-slate-500">
-                    <tr>
-                      <th className="w-10 px-3 py-2 text-left">
-                        <input type="checkbox" className="h-3 w-3 rounded" />
-                      </th>
-                      <th className="px-3 py-2 text-left">Vacancy</th>
-                      <th className="px-3 py-2 text-left">Job Title</th>
-                      <th className="px-3 py-2 text-left">Hiring Manager</th>
-                      <th className="px-3 py-2 text-left">Status</th>
-                      <th className="px-3 py-2 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredVacancies.length > 0 ? (
-                      filteredVacancies.map((v: any) => {
-                        const jobTitle =
-                          typeof v.job === "string" ? "" : v.job?.title ?? "";
-
-                        return (
-                          <tr
-                            key={v._id}
-                            className="border-t border-slate-100 last:border-b-0"
-                          >
-                            <td className="px-3 py-2">
-                              <input
-                                type="checkbox"
-                                className="h-3 w-3 rounded"
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-slate-700">
-                              {v.name}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-slate-700">
-                              {jobTitle || "-"}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-slate-700">
-                              {v.hiringManagerName || "-"}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-slate-700">
-                              {v.status}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-green-600">
-                              View
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-3 py-6 text-center text-[11px] text-slate-400"
+                      <td className="px-6 py-4 font-medium text-slate-800">
+                        {v.name}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {jobTitle || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {v.hiringManagerName || "-"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            v.status === "OPEN"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
                         >
-                          No Records Found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
+                          {v.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() =>
+                            navigate(`/recruitment/vacancies/${v._id}`)
+                          }
+                          className="text-lime-600 hover:underline text-xs font-medium"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-slate-400"
+                  >
+                    No Vacancies Found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <style>{`
+        .input {
+          width: 100%;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.75rem;
+          padding: 0.55rem 0.9rem;
+          font-size: 0.875rem;
+          outline: none;
+          transition: all 0.2s;
+          background: white;
+        }
+        .input:focus {
+          border-color: #84cc16;
+          box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.2);
+        }
+      `}</style>
     </div>
   );
 }

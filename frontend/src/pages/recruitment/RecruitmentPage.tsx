@@ -1,23 +1,25 @@
 // frontend/src/pages/recruitment/RecruitmentPage.tsx
 import { FormEvent, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useGetCandidatesQuery } from "../../features/recruitment/recruitmentApi";
+import { useGetJobTitlesQuery } from "../../features/admin/adminApi";
 import {
-  useGetJobsQuery,
-  useGetCandidatesQuery,
-} from "../../features/recruitment/recruitmentApi";
-import { FiChevronDown, FiCalendar, FiPlus } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+  FiPlus,
+  FiSearch,
+  FiRefreshCw,
+} from "react-icons/fi";
 
-/** Local top tabs for Recruitment (Candidates / Vacancies) */
+/* ================= Top Tabs ================= */
+
 const RecruitmentTopTabs: React.FC = () => {
   const base = "/recruitment";
 
   const pill =
-    "px-4 py-1.5 text-xs font-medium rounded-full border border-transparent transition-colors";
+    "px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200";
   const getClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? `${pill} bg-white text-green-600 shadow-sm`
-      : `${pill} text-slate-600 hover:bg-white/70`;
+      ? `${pill} bg-lime-500 text-white shadow-sm`
+      : `${pill} text-slate-600 hover:bg-white hover:shadow-sm`;
 
   return (
     <div className="mb-4 flex items-center gap-2">
@@ -31,81 +33,106 @@ const RecruitmentTopTabs: React.FC = () => {
   );
 };
 
-export default function RecruitmentPage() {
-  const { data: jobs } = useGetJobsQuery();
-  const { data: candidates } = useGetCandidatesQuery();
+/* ================= Status Badge ================= */
 
-  // --- Filter form state ---
-  const [jobId, setJobId] = useState("");
-  const [vacancyId, setVacancyId] = useState("");
-  const [hiringManager, setHiringManager] = useState("");
-  const [status, setStatus] = useState("");
-  const [candidateName, setCandidateName] = useState("");
-  const [keywords, setKeywords] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [method, setMethod] = useState("");
+function StatusBadge({ status }: { status?: string }) {
+  const base =
+    "px-2.5 py-1 rounded-full text-[10px] font-semibold border inline-block";
+
+  const map: Record<string, string> = {
+    APPLIED: "bg-slate-100 text-slate-700 border-slate-200",
+    SHORTLISTED: "bg-amber-100 text-amber-700 border-amber-200",
+    INTERVIEW: "bg-sky-100 text-sky-700 border-sky-200",
+    HIRED: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    REJECTED: "bg-rose-100 text-rose-700 border-rose-200",
+    SELECTED: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  };
+
+  return (
+    <span className={`${base} ${map[status || ""] || "bg-slate-100"}`}>
+      {status || "-"}
+    </span>
+  );
+}
+
+function toIsoDate(v: any) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
+/* ================= Page ================= */
+
+export default function RecruitmentPage() {
   const navigate = useNavigate();
 
-  // Applied filters (only change when Search is clicked)
+  // ✅ FIX: Fetch job titles from Admin module (this is what your Admin page shows)
+  const { data: jobTitles = [], isLoading: loadingJobs } =
+    useGetJobTitlesQuery();
+
+  const { data: candidates = [] } = useGetCandidatesQuery();
+
+  // Filters UI state
+  const [jobTitleId, setJobTitleId] = useState("");
+  const [status, setStatus] = useState("");
+  const [candidateName, setCandidateName] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  // Applied filters (only set on Search click)
   const [appliedFilters, setAppliedFilters] = useState({
-    jobId: "",
-    vacancyId: "",
-    hiringManager: "",
+    jobTitleId: "",
     status: "",
     candidateName: "",
-    keywords: "",
     dateFrom: "",
     dateTo: "",
-    method: "",
   });
 
   function handleSearch(e: FormEvent) {
     e.preventDefault();
     setAppliedFilters({
-      jobId,
-      vacancyId,
-      hiringManager,
+      jobTitleId,
       status,
       candidateName,
-      keywords,
       dateFrom,
       dateTo,
-      method,
     });
   }
 
   function handleReset() {
-    setJobId("");
-    setVacancyId("");
-    setHiringManager("");
+    setJobTitleId("");
     setStatus("");
     setCandidateName("");
-    setKeywords("");
     setDateFrom("");
     setDateTo("");
-    setMethod("");
     setAppliedFilters({
-      jobId: "",
-      vacancyId: "",
-      hiringManager: "",
+      jobTitleId: "",
       status: "",
       candidateName: "",
-      keywords: "",
       dateFrom: "",
       dateTo: "",
-      method: "",
     });
   }
 
-  // Simple front-end filtering to match the Search button
   const filteredCandidates = useMemo(() => {
     if (!candidates) return [];
 
     return candidates.filter((c: any) => {
-      if (appliedFilters.jobId) {
-        const idFromJob = typeof c.job === "string" ? c.job : c.job?._id ?? "";
-        if (idFromJob !== appliedFilters.jobId) return false;
+      // ✅ job matching:
+      // Your candidates might store job as:
+      // - string (id)
+      // - populated object
+      // - OR not at all (if you attach via vacancy)
+      if (appliedFilters.jobTitleId) {
+        const candidateJobId =
+          typeof c.job === "string"
+            ? c.job
+            : c.job?._id ??
+              c.jobTitleId ?? // fallback if your backend uses this
+              "";
+
+        if (candidateJobId !== appliedFilters.jobTitleId) return false;
       }
 
       if (appliedFilters.status && c.status !== appliedFilters.status) {
@@ -123,11 +150,12 @@ export default function RecruitmentPage() {
         }
       }
 
-      // naive date filter using applicationDate / createdAt if present
+      // date filter
       if (appliedFilters.dateFrom || appliedFilters.dateTo) {
-        const rawDate = c.applicationDate || c.createdAt;
+        const rawDate = c.applicationDate || c.dateOfApplication || c.createdAt;
         if (rawDate) {
           const d = new Date(rawDate).getTime();
+
           if (appliedFilters.dateFrom) {
             const from = new Date(appliedFilters.dateFrom).getTime();
             if (d < from) return false;
@@ -144,282 +172,194 @@ export default function RecruitmentPage() {
   }, [candidates, appliedFilters]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-800">Recruitment</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-2xl bg-gradient-to-r from-lime-50 via-white to-white border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Recruitment</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage candidates and track hiring progress
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate("/recruitment/candidates/add")}
+            className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-5 py-2 text-sm font-semibold text-white hover:bg-lime-600 transition"
+          >
+            <FiPlus />
+            Add Candidate
+          </button>
+        </div>
+      </div>
 
       <RecruitmentTopTabs />
 
-      {/* Filters card */}
+      {/* Search Filters */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 className="text-sm font-semibold text-slate-800">Candidates</h2>
-        </div>
-
-        <form onSubmit={handleSearch} className="px-6 pb-5 space-y-4 text-xs">
+        <form onSubmit={handleSearch} className="p-6 space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* Job Title */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Job Title
               </label>
-              <div className="relative">
-                <select
-                  value={jobId}
-                  onChange={(e) => setJobId(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                >
-                  <option value="">-- Select --</option>
-                  {jobs?.map((j: any) => (
-                    <option key={j._id} value={j._id}>
-                      {j.title}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
+              <select
+                value={jobTitleId}
+                onChange={(e) => setJobTitleId(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+              >
+                <option value="">{loadingJobs ? "Loading..." : "All"}</option>
+                {jobTitles.map((j) => (
+                  <option key={j._id} value={j._id}>
+                    {j.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Vacancy (placeholder for now) */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Vacancy
-              </label>
-              <div className="relative">
-                <select
-                  value={vacancyId}
-                  onChange={(e) => setVacancyId(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                >
-                  <option value="">-- Select --</option>
-                  {/* hook up real vacancies later */}
-                </select>
-                <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Hiring Manager (placeholder) */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Hiring Manager
-              </label>
-              <div className="relative">
-                <select
-                  value={hiringManager}
-                  onChange={(e) => setHiringManager(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                >
-                  <option value="">-- Select --</option>
-                  {/* fill with managers from API later */}
-                </select>
-                <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Status
               </label>
-              <div className="relative">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                >
-                  <option value="">-- Select --</option>
-                  <option value="APPLIED">Applied</option>
-                  <option value="SHORTLISTED">Shortlisted</option>
-                  <option value="INTERVIEW">Interview</option>
-                  <option value="HIred">Hired</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-                <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+              >
+                <option value="">All</option>
+                <option value="APPLIED">Applied</option>
+                <option value="SHORTLISTED">Shortlisted</option>
+                <option value="INTERVIEW">Interview</option>
+                <option value="HIRED">Hired</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="SELECTED">Selected</option>
+              </select>
             </div>
 
-            {/* Candidate Name */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Candidate Name
               </label>
               <input
                 value={candidateName}
                 onChange={(e) => setCandidateName(e.target.value)}
-                placeholder="Type for hints..."
-                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+                placeholder="Search name..."
               />
             </div>
 
-            {/* Keywords */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Keywords
-              </label>
-              <input
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="Enter comma separated words..."
-                className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
-              />
-            </div>
-
-            {/* Date From */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Date of Application (From)
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
-                />
-                <FiCalendar className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Date To */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Date of Application (To)
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-9 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white"
-                />
-                <FiCalendar className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Method of Application */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-500">
-                Method of Application
-              </label>
-              <div className="relative">
-                <select
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 pr-8 text-xs focus:outline-none focus:ring-1 focus:ring-green-500 focus:bg-white appearance-none"
-                >
-                  <option value="">-- Select --</option>
-                  <option value="ONLINE">Online</option>
-                  <option value="EMAIL">Email</option>
-                  <option value="REFERRAL">Referral</option>
-                  <option value="WALKIN">Walk-in</option>
-                </select>
-                <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-full bg-lime-500 px-5 py-2 text-sm font-semibold text-white hover:bg-lime-600"
+              >
+                <FiSearch />
+                Search
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                <FiRefreshCw />
+                Reset
+              </button>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="rounded-full border border-slate-200 px-5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-full bg-lime-500 px-6 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
-            >
-              Search
-            </button>
+          {/* Optional date filters (kept, but visually smaller) */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
+                Date From
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
+                Date To
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+              />
+            </div>
+            <div className="hidden lg:block" />
+            <div className="hidden lg:block" />
           </div>
         </form>
       </section>
 
-      {/* Candidates list card */}
+      {/* Candidate Table */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between px-6 py-4">
-          <button
-            onClick={() => navigate("/recruitment/candidates/add")}
-            className="inline-flex items-center gap-2 rounded-full bg-lime-500 px-5 py-1.5 text-xs font-semibold text-white hover:bg-lime-600"
-          >
-            <FiPlus className="text-sm" />
-            <span>Add</span>
-          </button>
-        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-500 sticky top-0">
+              <tr>
+                <th className="px-6 py-3 text-left">Vacancy</th>
+                <th className="px-6 py-3 text-left">Candidate</th>
+                <th className="px-6 py-3 text-left">Date Applied</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-left">Action</th>
+              </tr>
+            </thead>
 
-        <div className="border-t border-slate-100" />
+            <tbody>
+              {filteredCandidates.length > 0 ? (
+                filteredCandidates.map((c: any) => {
+                  const dateRaw =
+                    c.applicationDate || c.dateOfApplication || c.createdAt;
+                  const formatted = dateRaw
+                    ? new Date(dateRaw).toLocaleDateString()
+                    : "-";
 
-        <div className="px-6 pb-4 pt-2">
-          <div className="overflow-x-auto rounded-xl border border-slate-100">
-            <table className="min-w-full text-xs">
-              <thead className="bg-slate-50 text-[11px] text-slate-500">
-                <tr>
-                  <th className="w-10 px-3 py-2 text-left">
-                    <input type="checkbox" className="h-3 w-3 rounded" />
-                  </th>
-                  <th className="px-3 py-2 text-left">Vacancy</th>
-                  <th className="px-3 py-2 text-left">Candidate</th>
-                  <th className="px-3 py-2 text-left">Hiring Manager</th>
-                  <th className="px-3 py-2 text-left">Date of Application</th>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCandidates.length > 0 ? (
-                  filteredCandidates.map((c: any) => {
-                    const jobTitle =
-                      typeof c.job === "string" ? "" : c.job?.title ?? "";
-                    const applicationDate =
-                      c.applicationDate || c.createdAt || "";
-                    const formattedDate = applicationDate
-                      ? new Date(applicationDate).toLocaleDateString()
-                      : "-";
-
-                    return (
-                      <tr
-                        key={c._id}
-                        className="border-t border-slate-100 last:border-b-0"
-                      >
-                        <td className="px-3 py-2">
-                          <input type="checkbox" className="h-3 w-3 rounded" />
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-slate-700">
-                          {jobTitle || "-"}
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-slate-700">
-                          {c.firstName} {c.lastName}
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-slate-700">
-                          {/* hook real manager later */}
-                          {c.hiringManagerName || "-"}
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-slate-700">
-                          {formattedDate}
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-slate-700">
-                          {c.status || "-"}
-                        </td>
-                        <td className="px-3 py-2 align-top text-[11px] text-green-600">
-                          {/* placeholder for action buttons */}
-                          View
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-3 py-6 text-center text-[11px] text-slate-400"
+                  return (
+                    <tr
+                      key={c._id}
+                      className="border-t border-slate-100 hover:bg-slate-50 transition"
                     >
-                      No Records Found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      <td className="px-6 py-4 text-slate-700">
+                        {c.vacancy?.name || "-"}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-800">
+                        {c.firstName} {c.lastName}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{formatted}</td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={c.status} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() =>
+                            navigate(`/recruitment/candidates/${c._id}`)
+                          }
+                          className="text-lime-600 font-semibold hover:underline"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-slate-400"
+                  >
+                    No candidates found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

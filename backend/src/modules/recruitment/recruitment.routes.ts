@@ -10,7 +10,10 @@ import {
   createCandidate,
   listCandidates,
   updateCandidateStatus,
+  setInterviewDate,
+  getCandidateById,
 } from "./recruitment.controller";
+
 import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -59,7 +62,7 @@ router.get(
   asyncHandler(getJob)
 );
 
-/* ---------- Vacancies (already fixed earlier) ---------- */
+/* ---------- Vacancies ---------- */
 router.use("/vacancies", vacancyRoutes);
 
 /* ---------- Candidates ---------- */
@@ -72,7 +75,6 @@ router.post(
   asyncHandler(createCandidate)
 );
 
-
 router.get(
   "/candidates",
   requireAuth,
@@ -80,6 +82,23 @@ router.get(
   asyncHandler(listCandidates)
 );
 
+// ✅ Candidate view API used by frontend CandidateViewPage
+router.get(
+  "/candidates/:id",
+  requireAuth,
+  requireRole("ADMIN", "HR", "SUPERVISOR"),
+  asyncHandler(getCandidateById)
+);
+
+// ✅ Set interview date -> generates TEMP code
+router.patch(
+  "/candidates/:id/interview",
+  requireAuth,
+  requireRole("ADMIN", "HR", "SUPERVISOR"),
+  asyncHandler(setInterviewDate)
+);
+
+// ✅ Status update -> on SELECTED/HIRED generates employeeCode (requires interviewDate)
 router.patch(
   "/candidates/:id/status",
   requireAuth,

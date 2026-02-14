@@ -73,6 +73,10 @@ export const recruitmentApi = createApi({
       invalidatesTags: ["Job"],
     }),
 
+    getCandidateById: builder.query<any, string>({
+      query: (id) => `/recruitment/candidates/${id}`,
+    }),
+
     // Candidates
     getCandidates: builder.query<Candidate[], { jobId?: string } | void>({
       query: (params) => {
@@ -82,33 +86,25 @@ export const recruitmentApi = createApi({
       providesTags: ["Candidate"],
     }),
 
-    // JSON version (no file upload)
-    // createCandidate: builder.mutation<
-    //   Candidate,
-    //   {
-    //     firstName: string;
-    //     lastName: string;
-    //     email: string;
-    //     phone?: string;
-    //     jobId: string;
-    //     resumeUrl?: string;
-    //     notes?: string;
-    //   }
-    // >({
-    //   query: (body) => ({
-    //     url: "/recruitment/candidates",
-    //     method: "POST",
-    //     body,
-    //   }),
-    //   invalidatesTags: ["Candidate"],
-    // }),
-
     // ✅ If using file upload, use this :
     createCandidate: builder.mutation<Candidate, FormData>({
       query: (formData) => ({
         url: "/recruitment/candidates",
         method: "POST",
         body: formData,
+      }),
+      invalidatesTags: ["Candidate"],
+    }),
+
+    // ✅ Interview date -> generates TEMP code
+    setInterviewDate: builder.mutation<
+      any,
+      { id: string; interviewDate: string }
+    >({
+      query: ({ id, interviewDate }) => ({
+        url: `/recruitment/candidates/${id}/interview`,
+        method: "PATCH",
+        body: { interviewDate },
       }),
       invalidatesTags: ["Candidate"],
     }),
@@ -145,8 +141,10 @@ export const {
   useGetJobsQuery,
   useCreateJobMutation,
   useGetCandidatesQuery,
+  useGetCandidateByIdQuery,
   useCreateCandidateMutation,
   useUpdateCandidateStatusMutation,
   useGetVacanciesQuery,
   useCreateVacancyMutation,
+  useSetInterviewDateMutation,
 } = recruitmentApi;

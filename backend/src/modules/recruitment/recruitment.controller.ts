@@ -1,4 +1,3 @@
-// backend/src/modules/recruitment/recruitment.controller.ts
 import { Request, Response, NextFunction } from "express";
 import { Job } from "./job.model";
 import { Candidate } from "./candidate.model";
@@ -6,6 +5,10 @@ import { Vacancy } from "./vacancy/vacancy.model";
 import { AuthRequest } from "../../middleware/authMiddleware";
 import { ApiError } from "../../utils/ApiError";
 import mongoose from "mongoose";
+import {
+  generateEmployeeCode,
+  generateTempEmployeeCode,
+} from "./recruitment.utils";
 
 // JOBS
 
@@ -145,6 +148,7 @@ export async function createCandidate(
       consentToKeepData: consent,
       resume,
       status: "APPLIED",
+      // ✅ interviewDate/tempEmployeeCode/employeeCode will be added later
     });
 
     const populated = await candidate.populate([
@@ -159,7 +163,7 @@ export async function createCandidate(
 
 // GET /api/recruitment/candidates
 export async function listCandidates(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) {
@@ -169,6 +173,94 @@ export async function listCandidates(
       .sort({ createdAt: -1 })
       .lean();
     res.json(items);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ✅ GET /api/recruitment/candidates/:id
+export async function getCandidateById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid candidate id" });
+    }
+
+    const candidate = await Candidate.findById(id)
+      .populate("vacancy", "name")
+      .lean();
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    res.json(candidate);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * ✅ PATCH /api/recruitment/candidates/:id/interview
+ * body: { interviewDate: "YYYY-MM-DD" }
+ *
+ * - sets interviewDate
+ * - generates tempEmployeeCode if missing
+ * - if candidate already SELECTED/HIRED and employeeCode missing -> generate it
+ */
+export async function setInterviewDate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const { interviewDate } = req.body as { interviewDate?: string };
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid candidate id" });
+    }
+    if (!interviewDate) {
+      return res.status(400).json({ message: "interviewDate is required" });
+    }
+
+    const d = new Date(interviewDate);
+    if (Number.isNaN(d.getTime())) {
+      return res.status(400).json({ message: "Invalid interviewDate" });
+    }
+
+    const candidate = await Candidate.findById(id);
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    candidate.interviewDate = d;
+
+    // Generate temp code if missing
+    if (!candidate.tempEmployeeCode) {
+      candidate.tempEmployeeCode = await generateTempEmployeeCode(d);
+    }
+
+    // If already selected/hired but employee code missing, generate final too
+    if (
+      (candidate.status === "SELECTED" || candidate.status === "HIRED") &&
+      !candidate.employeeCode
+    ) {
+      candidate.employeeCode = await generateEmployeeCode(d);
+    }
+
+    await candidate.save();
+
+    const populated = await Candidate.findById(id)
+      .populate("vacancy", "name")
+      .lean();
+
+    res.json(populated);
   } catch (err) {
     next(err);
   }
@@ -191,19 +283,38 @@ export async function updateCandidateStatus(
       return res.status(400).json({ message: "Status is required" });
     }
 
-    const candidate = await Candidate.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    )
-      .populate("vacancy", "name")
-      .lean();
-
+    const candidate = await Candidate.findById(id);
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
 
-    res.json(candidate);
+    // ✅ If converting to SELECTED/HIRED, interviewDate is mandatory
+    const converting = status === "SELECTED" || status === "HIRED";
+    if (converting && !candidate.interviewDate) {
+      return res.status(400).json({
+        message: "Interview date must be set before selecting/hiring candidate",
+      });
+    }
+
+    candidate.status = status as any;
+
+    // ✅ Ensure temp code exists once interview date exists
+    if (candidate.interviewDate && !candidate.tempEmployeeCode) {
+      candidate.tempEmployeeCode = await generateTempEmployeeCode(candidate.interviewDate);
+    }
+
+    // ✅ Convert to employee code on SELECTED/HIRED
+    if (converting && candidate.interviewDate && !candidate.employeeCode) {
+      candidate.employeeCode = await generateEmployeeCode(candidate.interviewDate);
+    }
+
+    await candidate.save();
+
+    const populated = await Candidate.findById(id)
+      .populate("vacancy", "name")
+      .lean();
+
+    res.json(populated);
   } catch (err) {
     next(err);
   }

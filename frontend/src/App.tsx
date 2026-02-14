@@ -121,6 +121,8 @@ import EditJobTitlePage from "./pages/admin/job/EditJobTitlePage";
 
 // Profile page
 import ProfilePage from "./pages/profile/ProfilePage";
+import CandidateViewPage from "./pages/recruitment/CandidateViewPage";
+import VacancyViewPage from "./pages/recruitment/VacancyViewPage";
 
 export default function App() {
   return (
@@ -258,6 +260,26 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <CandidatesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/recruitment/candidates/:id"
+        element={
+          <RequireAuth>
+            <Layout>
+              <CandidateViewPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/recruitment/vacancies/:id"
+        element={
+          <RequireAuth>
+            <Layout>
+              <VacancyViewPage />
             </Layout>
           </RequireAuth>
         }
