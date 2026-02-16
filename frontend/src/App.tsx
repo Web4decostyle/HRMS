@@ -123,6 +123,7 @@ import EditJobTitlePage from "./pages/admin/job/EditJobTitlePage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import CandidateViewPage from "./pages/recruitment/CandidateViewPage";
 import VacancyViewPage from "./pages/recruitment/VacancyViewPage";
+import InterviewedEmployeesPage from "./pages/recruitment/InterviewedEmployeesPage";
 
 export default function App() {
   return (
@@ -254,6 +255,18 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      <Route
+        path="/recruitment/interviewed"
+        element={
+          <RequireAuth>
+            <Layout>
+              <InterviewedEmployeesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
       <Route
         path="/recruitment/candidates/add"
         element={

@@ -10,7 +10,8 @@ import {
   generateTempEmployeeCode,
 } from "./recruitment.utils";
 
-// JOBS
+import { User } from "../auth/auth.model";
+import { createNotification } from "../notifications/notification.service";
 
 // POST /api/recruitment/jobs
 export async function createJob(req: AuthRequest, res: Response) {
@@ -58,7 +59,7 @@ export async function getJob(req: Request, res: Response) {
 export async function createCandidate(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const {
@@ -165,7 +166,7 @@ export async function createCandidate(
 export async function listCandidates(
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const items = await Candidate.find()
@@ -178,11 +179,52 @@ export async function listCandidates(
   }
 }
 
+// ✅ GET /api/recruitment/candidates/interviewed?tempCode=TMP-...&status=INTERVIEW|SELECTED|HIRED
+export async function listInterviewedCandidates(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const tempCode = String(req.query.tempCode || "").trim();
+    const status = String(req.query.status || "")
+      .trim()
+      .toUpperCase();
+
+    const allowedStatus = new Set(["INTERVIEW", "SELECTED", "HIRED"]);
+
+    const query: any = {
+      // Interviewed = has interviewDate OR status in INTERVIEW/SELECTED/HIRED
+      $or: [
+        { interviewDate: { $exists: true, $ne: null } },
+        { status: { $in: ["INTERVIEW", "SELECTED", "HIRED"] } },
+      ],
+    };
+
+    if (tempCode) {
+      query.tempEmployeeCode = { $regex: tempCode, $options: "i" };
+    }
+
+    if (status && allowedStatus.has(status)) {
+      query.status = status;
+    }
+
+    const items = await Candidate.find(query)
+      .populate("vacancy", "name")
+      .sort({ interviewDate: -1, createdAt: -1 })
+      .lean();
+
+    res.json(items);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ✅ GET /api/recruitment/candidates/:id
 export async function getCandidateById(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const { id } = req.params;
@@ -216,7 +258,7 @@ export async function getCandidateById(
 export async function setInterviewDate(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const { id } = req.params;
@@ -241,12 +283,10 @@ export async function setInterviewDate(
 
     candidate.interviewDate = d;
 
-    // Generate temp code if missing
     if (!candidate.tempEmployeeCode) {
       candidate.tempEmployeeCode = await generateTempEmployeeCode(d);
     }
 
-    // If already selected/hired but employee code missing, generate final too
     if (
       (candidate.status === "SELECTED" || candidate.status === "HIRED") &&
       !candidate.employeeCode
@@ -255,6 +295,49 @@ export async function setInterviewDate(
     }
 
     await candidate.save();
+
+    // ✅ notify hiring manager (if mapped)
+    if (candidate.vacancy) {
+      const vac = await Vacancy.findById(candidate.vacancy)
+        .populate("job", "title code")
+        .lean();
+
+      const hmEmail =
+        (vac as any)?.hiringManagerEmail?.toLowerCase?.()?.trim?.() || "";
+      if (hmEmail) {
+        const hmUser = await User.findOne({
+          $or: [{ email: hmEmail }, { username: hmEmail }],
+        }).lean();
+
+        if (hmUser?._id) {
+          const candidateName =
+            `${candidate.firstName ?? ""} ${candidate.lastName ?? ""}`.trim();
+          const jobTitle = (vac as any)?.job?.title ?? "";
+          const vacancyName = (vac as any)?.name ?? "";
+          const when = d.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+
+          await createNotification({
+            userId: String(hmUser._id),
+            type: "RECRUITMENT",
+            title: "Interview Scheduled",
+            message: `${candidateName} interview scheduled on ${when} for ${vacancyName}${jobTitle ? ` (${jobTitle})` : ""}.`,
+            link: `/recruitment/candidates/${candidate._id}`,
+            meta: {
+              candidateId: String(candidate._id),
+              candidateEmail: candidate.email,
+              vacancyId: String((vac as any)?._id ?? ""),
+              vacancyName,
+              jobTitle,
+              interviewDate: d.toISOString(),
+            },
+          });
+        }
+      }
+    }
 
     const populated = await Candidate.findById(id)
       .populate("vacancy", "name")
@@ -270,7 +353,7 @@ export async function setInterviewDate(
 export async function updateCandidateStatus(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const { id } = req.params;
@@ -300,12 +383,16 @@ export async function updateCandidateStatus(
 
     // ✅ Ensure temp code exists once interview date exists
     if (candidate.interviewDate && !candidate.tempEmployeeCode) {
-      candidate.tempEmployeeCode = await generateTempEmployeeCode(candidate.interviewDate);
+      candidate.tempEmployeeCode = await generateTempEmployeeCode(
+        candidate.interviewDate,
+      );
     }
 
     // ✅ Convert to employee code on SELECTED/HIRED
     if (converting && candidate.interviewDate && !candidate.employeeCode) {
-      candidate.employeeCode = await generateEmployeeCode(candidate.interviewDate);
+      candidate.employeeCode = await generateEmployeeCode(
+        candidate.interviewDate,
+      );
     }
 
     await candidate.save();

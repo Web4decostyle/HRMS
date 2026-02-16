@@ -33,7 +33,9 @@ export interface Vacancy {
   _id: string;
   name: string;
   job: Job | string;
+  hiringManagerEmployeeId?: string;
   hiringManagerName?: string;
+  hiringManagerEmail?: string;
   status: VacancyStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -43,6 +45,7 @@ export interface CreateVacancyInput {
   jobId: string;
   name: string;
   hiringManagerName?: string;
+  hiringManagerEmployeeId?: string;
   status?: VacancyStatus;
 }
 
@@ -121,6 +124,21 @@ export const recruitmentApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
 
+    // ✅ Interviewed candidates list (filterable)
+    getInterviewedCandidates: builder.query<
+      any[],
+      { tempCode?: string; status?: string } | void
+    >({
+      query: (params) => {
+        const sp = new URLSearchParams();
+        if (params?.tempCode) sp.set("tempCode", params.tempCode);
+        if (params?.status) sp.set("status", params.status);
+        const qs = sp.toString();
+        return `/recruitment/candidates/interviewed${qs ? `?${qs}` : ""}`;
+      },
+      providesTags: ["Candidate"],
+    }),
+
     // Vacancies
     getVacancies: builder.query<Vacancy[], void>({
       query: () => "/recruitment/vacancies",
@@ -147,4 +165,5 @@ export const {
   useGetVacanciesQuery,
   useCreateVacancyMutation,
   useSetInterviewDateMutation,
+  useGetInterviewedCandidatesQuery,
 } = recruitmentApi;

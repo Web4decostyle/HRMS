@@ -30,6 +30,9 @@ const RecruitmentTopTabs: React.FC = () => {
       <NavLink to={`${base}/vacancies`} className={getClass}>
         Vacancies
       </NavLink>
+      <NavLink to={`${base}/interviewed`} className={getClass}>
+        Interviewed
+      </NavLink>
     </div>
   );
 };
@@ -53,26 +56,28 @@ export default function VacanciesPage() {
   // ✅ Employees (for hiring manager dropdown)
   // If your API requires params, adjust accordingly:
   // useGetEmployeesQuery({ include: "all" })
-  const { data: employees = [] } = useGetEmployeesQuery({ include: "all" } as any);
+  // ✅ Employees (for hiring manager dropdown)
+  const { data: employees = [] } = useGetEmployeesQuery({
+    include: "all",
+  } as any);
 
-  // Build unique manager name list (clean + sorted)
-  const managerNames = useMemo(() => {
-    const names = (employees as any[])
-      .map(toFullName)
-      .filter((n) => n && n !== "—");
-
-    // unique + sort
-    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  const managerOptions = useMemo(() => {
+    return (employees as any[])
+      .map((e) => ({
+        id: e?._id,
+        name: toFullName(e),
+        email: (e?.email ?? "").toLowerCase(),
+      }))
+      .filter((x) => x.id && x.name && x.name !== "—")
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [employees]);
 
   /* ================= Filters ================= */
 
   const [jobIdFilter, setJobIdFilter] = useState("");
   const [vacancyNameFilter, setVacancyNameFilter] = useState("");
-
-  // ✅ Now a dropdown value (employee name)
+  // ✅ Now filter is employeeId
   const [hiringManagerFilter, setHiringManagerFilter] = useState("");
-
   const [statusFilter, setStatusFilter] = useState("");
 
   const [appliedFilters, setAppliedFilters] = useState({
@@ -111,7 +116,7 @@ export default function VacanciesPage() {
     return vacancies.filter((v: any) => {
       if (appliedFilters.jobId) {
         const idFromJob =
-          typeof v.job === "string" ? v.job : v.job?._id ?? "";
+          typeof v.job === "string" ? v.job : (v.job?._id ?? "");
         if (idFromJob !== appliedFilters.jobId) return false;
       }
 
@@ -126,9 +131,8 @@ export default function VacanciesPage() {
 
       // ✅ Hiring manager dropdown filter (exact match OR contains; we’ll do contains-safe)
       if (appliedFilters.hiringManager) {
-        const hm = (v.hiringManagerName ?? "").toLowerCase().trim();
-        const sel = appliedFilters.hiringManager.toLowerCase().trim();
-        if (!hm.includes(sel)) return false;
+        const id = String(v.hiringManagerEmployeeId ?? "");
+        if (id !== appliedFilters.hiringManager) return false;
       }
 
       return true;
@@ -153,7 +157,7 @@ export default function VacanciesPage() {
     await createVacancy({
       jobId: newJobId,
       name: newName.trim(),
-      hiringManagerName: newHiringManager.trim() || undefined,
+      hiringManagerEmployeeId: newHiringManager || undefined,
       status: newStatus,
     }).unwrap();
 
@@ -210,9 +214,9 @@ export default function VacanciesPage() {
             className="input"
           >
             <option value="">All Hiring Managers</option>
-            {managerNames.map((n) => (
-              <option key={n} value={n}>
-                {n}
+            {managerOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
               </option>
             ))}
           </select>
@@ -292,9 +296,9 @@ export default function VacanciesPage() {
                 className="input"
               >
                 <option value="">Select Hiring Manager</option>
-                {managerNames.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+                {managerOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
                   </option>
                 ))}
               </select>
@@ -340,7 +344,7 @@ export default function VacanciesPage() {
               {filteredVacancies.length > 0 ? (
                 filteredVacancies.map((v: any) => {
                   const jobTitle =
-                    typeof v.job === "string" ? "" : v.job?.title ?? "";
+                    typeof v.job === "string" ? "" : (v.job?.title ?? "");
 
                   return (
                     <tr

@@ -10,11 +10,11 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   return (
-    <div className="min-h-screen flex bg-slate-100">
+    <div className="min-h-screen flex bg-slate-100 overflow-x-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar />
-        <main className="p-6 min-w-0">
+        <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-5 lg:p-6">
           <ViewOnlyGuard>{children}</ViewOnlyGuard>
         </main>
       </div>

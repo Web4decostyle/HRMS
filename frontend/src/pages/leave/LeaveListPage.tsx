@@ -11,6 +11,7 @@ import {
   PendingWith,
 } from "../../features/leave/leaveApi";
 import { selectAuthRole } from "../../features/auth/selectors";
+import LeaveModuleTabs from "./LeaveModuleTabs";
 
 /* ------------------------------------------------------------------
    Style helpers
@@ -32,29 +33,6 @@ const btnGhost =
   "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
 
 /* ------------------------------------------------------------------
-   Tabs config
------------------------------------------------------------------- */
-type MenuKey = "configure" | null;
-
-const TABS = [
-  { key: "apply", label: "Apply", path: "/leave/apply" },
-  { key: "my-leave", label: "My Leave", path: "/leave/my-leave" },
-  {
-    key: "configure",
-    label: "Configure",
-    isMenu: true as const,
-    menu: [
-      { label: "Leave Period", path: "/leave/config/period" },
-      { label: "Leave Types", path: "/leave/config/types" },
-      { label: "Work Week", path: "/leave/config/work-week" },
-      { label: "Holidays", path: "/leave/config/holidays" },
-    ],
-  },
-  { key: "leave-list", label: "Leave List", path: "/leave" },
-  { key: "assign-leave", label: "Assign Leave", path: "/leave/assign" },
-] as const;
-
-/* ------------------------------------------------------------------
    Status filter helpers
 ------------------------------------------------------------------ */
 type LeaveStatusFilter = "" | LeaveStatus;
@@ -73,7 +51,6 @@ function fmtDateRange(from: string, to: string) {
 }
 
 function mapPendingWithLabel(pw: PendingWith) {
-  // ✅ accept legacy backend values too
   if (pw === "MANAGER" || pw === "SUPERVISOR") return "Manager";
   if (pw === "ADMIN" || pw === "HR") return "Admin";
   return null;
@@ -114,22 +91,13 @@ function StatusPill({
   );
 }
 
-/**
- * ✅ Button visibility should match "who can act"
- * - ADMIN/HR can act on ANY pending request
- * - SUPERVISOR can act only when pending is with Manager/Supervisor
- *   (backend will still enforce assignment)
- */
 function canUserActOnLeave(
   leave: any,
   role: string,
   status: LeaveStatus,
   pendingWith?: PendingWith
 ) {
-  // Prefer backend-calculated permission (works even when manager role is ESS)
   if (typeof leave?.canAct === "boolean") return leave.canAct;
-
-  // Fallback (older backend):
   if (status !== "PENDING") return false;
   if (role === "ADMIN" || role === "HR") return true;
   const pendingLabel = mapPendingWithLabel(pendingWith);
@@ -139,7 +107,6 @@ function canUserActOnLeave(
 
 export default function LeaveListPage() {
   const navigate = useNavigate();
-  const [openMenu, setOpenMenu] = useState<MenuKey>(null);
   const role = useSelector(selectAuthRole) ?? "ESS";
 
   const [updateLeaveStatus, { isLoading: updatingStatus }] =
@@ -147,7 +114,6 @@ export default function LeaveListPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  // Filter form state
   const today = new Date();
   const nextYear = new Date(today);
   nextYear.setFullYear(today.getFullYear() + 1);
@@ -168,8 +134,6 @@ export default function LeaveListPage() {
   const { data: leaveTypes = [] } = useGetLeaveTypesQuery();
   const { data: leaves = [], isLoading, isFetching } =
     useGetAllLeavesQuery(activeFilters);
-
-  const activeTabKey = "leave-list";
 
   function handleReset() {
     setFromDate(today.toISOString().slice(0, 10));
@@ -211,7 +175,6 @@ export default function LeaveListPage() {
     }
   }
 
-  // Counts for chips (from currently loaded leaves)
   const chipCounts = useMemo(() => {
     const counts: Record<string, number> = {
       REJECTED: 0,
@@ -232,65 +195,12 @@ export default function LeaveListPage() {
   }, [fromDate, toDate, status]);
 
   return (
-    <div className="h-full bg-[#f5f6fa] px-6 py-4 overflow-y-auto">
-      {/* Top Tabs */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {TABS.map((tab) => {
-          const isActive = tab.key === activeTabKey;
-          const isMenuTab = "isMenu" in tab && tab.isMenu;
-          const menuItems = isMenuTab ? tab.menu : undefined;
-
-          return (
-            <div key={tab.key} className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isMenuTab && menuItems) {
-                    setOpenMenu((prev) =>
-                      prev === tab.key ? null : (tab.key as MenuKey)
-                    );
-                  } else if ("path" in tab) {
-                    navigate(tab.path);
-                  }
-                }}
-                className={[
-                  "px-5 h-9 rounded-full text-[12px] border transition flex items-center",
-                  isActive
-                    ? "bg-[#fef4ea] border-[#f7941d] text-[#f7941d] font-semibold"
-                    : "bg-white border-[#e5e7f0] text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                <span>{tab.label}</span>
-                {isMenuTab && (
-                  <span className="ml-1 text-[10px] align-middle">▼</span>
-                )}
-              </button>
-
-              {isMenuTab && openMenu === tab.key && menuItems && (
-                <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white border border-[#e5e7f0] shadow-lg z-20 text-[12px] overflow-hidden">
-                  {menuItems.map((item) => (
-                    <button
-                      key={item.path}
-                      type="button"
-                      onClick={() => {
-                        navigate(item.path);
-                        setOpenMenu(null);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-[#fef4ea] hover:text-[#f7941d]"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div className="h-full bg-[#f5f6fa] px-3 sm:px-6 py-4 overflow-y-auto">
+      <LeaveModuleTabs activeKey="leave-list" />
 
       {/* Page Header */}
       <div className="mb-4 rounded-[18px] border border-[#e5e7f0] bg-gradient-to-r from-white to-[#fff7ee] shadow-sm">
-        <div className="px-7 py-5 flex items-start justify-between gap-4">
+        <div className="px-4 sm:px-7 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="text-[15px] font-extrabold text-slate-900">
               Leave List
@@ -333,11 +243,11 @@ export default function LeaveListPage() {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            <button className={`${btnBase} ${btnGhost}`} onClick={handleReset}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button className={`${btnBase} ${btnGhost} flex-1 sm:flex-none`} onClick={handleReset}>
               Reset
             </button>
-            <button className={`${btnBase} ${btnPrimary}`} onClick={handleSearch}>
+            <button className={`${btnBase} ${btnPrimary} flex-1 sm:flex-none`} onClick={handleSearch}>
               Search
             </button>
           </div>
@@ -366,26 +276,17 @@ export default function LeaveListPage() {
 
       {/* Filters Card */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-5 overflow-hidden">
-        <div className="px-7 py-4 border-b border-[#edf0f7] flex items-center justify-between">
+        <div className="px-4 sm:px-7 py-4 border-b border-[#edf0f7] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="text-[13px] font-bold text-slate-900">Filters</div>
             <div className="text-[11px] text-slate-500 mt-0.5">
               Refine results by date range, status, and type.
             </div>
           </div>
-
-          <div className="md:hidden flex items-center gap-2">
-            <button className={`${btnBase} ${btnGhost}`} onClick={handleReset}>
-              Reset
-            </button>
-            <button className={`${btnBase} ${btnPrimary}`} onClick={handleSearch}>
-              Search
-            </button>
-          </div>
         </div>
 
-        <div className="px-7 pt-5 pb-6 text-[12px]">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="px-4 sm:px-7 pt-5 pb-6 text-[12px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div>
               <label className={labelCls}>From Date</label>
               <input
@@ -437,7 +338,7 @@ export default function LeaveListPage() {
               </select>
             </div>
 
-            {/* These are UI-only in your current file */}
+            {/* UI-only */}
             <div>
               <label className={labelCls}>Employee Name</label>
               <input
@@ -465,7 +366,7 @@ export default function LeaveListPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2 flex items-end justify-between gap-4">
+            <div className="sm:col-span-2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="text-[12px] text-slate-700 font-semibold">
                   Include Past Employees
@@ -488,17 +389,11 @@ export default function LeaveListPage() {
                 </button>
               </div>
 
-              <div className="hidden md:flex items-center gap-2">
-                <button
-                  className={`${btnBase} ${btnOutlinered}`}
-                  onClick={handleReset}
-                >
+              <div className="flex items-center gap-2">
+                <button className={`${btnBase} ${btnOutlinered} flex-1 sm:flex-none`} onClick={handleReset}>
                   Reset
                 </button>
-                <button
-                  className={`${btnBase} ${btnPrimary}`}
-                  onClick={handleSearch}
-                >
+                <button className={`${btnBase} ${btnPrimary} flex-1 sm:flex-none`} onClick={handleSearch}>
                   Search
                 </button>
               </div>
@@ -509,7 +404,7 @@ export default function LeaveListPage() {
 
       {/* Results Card */}
       <div className="bg-white rounded-[18px] border border-[#e5e7f0] shadow-sm mb-8 overflow-hidden">
-        <div className="px-7 py-4 border-b border-[#edf0f7] flex items-center justify-between">
+        <div className="px-4 sm:px-7 py-4 border-b border-[#edf0f7] flex items-center justify-between">
           <div className="text-[13px] font-bold text-slate-900">Results</div>
           <div className="text-[11px] text-slate-500">
             {isLoading ? "Loading..." : `${leaves.length} record(s)`}
@@ -517,152 +412,145 @@ export default function LeaveListPage() {
           </div>
         </div>
 
-        <div className="px-7 py-4">
+        <div className="px-3 sm:px-7 py-4">
           <div className="border border-[#e3e5f0] rounded-2xl overflow-hidden">
-            <table className="w-full text-[12px] text-slate-700">
-              <thead className="bg-[#f5f6fb] text-slate-500">
-                <tr>
-                  <th className="px-3 py-3 w-10">
-                    <input type="checkbox" disabled />
-                  </th>
-                  <th className="px-3 py-3 text-left font-semibold">Date</th>
-                  <th className="px-3 py-3 text-left font-semibold">Employee</th>
-                  <th className="px-3 py-3 text-left font-semibold">Leave Type</th>
-                  <th className="px-3 py-3 text-left font-semibold">Balance</th>
-                  <th className="px-3 py-3 text-left font-semibold">Days</th>
-                  <th className="px-3 py-3 text-left font-semibold">Status</th>
-                  <th className="px-3 py-3 text-left font-semibold">Comments</th>
-                  <th className="px-3 py-3 text-left font-semibold">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {isLoading ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-[980px] w-full text-[12px] text-slate-700">
+                <thead className="bg-[#f5f6fb] text-slate-500">
                   <tr>
-                    <td
-                      colSpan={9}
-                      className="px-4 py-10 text-center text-slate-500"
-                    >
-                      Loading leave requests…
-                    </td>
+                    <th className="px-3 py-3 w-10">
+                      <input type="checkbox" disabled />
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold">Date</th>
+                    <th className="px-3 py-3 text-left font-semibold">Employee</th>
+                    <th className="px-3 py-3 text-left font-semibold">Leave Type</th>
+                    <th className="px-3 py-3 text-left font-semibold">Balance</th>
+                    <th className="px-3 py-3 text-left font-semibold">Days</th>
+                    <th className="px-3 py-3 text-left font-semibold">Status</th>
+                    <th className="px-3 py-3 text-left font-semibold">Comments</th>
+                    <th className="px-3 py-3 text-left font-semibold">Actions</th>
                   </tr>
-                ) : leaves.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-4 py-10 text-center text-slate-500"
-                    >
-                      No records found for selected filters.
-                    </td>
-                  </tr>
-                ) : (
-                  leaves.map((l, idx) => {
-                    const typeName =
-                      typeof l.type === "string" ? l.type : l.type?.name ?? "";
-                    const pendingWith = (l as any).pendingWith as PendingWith;
+                </thead>
 
-                    const fullName =
-                      l.employee && typeof l.employee === "object"
-                        ? `${l.employee.firstName ?? ""} ${l.employee.lastName ?? ""}`.trim()
-                        : "--";
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                        Loading leave requests…
+                      </td>
+                    </tr>
+                  ) : leaves.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                        No records found for selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    leaves.map((l, idx) => {
+                      const typeName =
+                        typeof l.type === "string" ? l.type : l.type?.name ?? "";
+                      const pendingWith = (l as any).pendingWith as PendingWith;
 
-                    const dateText = `${(l.fromDate || l.startDate || "").slice(
-                      0,
-                      10
-                    )} - ${(l.toDate || l.endDate || "").slice(0, 10)}`;
+                      const fullName =
+                        l.employee && typeof l.employee === "object"
+                          ? `${l.employee.firstName ?? ""} ${l.employee.lastName ?? ""}`.trim()
+                          : "--";
 
-                    const canAct = canUserActOnLeave(l as any, role, l.status, pendingWith);
+                      const dateText = `${(l.fromDate || l.startDate || "").slice(0, 10)} - ${(l.toDate || l.endDate || "").slice(0, 10)}`;
 
-                    return (
-                      <tr
-                        key={l._id}
-                        className={[
-                          "border-t border-[#f0f1f7] hover:bg-[#fbfcff] transition",
-                          idx % 2 === 0 ? "bg-white" : "bg-[#fcfdff]",
-                        ].join(" ")}
-                      >
-                        <td className="px-3 py-3">
-                          <input type="checkbox" />
-                        </td>
+                      const canAct = canUserActOnLeave(l as any, role, l.status, pendingWith);
 
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="text-[12px] font-semibold text-slate-800">
-                            {dateText}
-                          </div>
-                        </td>
+                      return (
+                        <tr
+                          key={l._id}
+                          className={[
+                            "border-t border-[#f0f1f7] hover:bg-[#fbfcff] transition",
+                            idx % 2 === 0 ? "bg-white" : "bg-[#fcfdff]",
+                          ].join(" ")}
+                        >
+                          <td className="px-3 py-3">
+                            <input type="checkbox" />
+                          </td>
 
-                        <td className="px-3 py-3">
-                          <div className="text-[12px] font-semibold text-slate-900">
-                            {fullName}
-                          </div>
-                          {l.status === "PENDING" && mapPendingWithLabel(pendingWith) && (
-                            <div className="text-[11px] text-slate-500 mt-0.5">
-                              Pending with:{" "}
-                              <span className="font-semibold text-slate-700">
-                                {mapPendingWithLabel(pendingWith)}
-                              </span>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <div className="text-[12px] font-semibold text-slate-800">
+                              {dateText}
                             </div>
-                          )}
-                        </td>
+                          </td>
 
-                        <td className="px-3 py-3">{typeName || "--"}</td>
-
-                        <td className="px-3 py-3 text-slate-500">--</td>
-
-                        <td className="px-3 py-3 font-semibold text-slate-800">
-                          {l.days ?? "--"}
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <StatusPill status={l.status} pendingWith={pendingWith} />
-                        </td>
-
-                        <td className="px-3 py-3 max-w-[260px]">
-                          <div className="truncate text-slate-600">
-                            {l.reason || "--"}
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-2">
-                            {canAct ? (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={updatingStatus}
-                                  onClick={() => handleDecision(l._id, "APPROVED")}
-                                  className="px-3 h-8 rounded-full bg-[#8bc34a] text-white text-[11px] font-bold hover:bg-[#7cb342] disabled:opacity-60"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={updatingStatus}
-                                  onClick={() => handleDecision(l._id, "REJECTED")}
-                                  className="px-3 h-8 rounded-full border border-rose-300 text-rose-700 bg-white text-[11px] font-bold hover:bg-rose-50 disabled:opacity-60"
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            ) : (
-                              <span className="text-[11px] text-slate-400">—</span>
+                          <td className="px-3 py-3">
+                            <div className="text-[12px] font-semibold text-slate-900">
+                              {fullName}
+                            </div>
+                            {l.status === "PENDING" && mapPendingWithLabel(pendingWith) && (
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                Pending with:{" "}
+                                <span className="font-semibold text-slate-700">
+                                  {mapPendingWithLabel(pendingWith)}
+                                </span>
+                              </div>
                             )}
+                          </td>
 
-                            <button
-                              type="button"
-                              className="px-3 h-8 rounded-full border border-[#fbd7a5] bg-[#fef4ea] text-[#f7941d] text-[11px] font-bold hover:brightness-95"
-                              onClick={() => navigate(`/leave/list/${l._id}`)}
-                            >
-                              View
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                          <td className="px-3 py-3">{typeName || "--"}</td>
+
+                          <td className="px-3 py-3 text-slate-500">--</td>
+
+                          <td className="px-3 py-3 font-semibold text-slate-800">
+                            {l.days ?? "--"}
+                          </td>
+
+                          <td className="px-3 py-3">
+                            <StatusPill status={l.status} pendingWith={pendingWith} />
+                          </td>
+
+                          <td className="px-3 py-3 max-w-[260px]">
+                            <div className="truncate text-slate-600">
+                              {l.reason || "--"}
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              {canAct ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={updatingStatus}
+                                    onClick={() => handleDecision(l._id, "APPROVED")}
+                                    className="px-3 h-8 rounded-full bg-[#8bc34a] text-white text-[11px] font-bold hover:bg-[#7cb342] disabled:opacity-60"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={updatingStatus}
+                                    onClick={() => handleDecision(l._id, "REJECTED")}
+                                    className="px-3 h-8 rounded-full border border-rose-300 text-rose-700 bg-white text-[11px] font-bold hover:bg-rose-50 disabled:opacity-60"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">—</span>
+                              )}
+
+                              <button
+                                type="button"
+                                className="px-3 h-8 rounded-full border border-[#fbd7a5] bg-[#fef4ea] text-[#f7941d] text-[11px] font-bold hover:brightness-95"
+                                onClick={() => navigate(`/leave/list/${l._id}`)}
+                              >
+                                View
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="mt-3 text-[11px] text-slate-400">

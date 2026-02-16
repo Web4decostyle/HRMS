@@ -12,6 +12,7 @@ import {
   updateCandidateStatus,
   setInterviewDate,
   getCandidateById,
+  listInterviewedCandidates,
 } from "./recruitment.controller";
 
 import { requireAuth } from "../../middleware/authMiddleware";
@@ -80,6 +81,15 @@ router.get(
   requireAuth,
   requireRole("ADMIN", "HR", "SUPERVISOR"),
   asyncHandler(listCandidates)
+);
+
+
+// ✅ Interviewed Candidates listing (TEMP code / status filtering)
+router.get(
+  "/candidates/interviewed",
+  requireAuth,
+  requireRole("ADMIN", "HR", "SUPERVISOR"),
+  asyncHandler(listInterviewedCandidates)
 );
 
 // ✅ Candidate view API used by frontend CandidateViewPage

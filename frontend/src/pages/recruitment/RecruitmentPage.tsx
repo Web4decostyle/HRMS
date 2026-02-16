@@ -3,11 +3,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useGetCandidatesQuery } from "../../features/recruitment/recruitmentApi";
 import { useGetJobTitlesQuery } from "../../features/admin/adminApi";
-import {
-  FiPlus,
-  FiSearch,
-  FiRefreshCw,
-} from "react-icons/fi";
+import { FiPlus, FiSearch, FiRefreshCw } from "react-icons/fi";
 
 /* ================= Top Tabs ================= */
 
@@ -28,6 +24,9 @@ const RecruitmentTopTabs: React.FC = () => {
       </NavLink>
       <NavLink to={`${base}/vacancies`} className={getClass}>
         Vacancies
+      </NavLink>
+      <NavLink to={`${base}/interviewed`} className={getClass}>
+        Interviewed
       </NavLink>
     </div>
   );
@@ -128,9 +127,9 @@ export default function RecruitmentPage() {
         const candidateJobId =
           typeof c.job === "string"
             ? c.job
-            : c.job?._id ??
+            : (c.job?._id ??
               c.jobTitleId ?? // fallback if your backend uses this
-              "";
+              "");
 
         if (candidateJobId !== appliedFilters.jobTitleId) return false;
       }

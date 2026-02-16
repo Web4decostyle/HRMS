@@ -2,7 +2,9 @@ import BaseWidget from "./BaseWidget";
 import { useGetBuzzPostsQuery } from "../../../features/buzz/buzzApi";
 
 export default function BuzzLatestPostWidget() {
-  const { data: posts = [], isLoading } = useGetBuzzPostsQuery({ filter: "recent" } as any);
+  const { data: posts = [], isLoading } = useGetBuzzPostsQuery({
+    filter: "recent",
+  } as any);
 
   const latest = posts?.[0];
 
@@ -24,12 +26,14 @@ export default function BuzzLatestPostWidget() {
                   {latest.author?.firstName} {latest.author?.lastName}
                 </div>
                 <div className="text-[10px] text-slate-400">
-                  {latest.createdAt ? new Date(latest.createdAt).toLocaleString() : ""}
+                  {latest.createdAt
+                    ? new Date(latest.createdAt).toLocaleString()
+                    : ""}
                 </div>
               </div>
             </div>
 
-            <div className="mt-3 text-xs text-slate-600 whitespace-pre-wrap">
+            <div className="mt-3 text-xs text-slate-600 whitespace-pre-wrap break-words">
               {latest.content}
             </div>
 
@@ -39,12 +43,12 @@ export default function BuzzLatestPostWidget() {
                   <video
                     src={latest.media[0].url}
                     controls
-                    className="w-full rounded-xl"
+                    className="w-full rounded-xl max-h-[260px] object-cover"
                   />
                 ) : (
                   <img
                     src={latest.media[0].url}
-                    className="w-full rounded-xl"
+                    className="w-full rounded-xl max-h-[260px] object-cover"
                     alt=""
                   />
                 )}
