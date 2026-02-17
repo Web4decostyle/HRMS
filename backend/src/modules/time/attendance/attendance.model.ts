@@ -23,8 +23,8 @@ const AttendanceSessionSchema = new Schema<AttendanceSessionDoc>(
   { timestamps: true }
 );
 
-// helpful index for daily queries
-AttendanceSessionSchema.index({ userId: 1, punchInAt: 1 });
+// ✅ Prevent duplicates for same user + exact same punchInAt
+AttendanceSessionSchema.index({ userId: 1, punchInAt: 1 }, { unique: true });
 
 export const AttendanceSession =
   mongoose.models.AttendanceSession ||

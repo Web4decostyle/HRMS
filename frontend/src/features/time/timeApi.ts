@@ -22,11 +22,18 @@ export interface Timesheet {
 export interface AttendanceRecord {
   _id: string;
   employee: any;
-  date: string;
-  inTime: string;
-  outTime?: string | null;
+  date: string; // ISO date stored as midnight
+  inTime: string; // ISO datetime
+  outTime?: string | null; // ISO datetime or null
   status: "OPEN" | "CLOSED";
 }
+
+export type AttendanceRangeArg =
+  | void
+  | {
+      from?: string; // YYYY-MM-DD
+      to?: string; // YYYY-MM-DD
+    };
 
 export const timeApi = createApi({
   reducerPath: "timeApi",
@@ -36,7 +43,6 @@ export const timeApi = createApi({
     // ----- TIMESHEETS LISTS -----
     getMyTimesheets: builder.query<Timesheet[], void>({
       query: () => "time/timesheets/my",
-      // generic tag so all timesheet lists get invalidated together
       providesTags: ["Timesheet"],
     }),
 
@@ -45,14 +51,12 @@ export const timeApi = createApi({
       providesTags: ["Timesheet"],
     }),
 
-    // ----- SINGLE TIMESHEET (for view/edit) -----
+    // ----- SINGLE TIMESHEET -----
     getTimesheet: builder.query<Timesheet, string>({
       query: (id) => `time/timesheets/${id}`,
-      // per-id tag so edits can invalidate this specific record
       providesTags: (result, error, id) => [{ type: "Timesheet", id }],
     }),
 
-    // create new timesheet (period + initial entries)
     createTimesheet: builder.mutation<
       Timesheet,
       { periodStart: string; periodEnd: string; entries: TimesheetEntry[] }
@@ -65,7 +69,6 @@ export const timeApi = createApi({
       invalidatesTags: ["Timesheet"],
     }),
 
-    // update only the status (SUBMITTED, APPROVED, etc.)
     updateTimesheetStatus: builder.mutation<
       Timesheet,
       { id: string; status: Timesheet["status"] }
@@ -77,14 +80,10 @@ export const timeApi = createApi({
       }),
       invalidatesTags: (result) =>
         result
-          ? [
-              { type: "Timesheet" as const, id: result._id },
-              "Timesheet",
-            ]
+          ? [{ type: "Timesheet" as const, id: result._id }, "Timesheet"]
           : ["Timesheet"],
     }),
 
-    // FULL entries update – used by Edit screen
     updateTimesheetEntries: builder.mutation<
       Timesheet,
       { id: string; entries: TimesheetEntry[] }
@@ -117,8 +116,19 @@ export const timeApi = createApi({
       invalidatesTags: ["Attendance"],
     }),
 
-    getMyAttendance: builder.query<AttendanceRecord[], void>({
-      query: () => "time/attendance/my",
+    // ✅ UPDATED: supports optional range
+    getMyAttendance: builder.query<AttendanceRecord[], AttendanceRangeArg>({
+      query: (arg) => {
+        const from = (arg as any)?.from;
+        const to = (arg as any)?.to;
+
+        const params = new URLSearchParams();
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+
+        const qs = params.toString();
+        return qs ? `time/attendance/my?${qs}` : "time/attendance/my";
+      },
       providesTags: ["Attendance"],
     }),
 

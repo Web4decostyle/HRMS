@@ -1,3 +1,4 @@
+// backend/src/modules/time/attendance/attendance.routes.ts
 import { Router } from "express";
 import {
   punchIn,
@@ -5,11 +6,13 @@ import {
   getMyRecordsByDate,
   getMyTodayStatus,
   getMyWeekSummary,
+  getMyMonthSummary,
+  importMyCsv,
+  cleanupMyDuplicates,
 } from "./attendance.controller";
 
-// ✅ Use your existing auth middleware here
-// Example: import { requireAuth } from "../../middleware/requireAuth";
-const requireAuth = (req: any, _res: any, next: any) => next();
+// ✅ Use your real auth middleware here:
+import { requireAuth } from "../../../middleware/authMiddleware"; 
 
 const router = Router();
 
@@ -19,5 +22,10 @@ router.post("/punch-out", requireAuth, punchOut);
 router.get("/me/records", requireAuth, getMyRecordsByDate);
 router.get("/me/today", requireAuth, getMyTodayStatus);
 router.get("/me/week", requireAuth, getMyWeekSummary);
+
+// ✅ NEW
+router.get("/me/month", requireAuth, getMyMonthSummary);
+router.post("/me/import-csv", requireAuth, importMyCsv);
+router.delete("/me/cleanup-duplicates", requireAuth, cleanupMyDuplicates);
 
 export default router;
