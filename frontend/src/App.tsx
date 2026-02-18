@@ -39,6 +39,7 @@ import MyTimesheetViewPage from "./pages/time/MyTimesheetViewPage";
 import EditTimesheetPage from "./pages/time/EditTimesheetPage";
 import PunchInPage from "./pages/time/attendance/PunchInPage";
 import MyAttendanceRecordsPage from "./pages/time/MyAttendanceRecordsPage";
+import EmployeeAttendanceRecords from "./pages/time/attendance/EmployeeAttendanceRecords";
 
 // Recruitment
 import RecruitmentPage from "./pages/recruitment/RecruitmentPage";
@@ -226,6 +227,16 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <MyAttendanceRecordsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/time/attendance/excel-import"
+        element={
+          <RequireAuth>
+            <Layout>
+              <EmployeeAttendanceRecords />
             </Layout>
           </RequireAuth>
         }

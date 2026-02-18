@@ -37,7 +37,7 @@ export default function TimeTopBar() {
           items: [
             { label: "My Records", to: "/time/attendance/my-records" },
             { label: "Punch In/Out", to: "/time/attendance/punch-in" },
-            { label: "Employee Records", to: "/time/attendance/employee-records" },
+            { label: "Employee Records", to: "/time/attendance/excel-import" },
             { label: "Configuration", to: "/time/attendance/config" },
           ],
         },
