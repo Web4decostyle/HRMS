@@ -1,5 +1,6 @@
 import React, { ChangeEvent, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import TimeTopTabs from "../TimeTopBar";
 
 /* ========================= Types ========================= */
 type MonthYear = { y: number; m: number };
@@ -35,12 +36,24 @@ type EmployeeRow = {
   byDate: Record<string, { inTime?: string; outTime?: string; status?: string }>;
 };
 
+type DbRegisterRow = {
+  _id: string;
+  employeeId: string;
+  payrollNo?: string;
+  cardNo?: string;
+  employeeName?: string;
+  date: string; // YYYY-MM-DD
+  inTime?: string;
+  outTime?: string;
+  status?: string;
+  month: string; // YYYY-MM
+};
+
 const DEFAULT_BULK_API = "/api/time/attendance/bulk-import";
+const DEFAULT_DB_GET_API = "/api/time/attendance/register";
 
 /**
- * OPTIONAL: If you have an endpoint that returns dept/designation by employeeId.
- * Expected response: [{ employeeId, dept, designation, name }]
- * If you don't have it, leave it—UI will show "—" and continue.
+ * OPTIONAL: dept/designation by employeeIds
  */
 const EMPLOYEE_META_API = "/api/employees/meta-by-ids";
 
@@ -147,12 +160,32 @@ function formatHeaderDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${d}-${m}-${y}`;
 }
-function statusDotClass(status?: string): string {
+
+type StatusFilter = "ALL" | "PRESENT" | "ABSENT" | "WEEKOFF" | "HOLIDAY" | "OTHER";
+
+function normStatus(status?: string): StatusFilter {
   const t = s(status).toUpperCase();
-  if (t === "P" || t === "PRESENT") return "bg-emerald-500";
-  if (t === "A" || t === "ABSENT") return "bg-rose-500";
-  if (t === "WO" || t === "W/O" || t === "WEEKOFF") return "bg-indigo-500";
-  if (t === "H" || t === "HOLIDAY") return "bg-amber-500";
+
+  if (t === "P" || t === "PRESENT") return "PRESENT";
+  if (t === "A" || t === "ABSENT") return "ABSENT";
+
+  if (t === "WO" || t === "W/O" || t === "WEEKOFF" || t === "WEEK OFF") return "WEEKOFF";
+  if (t === "H" || t === "HOLIDAY") return "HOLIDAY";
+
+  if (!t) return "OTHER";
+  return "OTHER";
+}
+
+function isPresentStatus(status?: string) {
+  return normStatus(status) === "PRESENT";
+}
+
+function statusDotClass(status?: string): string {
+  const t = normStatus(status);
+  if (t === "PRESENT") return "bg-emerald-500";
+  if (t === "ABSENT") return "bg-rose-500";
+  if (t === "WEEKOFF") return "bg-indigo-500";
+  if (t === "HOLIDAY") return "bg-amber-500";
   return "bg-slate-300";
 }
 
@@ -260,16 +293,57 @@ async function postBulk(apiUrl: string, payload: any) {
   return data;
 }
 
+/* ========================= DB fetch ========================= */
+async function fetchRegisterMonth(month: string, q: string) {
+  const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const params = new URLSearchParams();
+  params.set("month", month);
+  if (q) params.set("q", q);
+
+  const res = await fetch(`${DEFAULT_DB_GET_API}?${params.toString()}`, {
+    method: "GET",
+    headers,
+  });
+
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text };
+  }
+  if (!res.ok) throw new Error(data?.message || data?.error || `Fetch failed (${res.status})`);
+  return data as DbRegisterRow[];
+}
+
 /* ========================= Component ========================= */
 type SortKey = "empId" | "name";
 type SortDir = "asc" | "desc";
+type ViewMode = "excel" | "db";
+
+function monthStrFromMonthYear(my: MonthYear) {
+  return `${my.y}-${pad2(my.m)}`;
+}
 
 export default function EmployeeAttendanceRecords(): JSX.Element {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  const [viewMode, setViewMode] = useState<ViewMode>("excel");
+
   const [apiUrl, setApiUrl] = useState(DEFAULT_BULK_API);
   const [fileName, setFileName] = useState("");
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
+
+  // DB
+  const [dbMonth, setDbMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  });
+  const [dbRows, setDbRows] = useState<DbRegisterRow[]>([]);
+  const [dbLoading, setDbLoading] = useState(false);
 
   const [metaMap, setMetaMap] = useState<Record<string, EmployeeMeta>>({});
 
@@ -281,19 +355,51 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("empId");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [presentOnly, setPresentOnly] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+
+  const activeRecords: AttendanceRecord[] = useMemo(() => {
+    if (viewMode === "excel") return parsed?.records || [];
+    return (dbRows || []).map((r) => ({
+      payrollNo: r.payrollNo,
+      cardNo: r.cardNo || r.employeeId,
+      employeeName: r.employeeName,
+      date: r.date,
+      inTime: r.inTime,
+      outTime: r.outTime,
+      status: r.status,
+    }));
+  }, [viewMode, parsed, dbRows]);
 
   const dateColumns: string[] = useMemo(() => {
-    if (!parsed?.records?.length) return [];
+    if (!activeRecords.length) return [];
     const set = new Set<string>();
-    parsed.records.forEach((r) => set.add(r.date));
+    activeRecords.forEach((r) => set.add(r.date));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [parsed]);
+  }, [activeRecords]);
+
+  // Summary counts per date
+  const summaryByDate: Record<
+    string,
+    { PRESENT: number; ABSENT: number; WEEKOFF: number; HOLIDAY: number; OTHER: number }
+  > = useMemo(() => {
+    const out: Record<string, any> = {};
+    for (const d of dateColumns) out[d] = { PRESENT: 0, ABSENT: 0, WEEKOFF: 0, HOLIDAY: 0, OTHER: 0 };
+
+    for (const r of activeRecords) {
+      const d = r.date;
+      if (!out[d]) continue;
+      const st = normStatus(r.status);
+      out[d][st] = (out[d][st] || 0) + 1;
+    }
+    return out;
+  }, [activeRecords, dateColumns]);
 
   const employeeRows: EmployeeRow[] = useMemo(() => {
-    if (!parsed?.records?.length) return [];
+    if (!activeRecords.length) return [];
     const map = new Map<string, EmployeeRow>();
 
-    for (const r of parsed.records) {
+    for (const r of activeRecords) {
       const empId = s(r.cardNo) || s(r.payrollNo) || "";
       if (!empId) continue;
 
@@ -332,6 +438,16 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
       });
     }
 
+    // Present only
+    if (presentOnly) {
+      arr = arr.filter((emp) => dateColumns.some((d) => isPresentStatus(emp.byDate[d]?.status)));
+    }
+
+    // Status filter (employee must have at least one day with that status)
+    if (statusFilter !== "ALL") {
+      arr = arr.filter((emp) => dateColumns.some((d) => normStatus(emp.byDate[d]?.status) === statusFilter));
+    }
+
     arr.sort((a, b) => {
       const A = sortKey === "empId" ? a.empId : a.name;
       const B = sortKey === "empId" ? b.empId : b.name;
@@ -340,13 +456,14 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     });
 
     return arr;
-  }, [parsed, metaMap, search, sortKey, sortDir]);
+  }, [activeRecords, metaMap, search, sortKey, sortDir, presentOnly, statusFilter, dateColumns]);
 
   const onPick = async (e: ChangeEvent<HTMLInputElement>) => {
     setError("");
     setServerResp(null);
     setParsed(null);
     setMetaMap({});
+    setViewMode("excel");
 
     const f = e.target.files?.[0];
     if (!f) return;
@@ -359,15 +476,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
       const result = buildFromWorkbook(wb, f.name);
       setParsed(result);
 
-      // Optional enrichment for dept/designation/name
-      const ids = Array.from(
-        new Set(
-          result.records
-            .map((r) => s(r.cardNo) || s(r.payrollNo))
-            .filter(Boolean)
-        )
-      );
-
+      const ids = Array.from(new Set(result.records.map((r) => s(r.cardNo) || s(r.payrollNo)).filter(Boolean)));
       if (ids.length) {
         fetchEmployeeMeta(ids)
           .then((list) => {
@@ -375,9 +484,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
             list.forEach((x) => (m[x.employeeId] = x));
             setMetaMap(m);
           })
-          .catch(() => {
-            // ignore if no endpoint
-          });
+          .catch(() => {});
       }
     } catch (err: any) {
       setError(err?.message || "Failed to parse Excel.");
@@ -410,6 +517,36 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     }
   };
 
+  const onLoadDb = async () => {
+    setError("");
+    setServerResp(null);
+    setParsed(null);
+    setFileName("");
+    setViewMode("db");
+
+    try {
+      setDbLoading(true);
+      const list = await fetchRegisterMonth(dbMonth, "");
+      setDbRows(list);
+
+      const ids = Array.from(new Set(list.map((r) => s(r.employeeId)).filter(Boolean)));
+      if (ids.length) {
+        fetchEmployeeMeta(ids)
+          .then((metaList) => {
+            const m: Record<string, EmployeeMeta> = {};
+            metaList.forEach((x) => (m[x.employeeId] = x));
+            setMetaMap(m);
+          })
+          .catch(() => {});
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load DB register.");
+      setDbRows([]);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
   const toggleSort = (key: SortKey) => {
     if (sortKey !== key) {
       setSortKey(key);
@@ -419,18 +556,23 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     setSortDir((d) => (d === "asc" ? "desc" : "asc"));
   };
 
+  const monthLabel =
+    viewMode === "excel" && parsed ? monthStrFromMonthYear(parsed.monthYear) : viewMode === "db" ? dbMonth : "";
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <TimeTopTabs />
       <div className="mx-auto max-w-[1600px] px-4 py-6">
         {/* Header */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Attendance Register</h1>
             <p className="mt-1 text-sm text-slate-600">
-              Matrix view like your screenshot: IN/OUT stacked per day (date-wise).
+              Date-wise + Present-wise summary for all employees (Excel or DB).
             </p>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => fileRef.current?.click()}
               className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:bg-slate-950"
@@ -438,6 +580,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
             >
               Choose Excel
             </button>
+
             <button
               onClick={onUpload}
               disabled={uploading || parsing || !parsed?.records?.length}
@@ -451,6 +594,39 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
             >
               {uploading ? "Uploading..." : "Upload to DB"}
             </button>
+
+            <div className="mx-2 hidden sm:block w-px bg-slate-200" />
+
+            <div className="flex items-center gap-2">
+              <select
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+              >
+                <option value="excel">View: Excel</option>
+                <option value="db">View: DB</option>
+              </select>
+
+              <input
+                type="month"
+                value={dbMonth}
+                onChange={(e) => setDbMonth(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                title="Select month"
+              />
+
+              <button
+                type="button"
+                onClick={onLoadDb}
+                disabled={dbLoading}
+                className={[
+                  "rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
+                  dbLoading ? "cursor-not-allowed bg-slate-200 text-slate-600" : "bg-blue-600 text-white hover:bg-blue-700",
+                ].join(" ")}
+              >
+                {dbLoading ? "Loading..." : "Load DB"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -459,8 +635,11 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
         {/* Controls */}
         <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-12">
           <div className="lg:col-span-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <div className="text-sm font-semibold text-slate-900">Import Settings</div>
-            <div className="mt-1 text-xs text-slate-500">{fileName ? `File: ${fileName}` : "No file selected"}</div>
+            <div className="text-sm font-semibold text-slate-900">Import / View Settings</div>
+
+            <div className="mt-1 text-xs text-slate-500">
+              {viewMode === "excel" ? (monthLabel ? `Month: ${monthLabel}` : "No file selected") : `DB Month: ${dbMonth}`}
+            </div>
 
             <label className="mt-3 block text-xs font-medium text-slate-700">Bulk API URL</label>
             <input
@@ -477,28 +656,57 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
               <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">
                 Dates: {dateColumns.length}
               </span>
-              {parsed ? (
-                <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                  Month: {parsed.monthYear.y}-{pad2(parsed.monthYear.m)}
-                </span>
+              {monthLabel ? (
+                <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">Month: {monthLabel}</span>
               ) : null}
             </div>
 
-            {parsing && (
+            <div className="mt-3 flex flex-col gap-2">
+              <label className="text-sm text-slate-700">
+                <input
+                  className="mr-2"
+                  id="presentOnly"
+                  type="checkbox"
+                  checked={presentOnly}
+                  onChange={(e) => setPresentOnly(e.target.checked)}
+                />
+                Show Present employees only
+              </label>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-700">Status filter:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                >
+                  <option value="ALL">All</option>
+                  <option value="PRESENT">Present</option>
+                  <option value="ABSENT">Absent</option>
+                  <option value="WEEKOFF">WeekOff</option>
+                  <option value="HOLIDAY">Holiday</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+
+            {(parsing || dbLoading) && (
               <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200">
-                Parsing Excel…
+                {parsing ? "Parsing Excel…" : "Loading from DB…"}
               </div>
             )}
+
             {error && (
               <div className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">
                 <span className="font-semibold">Error:</span> {error}
               </div>
             )}
+
             {serverResp && (
               <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
                 <div className="font-semibold">Upload complete</div>
                 <pre className="mt-2 max-h-40 overflow-auto text-xs text-emerald-900">
-{JSON.stringify(serverResp, null, 2)}
+                  {JSON.stringify(serverResp, null, 2)}
                 </pre>
               </div>
             )}
@@ -541,6 +749,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
           <div className="overflow-auto">
             <table className="w-full border-separate border-spacing-0 text-sm">
               <thead className="sticky top-0 z-20 bg-white">
+                {/* Row 1: date headers */}
                 <tr>
                   <th className="sticky left-0 z-30 min-w-[90px] border-b border-slate-200 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
                     Emp Id
@@ -565,19 +774,72 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                     </th>
                   ))}
                 </tr>
+
+                {/* Row 2: status summary per date */}
+                {dateColumns.length > 0 ? (
+                  <tr>
+                    <th className="sticky left-0 z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                      Summary
+                    </th>
+                    <th className="sticky left-[90px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                      —
+                    </th>
+                    <th className="sticky left-[310px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                      —
+                    </th>
+                    <th className="sticky left-[470px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                      —
+                    </th>
+
+                    {dateColumns.map((d) => {
+                      const sum = summaryByDate[d] || {
+                        PRESENT: 0,
+                        ABSENT: 0,
+                        WEEKOFF: 0,
+                        HOLIDAY: 0,
+                        OTHER: 0,
+                      };
+                      return (
+                        <th key={d} className="border-b border-slate-200 px-2 py-2 text-center text-[10px]">
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <span className="rounded bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">
+                              P: {sum.PRESENT}
+                            </span>
+                            <span className="rounded bg-rose-50 px-2 py-1 font-semibold text-rose-700">
+                              A: {sum.ABSENT}
+                            </span>
+                            <span className="rounded bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
+                              WO: {sum.WEEKOFF}
+                            </span>
+                            <span className="rounded bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                              H: {sum.HOLIDAY}
+                            </span>
+                            {sum.OTHER ? (
+                              <span className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">
+                                O: {sum.OTHER}
+                              </span>
+                            ) : null}
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                ) : null}
               </thead>
 
               <tbody>
-                {!parsed?.records?.length ? (
+                {!activeRecords.length ? (
                   <tr>
                     <td colSpan={4 + Math.max(1, dateColumns.length)} className="px-6 py-12 text-center text-slate-500">
-                      Choose an Excel file to generate the matrix table.
+                      {viewMode === "db"
+                        ? "Click “Load DB” to show saved data."
+                        : "Choose an Excel file to generate the matrix table."}
                     </td>
                   </tr>
                 ) : employeeRows.length === 0 ? (
                   <tr>
                     <td colSpan={4 + dateColumns.length} className="px-6 py-12 text-center text-slate-500">
-                      No employees match your search.
+                      No employees match your filters.
                     </td>
                   </tr>
                 ) : (
@@ -615,6 +877,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                                   <span className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
                                     {s(cell?.outTime) || "—"}
                                   </span>
+                                  <span className="text-[10px] font-semibold text-slate-600">{s(cell?.status) || ""}</span>
                                 </div>
                               </div>
                             )}
@@ -628,7 +891,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
             </table>
           </div>
 
-          {parsed?.records?.length ? (
+          {activeRecords.length ? (
             <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
               Dept/Designation shows “—” unless you connect <span className="font-semibold">{EMPLOYEE_META_API}</span>.
             </div>

@@ -33,21 +33,21 @@ export interface PunchPayload {
   tzOffsetMinutes?: number;
 }
 
-export interface AttendanceRecordRow {
-  punchInAt: string; // ISO
+export type AttendanceRecordRow = {
+  punchInAt: string;
   punchInNote?: string;
-  punchOutAt?: string | null; // ISO or null
+  punchOutAt: string | null;
   punchOutNote?: string;
-  durationMinutes: number;
-  tzLabel?: string;
-}
+  durationHours?: number;      // ✅ add this
+  tzLabel?: string;            // (already used in UI)
+};
 
-export interface AttendanceRecordsResponse {
-  date: string; // YYYY-MM-DD
-  totalMinutes: number;
+export type AttendanceRecordsResponse = {
+  date: string;                // YYYY-MM-DD
+  totalDurationHours?: number; // ✅ add this
   count: number;
   rows: AttendanceRecordRow[];
-}
+};
 
 export type MonthDaySummary = {
   date: string; // YYYY-MM-DD

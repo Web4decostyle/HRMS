@@ -42,7 +42,10 @@ import divisionRoutes from "./modules/divisions/division.routes";
 const app = express();
 
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-app.use(express.json());
+
+// ✅ IMPORTANT: allow big JSON payloads (Excel bulk import)
+app.use(express.json({ limit: "25mb" }));
+
 app.use(cookieParser());
 app.use(morgan("dev"));
 
@@ -67,6 +70,8 @@ app.use("/api/leave", leaveRoutes);
 
 app.use("/api/time/timesheets", timesheetRoutes);
 app.use("/api/time", timeRoutes);
+
+// ✅ This is already mounted in your project:
 app.use("/api/time/attendance", attendanceRoutes);
 
 app.use("/api/admin", adminRoutes);
@@ -89,9 +94,9 @@ app.use("/config/email", emailConfigRoutes);
 app.use("/api/qualifications", qualificationRoutes);
 app.use("/api/pim-config", pimConfigRoutes);
 app.use("/api/claim-config", claimConfigRoutes);
+
 // Divisions
 app.use("/api/divisions", divisionRoutes);
-
 
 app.use("/api/change-requests", changeRequestRoutes);
 
