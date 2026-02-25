@@ -138,7 +138,7 @@ export const attendanceApi = createApi({
 });
 
 export const {
-  useGetMyTodayAttendanceQuery, // ✅ Fixes your error
+  useGetMyTodayAttendanceQuery,
   useGetMyWeekSummaryQuery,
   usePunchInMutation,
   usePunchOutMutation,
