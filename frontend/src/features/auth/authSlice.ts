@@ -22,12 +22,20 @@ function readToken() {
   return localStorage.getItem("token");
 }
 
+function isRole(v: any): v is Role {
+  return v === "ADMIN" || v === "HR" || v === "SUPERVISOR" || v === "ESS" || v === "ESS_VIEWER";
+}
+
 function readUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem("user");
   if (!raw) return null;
+
   try {
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw);
+    // ✅ basic safety to avoid corrupted storage making UI think admin
+    if (!parsed?.id || !parsed?.username || !isRole(parsed?.role)) return null;
+    return parsed as AuthUser;
   } catch {
     return null;
   }
@@ -73,3 +81,4 @@ const authSlice = createSlice({
 
 export const { setCredentials, setUser, clearAuth } = authSlice.actions;
 export default authSlice.reducer;
+export type { AuthUser as SliceAuthUser };

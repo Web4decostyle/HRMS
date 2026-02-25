@@ -1,3 +1,4 @@
+// frontend/src/pages/time/attendance/EmployeeAttendanceRecords.tsx
 import React, { ChangeEvent, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import TimeTopTabs from "../TimeTopBar";
@@ -51,10 +52,6 @@ type DbRegisterRow = {
 
 const DEFAULT_BULK_API = "/api/time/attendance/bulk-import";
 const DEFAULT_DB_GET_API = "/api/time/attendance/register";
-
-/**
- * OPTIONAL: dept/designation by employeeIds
- */
 const EMPLOYEE_META_API = "/api/employees/meta-by-ids";
 
 /* ========================= Helpers ========================= */
@@ -88,9 +85,7 @@ function parseMonthYearFromHeader(matrix: any[][]): MonthYear | null {
   const flat = matrix.flat().map((x) => s(x)).filter(Boolean);
   const line = flat.find((t) => /monthly performance register/i.test(t));
   if (!line) return null;
-  const m = line.match(
-    /from\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+to\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/i
-  );
+  const m = line.match(/from\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+to\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
   if (!m) return null;
   const month = Number(m[2]);
   const year = Number(m[3]);
@@ -109,7 +104,7 @@ function cleanEmployeeName(raw: string): string {
 function parsePayrollHeader(header: string): { payrollNo?: string; cardNo?: string; name?: string } {
   const t = s(header);
   const m = t.match(
-    /NAME\s*([0-9]+)\s+([0-9]+)\s+(.+?)(?:\s{2,}|Present:|Absent:|Hours_Worked:|Overtime:|$)/i
+    /NAME\s*([0-9]+)\s+([0-9]+)\s+(.+?)(?:\s{2,}|Present:|Absent:|Hours_Worked:|Overtime:|$)/i,
   );
   if (m) return { payrollNo: s(m[1]), cardNo: s(m[2]), name: cleanEmployeeName(m[3]) };
 
@@ -127,9 +122,7 @@ function findDaysHeaderRow(matrix: any[][]): number {
   for (let r = 0; r < Math.min(matrix.length, 250); r++) {
     const row = matrix[r] || [];
     let count = 0;
-    for (let c = 1; c < Math.min(row.length, 45); c++) {
-      if (isDayNumber(row[c])) count++;
-    }
+    for (let c = 1; c < Math.min(row.length, 45); c++) if (isDayNumber(row[c])) count++;
     if (count >= 10) return r;
   }
   return -1;
@@ -162,24 +155,18 @@ function formatHeaderDate(iso: string): string {
 }
 
 type StatusFilter = "ALL" | "PRESENT" | "ABSENT" | "WEEKOFF" | "HOLIDAY" | "OTHER";
-
 function normStatus(status?: string): StatusFilter {
   const t = s(status).toUpperCase();
-
   if (t === "P" || t === "PRESENT") return "PRESENT";
   if (t === "A" || t === "ABSENT") return "ABSENT";
-
   if (t === "WO" || t === "W/O" || t === "WEEKOFF" || t === "WEEK OFF") return "WEEKOFF";
   if (t === "H" || t === "HOLIDAY") return "HOLIDAY";
-
   if (!t) return "OTHER";
   return "OTHER";
 }
-
 function isPresentStatus(status?: string) {
   return normStatus(status) === "PRESENT";
 }
-
 function statusDotClass(status?: string): string {
   const t = normStatus(status);
   if (t === "PRESENT") return "bg-emerald-500";
@@ -204,9 +191,7 @@ function buildFromWorkbook(wb: XLSX.WorkBook, fileName: string): ParsedResult {
 
   const daysRow = matrix[headerRowIndex] || [];
   const dayCols: { col: number; day: number }[] = [];
-  for (let c = 1; c < daysRow.length; c++) {
-    if (isDayNumber(daysRow[c])) dayCols.push({ col: c, day: Number(s(daysRow[c])) });
-  }
+  for (let c = 1; c < daysRow.length; c++) if (isDayNumber(daysRow[c])) dayCols.push({ col: c, day: Number(s(daysRow[c])) });
   if (!dayCols.length) throw new Error("No day columns detected.");
 
   const records: AttendanceRecord[] = [];
@@ -271,12 +256,12 @@ async function fetchEmployeeMeta(employeeIds: string[]): Promise<EmployeeMeta[]>
 }
 
 /* ========================= Upload ========================= */
-async function postBulk(apiUrl: string, payload: any) {
+async function postBulk(payload: any) {
   const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(apiUrl, {
+  const res = await fetch(DEFAULT_BULK_API, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -332,8 +317,6 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("excel");
-
-  const [apiUrl, setApiUrl] = useState(DEFAULT_BULK_API);
   const [fileName, setFileName] = useState("");
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
 
@@ -378,22 +361,18 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [activeRecords]);
 
-  // Summary counts per date
-  const summaryByDate: Record<
-    string,
-    { PRESENT: number; ABSENT: number; WEEKOFF: number; HOLIDAY: number; OTHER: number }
-  > = useMemo(() => {
-    const out: Record<string, any> = {};
-    for (const d of dateColumns) out[d] = { PRESENT: 0, ABSENT: 0, WEEKOFF: 0, HOLIDAY: 0, OTHER: 0 };
-
-    for (const r of activeRecords) {
-      const d = r.date;
-      if (!out[d]) continue;
-      const st = normStatus(r.status);
-      out[d][st] = (out[d][st] || 0) + 1;
-    }
-    return out;
-  }, [activeRecords, dateColumns]);
+  const summaryByDate: Record<string, { PRESENT: number; ABSENT: number; WEEKOFF: number; HOLIDAY: number; OTHER: number }> =
+    useMemo(() => {
+      const out: Record<string, any> = {};
+      for (const d of dateColumns) out[d] = { PRESENT: 0, ABSENT: 0, WEEKOFF: 0, HOLIDAY: 0, OTHER: 0 };
+      for (const r of activeRecords) {
+        const d = r.date;
+        if (!out[d]) continue;
+        const st = normStatus(r.status);
+        out[d][st] = (out[d][st] || 0) + 1;
+      }
+      return out;
+    }, [activeRecords, dateColumns]);
 
   const employeeRows: EmployeeRow[] = useMemo(() => {
     if (!activeRecords.length) return [];
@@ -428,25 +407,11 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
 
     const q = s(search).toLowerCase();
     if (q) {
-      arr = arr.filter((e) => {
-        return (
-          e.empId.toLowerCase().includes(q) ||
-          e.name.toLowerCase().includes(q) ||
-          e.dept.toLowerCase().includes(q) ||
-          e.designation.toLowerCase().includes(q)
-        );
-      });
+      arr = arr.filter((e) => e.empId.toLowerCase().includes(q) || e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q) || e.designation.toLowerCase().includes(q));
     }
 
-    // Present only
-    if (presentOnly) {
-      arr = arr.filter((emp) => dateColumns.some((d) => isPresentStatus(emp.byDate[d]?.status)));
-    }
-
-    // Status filter (employee must have at least one day with that status)
-    if (statusFilter !== "ALL") {
-      arr = arr.filter((emp) => dateColumns.some((d) => normStatus(emp.byDate[d]?.status) === statusFilter));
-    }
+    if (presentOnly) arr = arr.filter((emp) => dateColumns.some((d) => isPresentStatus(emp.byDate[d]?.status)));
+    if (statusFilter !== "ALL") arr = arr.filter((emp) => dateColumns.some((d) => normStatus(emp.byDate[d]?.status) === statusFilter));
 
     arr.sort((a, b) => {
       const A = sortKey === "empId" ? a.empId : a.name;
@@ -508,7 +473,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
         totalRecords: parsed.records.length,
         records: parsed.records,
       };
-      const resp = await postBulk(apiUrl, payload);
+      const resp = await postBulk(payload);
       setServerResp(resp);
     } catch (err: any) {
       setError(err?.message || "Upload failed.");
@@ -556,52 +521,54 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     setSortDir((d) => (d === "asc" ? "desc" : "asc"));
   };
 
-  const monthLabel =
-    viewMode === "excel" && parsed ? monthStrFromMonthYear(parsed.monthYear) : viewMode === "db" ? dbMonth : "";
+  const monthLabel = viewMode === "excel" && parsed ? monthStrFromMonthYear(parsed.monthYear) : viewMode === "db" ? dbMonth : "";
+  const totalEmployees = employeeRows.length;
+  const totalDates = dateColumns.length;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <TimeTopTabs />
-      <div className="mx-auto max-w-[1600px] px-4 py-6">
+
+      <div className="mx-auto max-w-[1600px] px-4 py-6 space-y-4">
         {/* Header */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Attendance Register</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Date-wise + Present-wise summary for all employees (Excel or DB).
-            </p>
-          </div>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-xl md:text-2xl font-semibold text-slate-900">Attendance Register</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Admin view: Import Excel attendance and verify register from DB.
+              </p>
+            </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 active:bg-slate-950"
-              type="button"
-            >
-              Choose Excel
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="h-10 rounded-full bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800"
+                type="button"
+              >
+                Choose Excel
+              </button>
 
-            <button
-              onClick={onUpload}
-              disabled={uploading || parsing || !parsed?.records?.length}
-              className={[
-                "rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
-                uploading || parsing || !parsed?.records?.length
-                  ? "cursor-not-allowed bg-slate-200 text-slate-600"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800",
-              ].join(" ")}
-              type="button"
-            >
-              {uploading ? "Uploading..." : "Upload to DB"}
-            </button>
+              <button
+                onClick={onUpload}
+                disabled={uploading || parsing || !parsed?.records?.length}
+                className={[
+                  "h-10 rounded-full px-5 text-sm font-semibold",
+                  uploading || parsing || !parsed?.records?.length
+                    ? "cursor-not-allowed bg-slate-200 text-slate-500"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700",
+                ].join(" ")}
+                type="button"
+              >
+                {uploading ? "Uploading..." : "Upload to DB"}
+              </button>
 
-            <div className="mx-2 hidden sm:block w-px bg-slate-200" />
+              <div className="hidden md:block w-px bg-slate-200 mx-2" />
 
-            <div className="flex items-center gap-2">
               <select
                 value={viewMode}
                 onChange={(e) => setViewMode(e.target.value as ViewMode)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none"
               >
                 <option value="excel">View: Excel</option>
                 <option value="db">View: DB</option>
@@ -611,7 +578,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                 type="month"
                 value={dbMonth}
                 onChange={(e) => setDbMonth(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none"
                 title="Select month"
               />
 
@@ -620,205 +587,166 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                 onClick={onLoadDb}
                 disabled={dbLoading}
                 className={[
-                  "rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
-                  dbLoading ? "cursor-not-allowed bg-slate-200 text-slate-600" : "bg-blue-600 text-white hover:bg-blue-700",
+                  "h-10 rounded-full px-5 text-sm font-semibold",
+                  dbLoading ? "cursor-not-allowed bg-slate-200 text-slate-500" : "bg-blue-600 text-white hover:bg-blue-700",
                 ].join(" ")}
               >
                 {dbLoading ? "Loading..." : "Load DB"}
               </button>
             </div>
           </div>
+
+          {/* Quick stats */}
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] text-slate-500">Month</div>
+              <div className="text-sm font-semibold text-slate-900">{monthLabel || "—"}</div>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] text-slate-500">Employees</div>
+              <div className="text-sm font-semibold text-slate-900">{totalEmployees}</div>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] text-slate-500">Dates</div>
+              <div className="text-sm font-semibold text-slate-900">{totalDates}</div>
+            </div>
+          </div>
+
+          {fileName ? <div className="mt-3 text-xs text-slate-400">Selected file: {fileName}</div> : null}
+
+          {(parsing || dbLoading) && (
+            <div className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 border border-slate-100">
+              {parsing ? "Parsing Excel…" : "Loading from DB…"}
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 border border-rose-100">
+              <span className="font-semibold">Error:</span> {error}
+            </div>
+          )}
+
+          {serverResp && (
+            <div className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 border border-emerald-100">
+              <div className="font-semibold">Upload complete</div>
+              <pre className="mt-2 max-h-40 overflow-auto text-xs text-emerald-900">{JSON.stringify(serverResp, null, 2)}</pre>
+            </div>
+          )}
         </div>
 
         <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onPick} className="hidden" />
 
-        {/* Controls */}
-        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-12">
-          <div className="lg:col-span-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <div className="text-sm font-semibold text-slate-900">Import / View Settings</div>
-
-            <div className="mt-1 text-xs text-slate-500">
-              {viewMode === "excel" ? (monthLabel ? `Month: ${monthLabel}` : "No file selected") : `DB Month: ${dbMonth}`}
+        {/* Filters */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-slate-900">Filters</div>
+              <div className="mt-1 text-xs text-slate-500">Search employees by empId / name / department / designation.</div>
             </div>
 
-            <label className="mt-3 block text-xs font-medium text-slate-700">Bulk API URL</label>
-            <input
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
-              placeholder="/api/time/attendance/bulk-import"
-            />
+            <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="w-full md:w-72 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400"
+              />
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-              <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                Employees: {employeeRows.length}
-              </span>
-              <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                Dates: {dateColumns.length}
-              </span>
-              {monthLabel ? (
-                <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">Month: {monthLabel}</span>
-              ) : null}
-            </div>
-
-            <div className="mt-3 flex flex-col gap-2">
-              <label className="text-sm text-slate-700">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
-                  className="mr-2"
+                  className="h-4 w-4"
                   id="presentOnly"
                   type="checkbox"
                   checked={presentOnly}
                   onChange={(e) => setPresentOnly(e.target.checked)}
                 />
-                Show Present employees only
+                Present only
               </label>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-700">Status filter:</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-                >
-                  <option value="ALL">All</option>
-                  <option value="PRESENT">Present</option>
-                  <option value="ABSENT">Absent</option>
-                  <option value="WEEKOFF">WeekOff</option>
-                  <option value="HOLIDAY">Holiday</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-            </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+              >
+                <option value="ALL">All</option>
+                <option value="PRESENT">Present</option>
+                <option value="ABSENT">Absent</option>
+                <option value="WEEKOFF">WeekOff</option>
+                <option value="HOLIDAY">Holiday</option>
+                <option value="OTHER">Other</option>
+              </select>
 
-            {(parsing || dbLoading) && (
-              <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200">
-                {parsing ? "Parsing Excel…" : "Loading from DB…"}
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => toggleSort("empId")}
+                className="h-10 rounded-xl bg-white px-4 text-sm font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50"
+              >
+                Emp Id {sortKey === "empId" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              </button>
 
-            {error && (
-              <div className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">
-                <span className="font-semibold">Error:</span> {error}
-              </div>
-            )}
-
-            {serverResp && (
-              <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
-                <div className="font-semibold">Upload complete</div>
-                <pre className="mt-2 max-h-40 overflow-auto text-xs text-emerald-900">
-                  {JSON.stringify(serverResp, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          <div className="lg:col-span-8 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">Filters</div>
-                <div className="mt-1 text-xs text-slate-500">Search employees by id/name/department/designation.</div>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search…"
-                  className="w-full sm:w-72 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => toggleSort("empId")}
-                  className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
-                >
-                  Emp Id {sortKey === "empId" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleSort("name")}
-                  className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
-                >
-                  Name {sortKey === "name" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSort("name")}
+                className="h-10 rounded-xl bg-white px-4 text-sm font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50"
+              >
+                Name {sortKey === "name" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Matrix table */}
-        <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-2xl bg-white shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-auto">
             <table className="w-full border-separate border-spacing-0 text-sm">
               <thead className="sticky top-0 z-20 bg-white">
-                {/* Row 1: date headers */}
                 <tr>
-                  <th className="sticky left-0 z-30 min-w-[90px] border-b border-slate-200 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
+                  <th className="sticky left-0 z-30 min-w-[90px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
                     Emp Id
                   </th>
-                  <th className="sticky left-[90px] z-30 min-w-[220px] border-b border-slate-200 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
+                  <th className="sticky left-[90px] z-30 min-w-[220px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
                     Name
                   </th>
-                  <th className="sticky left-[310px] z-30 min-w-[160px] border-b border-slate-200 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
+                  <th className="sticky left-[310px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
                     Dept.
                   </th>
-                  <th className="sticky left-[470px] z-30 min-w-[160px] border-b border-slate-200 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
+                  <th className="sticky left-[470px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
                     Designation
                   </th>
 
                   {dateColumns.map((d) => (
-                    <th
-                      key={d}
-                      className="min-w-[140px] border-b border-slate-200 px-3 py-2 text-center text-[11px] font-semibold text-slate-700"
-                    >
+                    <th key={d} className="min-w-[140px] border-b border-slate-100 px-3 py-2 text-center text-[11px] font-semibold text-slate-700">
                       <div className="leading-4">{formatHeaderDate(d)}</div>
                       <div className="text-[10px] font-medium text-slate-500">{weekdayLabel(d)}</div>
                     </th>
                   ))}
                 </tr>
 
-                {/* Row 2: status summary per date */}
                 {dateColumns.length > 0 ? (
                   <tr>
-                    <th className="sticky left-0 z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                    <th className="sticky left-0 z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
                       Summary
                     </th>
-                    <th className="sticky left-[90px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                    <th className="sticky left-[90px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
                       —
                     </th>
-                    <th className="sticky left-[310px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                    <th className="sticky left-[310px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
                       —
                     </th>
-                    <th className="sticky left-[470px] z-30 border-b border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
+                    <th className="sticky left-[470px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
                       —
                     </th>
 
                     {dateColumns.map((d) => {
-                      const sum = summaryByDate[d] || {
-                        PRESENT: 0,
-                        ABSENT: 0,
-                        WEEKOFF: 0,
-                        HOLIDAY: 0,
-                        OTHER: 0,
-                      };
+                      const sum = summaryByDate[d] || { PRESENT: 0, ABSENT: 0, WEEKOFF: 0, HOLIDAY: 0, OTHER: 0 };
                       return (
-                        <th key={d} className="border-b border-slate-200 px-2 py-2 text-center text-[10px]">
+                        <th key={d} className="border-b border-slate-100 px-2 py-2 text-center text-[10px]">
                           <div className="flex flex-wrap items-center justify-center gap-2">
-                            <span className="rounded bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">
-                              P: {sum.PRESENT}
-                            </span>
-                            <span className="rounded bg-rose-50 px-2 py-1 font-semibold text-rose-700">
-                              A: {sum.ABSENT}
-                            </span>
-                            <span className="rounded bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
-                              WO: {sum.WEEKOFF}
-                            </span>
-                            <span className="rounded bg-amber-50 px-2 py-1 font-semibold text-amber-700">
-                              H: {sum.HOLIDAY}
-                            </span>
-                            {sum.OTHER ? (
-                              <span className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                                O: {sum.OTHER}
-                              </span>
-                            ) : null}
+                            <span className="rounded bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">P: {sum.PRESENT}</span>
+                            <span className="rounded bg-rose-50 px-2 py-1 font-semibold text-rose-700">A: {sum.ABSENT}</span>
+                            <span className="rounded bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">WO: {sum.WEEKOFF}</span>
+                            <span className="rounded bg-amber-50 px-2 py-1 font-semibold text-amber-700">H: {sum.HOLIDAY}</span>
+                            {sum.OTHER ? <span className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">O: {sum.OTHER}</span> : null}
                           </div>
                         </th>
                       );
@@ -831,9 +759,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                 {!activeRecords.length ? (
                   <tr>
                     <td colSpan={4 + Math.max(1, dateColumns.length)} className="px-6 py-12 text-center text-slate-500">
-                      {viewMode === "db"
-                        ? "Click “Load DB” to show saved data."
-                        : "Choose an Excel file to generate the matrix table."}
+                      {viewMode === "db" ? "Click “Load DB” to show saved data." : "Choose an Excel file to generate the matrix table."}
                     </td>
                   </tr>
                 ) : employeeRows.length === 0 ? (
@@ -866,17 +792,13 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                         return (
                           <td key={d} className="border-b border-slate-100 px-3 py-2 text-center align-middle">
                             {!has ? (
-                              <div className="text-slate-400">=</div>
+                              <div className="text-slate-300 font-semibold">—</div>
                             ) : (
                               <div className="flex items-center justify-center gap-2">
                                 <span className={`h-2 w-2 rounded-full ${dot}`} />
                                 <div className="flex flex-col items-center leading-5">
-                                  <span className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
-                                    {s(cell?.inTime) || "—"}
-                                  </span>
-                                  <span className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
-                                    {s(cell?.outTime) || "—"}
-                                  </span>
+                                  <span className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">{s(cell?.inTime) || "—"}</span>
+                                  <span className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">{s(cell?.outTime) || "—"}</span>
                                   <span className="text-[10px] font-semibold text-slate-600">{s(cell?.status) || ""}</span>
                                 </div>
                               </div>
@@ -892,11 +814,13 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
           </div>
 
           {activeRecords.length ? (
-            <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
+            <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
               Dept/Designation shows “—” unless you connect <span className="font-semibold">{EMPLOYEE_META_API}</span>.
             </div>
           ) : null}
         </div>
+
+        <div className="py-6 text-center text-xs text-slate-400">DecoStyle · Attendance Register · © {new Date().getFullYear()}</div>
       </div>
     </div>
   );

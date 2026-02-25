@@ -1,4 +1,7 @@
 // frontend/src/pages/dashboard/DashboardPage.tsx
+import { useSelector } from "react-redux";
+import { selectAuthRole } from "../../features/auth/selectors";
+
 import EmployeeAttendanceWidget from "./widgets/EmployeeAttendanceWidget";
 import MyActionSummaryWidget from "./widgets/MyActionSummaryWidget";
 import QuickLaunchWidget from "./widgets/QuickLaunchWidget";
@@ -8,10 +11,13 @@ import EmployeeSubunitWidget from "./widgets/EmployeeSubunitWidget";
 import EmployeeLocationWidget from "./widgets/EmployeeLocationWidget";
 
 export default function DashboardPage() {
+  const role = useSelector(selectAuthRole) ?? "ESS";
+  const isAdminLike = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
+
   return (
-    <div className="min-h-[calc(100vh-120px)] px-3 sm:px-4 lg:px-0">
-      {/* ✅ responsive grid: 1 col on mobile, 2 cols on large */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+    <div className="min-h-[calc(100vh-120px)]">
+      {/*  2-column dashboard grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Row 1 */}
         <EmployeeAttendanceWidget />
         <MyActionSummaryWidget />
@@ -20,15 +26,18 @@ export default function DashboardPage() {
         <QuickLaunchWidget />
         <BuzzLatestPostWidget />
 
-        {/* Row 3 */}
-        <EmployeesOnLeaveWidget />
-        <EmployeeSubunitWidget />
+        {/* Admin-only widgets */}
+        {isAdminLike ? (
+          <>
+            {/* Row 3 */}
+            <EmployeesOnLeaveWidget />
+            <EmployeeSubunitWidget />
 
-        {/* Row 4 (left only on desktop, full width on mobile) */}
-        <div className="lg:col-span-1">
-          <EmployeeLocationWidget />
-        </div>
-        <div className="hidden lg:block" />
+            {/* Row 4 (left only like screenshot) */}
+            <EmployeeLocationWidget />
+            <div className="hidden lg:block" />
+          </>
+        ) : null}
       </div>
     </div>
   );

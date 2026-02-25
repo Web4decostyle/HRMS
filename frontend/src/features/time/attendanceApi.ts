@@ -38,13 +38,13 @@ export type AttendanceRecordRow = {
   punchInNote?: string;
   punchOutAt: string | null;
   punchOutNote?: string;
-  durationHours?: number;      // ✅ add this
-  tzLabel?: string;            // (already used in UI)
+  durationHours?: number;
+  tzLabel?: string;
 };
 
 export type AttendanceRecordsResponse = {
-  date: string;                // YYYY-MM-DD
-  totalDurationHours?: number; // ✅ add this
+  date: string; // YYYY-MM-DD
+  totalDurationHours?: number;
   count: number;
   rows: AttendanceRecordRow[];
 };
@@ -71,6 +71,7 @@ export type CsvImportRow = {
 };
 
 function tzOffsetAheadMinutes() {
+  // minutes ahead of UTC (India = 330)
   return -new Date().getTimezoneOffset();
 }
 
@@ -79,13 +80,11 @@ export const attendanceApi = createApi({
   baseQuery: authedBaseQuery,
   tagTypes: ["AttendanceToday", "AttendanceWeek", "AttendanceDay", "AttendanceMonth"],
   endpoints: (builder) => ({
-    // ✅ This produces hook: useGetMyTodayAttendanceQuery ✅
     getMyTodayAttendance: builder.query<TodayAttendanceResponse, void>({
       query: () => `time/attendance/me/today?tzOffsetMinutes=${tzOffsetAheadMinutes()}`,
       providesTags: ["AttendanceToday"],
     }),
 
-    // ✅ week endpoint: /me/week
     getMyWeekSummary: builder.query<WeekSummaryResponse, void>({
       query: () => `time/attendance/me/week?tzOffsetMinutes=${tzOffsetAheadMinutes()}`,
       providesTags: ["AttendanceWeek"],
@@ -115,14 +114,12 @@ export const attendanceApi = createApi({
       providesTags: (_r, _e, date) => [{ type: "AttendanceDay", id: date }],
     }),
 
-    // ✅ Month summary
     getMyMonthSummary: builder.query<MonthSummaryResponse, { from: string; to: string }>({
       query: ({ from, to }) =>
         `time/attendance/me/month?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&tzOffsetMinutes=${tzOffsetAheadMinutes()}`,
       providesTags: ["AttendanceMonth"],
     }),
 
-    // ✅ CSV import
     importMyAttendanceCsv: builder.mutation<
       { message: string; accepted: number; rejected: number },
       { rows: CsvImportRow[] }

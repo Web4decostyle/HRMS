@@ -1,4 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useMeQuery } from "./features/auth/authApi";
+import { useAppSelector } from "./app/hooks";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
@@ -35,7 +37,6 @@ import HolidaysPage from "./pages/leave/HolidaysPage";
 
 // Time
 import MyTimesheetsPage from "./pages/time/MyTimesheetsPage";
-import MyTimesheetViewPage from "./pages/time/MyTimesheetViewPage";
 import EditTimesheetPage from "./pages/time/EditTimesheetPage";
 import PunchInPage from "./pages/time/attendance/PunchInPage";
 import MyAttendanceRecordsPage from "./pages/time/MyAttendanceRecordsPage";
@@ -126,6 +127,17 @@ import CandidateViewPage from "./pages/recruitment/CandidateViewPage";
 import VacancyViewPage from "./pages/recruitment/VacancyViewPage";
 import InterviewedEmployeesPage from "./pages/recruitment/InterviewedEmployeesPage";
 
+function AuthBootstrap() {
+  const token = useAppSelector((s) => s.auth.token);
+
+  useMeQuery(undefined, {
+    skip: !token,
+    refetchOnMountOrArgChange: true, 
+  });
+
+  return null;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -187,16 +199,6 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <MyTimesheetsPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/time/timesheets/:id"
-        element={
-          <RequireAuth>
-            <Layout>
-              <MyTimesheetViewPage />
             </Layout>
           </RequireAuth>
         }

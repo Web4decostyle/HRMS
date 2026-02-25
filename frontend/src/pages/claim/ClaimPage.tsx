@@ -1,5 +1,7 @@
 // frontend/src/pages/claim/ClaimPage.tsx
 import { FormEvent, useMemo, useState } from "react";
+import { useAppSelector } from "../../app/hooks";
+import type { Role } from "../../features/auth/authSlice";
 
 /* ----------------- CONFIG: events & expense types ----------------- */
 import {
@@ -33,36 +35,58 @@ import {
   SimpleEmployee,
 } from "../../features/employees/employeesApi"; // must return [{ _id, fullName }]
 
-// -----------------------------------------------------------------------------
-// Tabs and layout
-// -----------------------------------------------------------------------------
-
 type Tab = "config" | "submit" | "myclaims" | "employee" | "assign";
 type ConfigView = "events" | "expenses";
 
-const topTabs: { key: Tab; label: string }[] = [
-  { key: "config", label: "Configuration" },
-  { key: "submit", label: "Submit Claim" },
-  { key: "myclaims", label: "My Claims" },
-  { key: "employee", label: "Employee Claims" },
-  { key: "assign", label: "Assign Claim" },
-];
-
 const CURRENCIES = ["INR", "USD", "EUR"];
 
+function selectRole(state: any): Role {
+  return (state?.auth?.user?.role as Role) ?? "ESS";
+}
+
 export default function ClaimPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("config");
+  const role = useAppSelector((s) => selectRole(s));
+  const canSeeAdminTabs = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
+
+  // ✅ Default tab depends on role
+  const [activeTab, setActiveTab] = useState<Tab>(canSeeAdminTabs ? "config" : "submit");
   const [configView, setConfigView] = useState<ConfigView>("events");
   const [configOpen, setConfigOpen] = useState(false);
 
+  // ✅ Build tabs based on role
+  const topTabs: { key: Tab; label: string }[] = useMemo(() => {
+    if (!canSeeAdminTabs) {
+      return [
+        { key: "submit", label: "Submit Claim" },
+        { key: "myclaims", label: "My Claims" },
+      ];
+    }
+    return [
+      { key: "config", label: "Configuration" },
+      { key: "submit", label: "Submit Claim" },
+      { key: "myclaims", label: "My Claims" },
+      { key: "employee", label: "Employee Claims" },
+      { key: "assign", label: "Assign Claim" },
+    ];
+  }, [canSeeAdminTabs]);
+
+  // ✅ If user role changes (login switch), make sure activeTab is valid
+  // (prevents ESS seeing admin tabs after switching accounts)
+  useMemo(() => {
+    if (!canSeeAdminTabs && (activeTab === "config" || activeTab === "employee" || activeTab === "assign")) {
+      setActiveTab("submit");
+      setConfigOpen(false);
+    }
+  }, [canSeeAdminTabs]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f5fb]">
-
-      {/* Tabs bar with Configuration dropdown */}
+      {/* Tabs bar with Configuration dropdown (admin-only) */}
       <div className="bg-white px-8 py-3 shadow-sm flex items-center gap-4 relative">
         {topTabs.map((t) => {
           const isActive = activeTab === t.key;
 
+          // ✅ Configuration dropdown ONLY for admin-like roles
           if (t.key === "config") {
             return (
               <div key={t.key} className="relative">
@@ -91,9 +115,7 @@ export default function ClaimPage() {
                         setConfigOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${
-                        configView === "events"
-                          ? "font-semibold text-slate-800"
-                          : ""
+                        configView === "events" ? "font-semibold text-slate-800" : ""
                       }`}
                     >
                       Events
@@ -105,9 +127,7 @@ export default function ClaimPage() {
                         setConfigOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${
-                        configView === "expenses"
-                          ? "font-semibold text-slate-800"
-                          : ""
+                        configView === "expenses" ? "font-semibold text-slate-800" : ""
                       }`}
                     >
                       Expense Types
@@ -140,20 +160,28 @@ export default function ClaimPage() {
 
       {/* Page content per tab */}
       <div className="px-8 py-8 flex-1 space-y-8">
-        {activeTab === "config" &&
+        {/* ✅ Config sections - admin only */}
+        {canSeeAdminTabs && activeTab === "config" &&
           (configView === "events" ? (
             <ClaimEventsConfigSection />
           ) : (
             <ExpenseTypesConfigSection />
           ))}
 
+        {/* ✅ ESS + Admin: submit + myclaims */}
         {activeTab === "submit" && <SubmitClaimSection />}
-
         {activeTab === "myclaims" && <MyClaimsSection />}
 
-        {activeTab === "employee" && <EmployeeClaimsSection />}
+        {/* ✅ Admin-only */}
+        {canSeeAdminTabs && activeTab === "employee" && <EmployeeClaimsSection />}
+        {canSeeAdminTabs && activeTab === "assign" && <AssignClaimSection />}
 
-        {activeTab === "assign" && <AssignClaimSection />}
+        {/* ✅ If ESS somehow lands on hidden tabs */}
+        {!canSeeAdminTabs && (activeTab === "config" || activeTab === "employee" || activeTab === "assign") && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-sm text-slate-600">
+            You do not have access to this section.
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -170,16 +198,12 @@ export default function ClaimPage() {
 
 function ClaimEventsConfigSection() {
   const { data, isLoading, isError, refetch } = useGetClaimEventsQuery();
-  const [createEvent, { isLoading: isCreating }] =
-    useCreateClaimEventMutation();
-  const [updateEvent, { isLoading: isUpdating }] =
-    useUpdateClaimEventMutation();
+  const [createEvent, { isLoading: isCreating }] = useCreateClaimEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateClaimEventMutation();
   const [deleteEvent] = useDeleteClaimEventMutation();
 
   const [searchName, setSearchName] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "ACTIVE" | "INACTIVE">(
-    ""
-  );
+  const [statusFilter, setStatusFilter] = useState<"" | "ACTIVE" | "INACTIVE">("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ClaimEvent | null>(null);
@@ -192,9 +216,7 @@ function ClaimEventsConfigSection() {
   const filtered = useMemo(
     () =>
       items.filter((ev) => {
-        const matchName = ev.name
-          .toLowerCase()
-          .includes(searchName.toLowerCase());
+        const matchName = ev.name.toLowerCase().includes(searchName.toLowerCase());
         const matchStatus = statusFilter ? ev.status === statusFilter : true;
         return matchName && matchStatus;
       }),
@@ -234,8 +256,7 @@ function ClaimEventsConfigSection() {
       setModalOpen(false);
     } catch (err: any) {
       setErrorMsg(
-        err?.data?.message ||
-          (editing ? "Failed to update event" : "Failed to create event")
+        err?.data?.message || (editing ? "Failed to update event" : "Failed to create event")
       );
     }
   }
@@ -257,7 +278,6 @@ function ClaimEventsConfigSection() {
 
   return (
     <>
-      {/* Filter box */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <h2 className="text-sm font-semibold text-slate-700 mb-4">Events</h2>
 
@@ -276,9 +296,7 @@ function ClaimEventsConfigSection() {
             <label className="text-xs text-slate-500">Status</label>
             <select
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")
-              }
+              onChange={(e) => setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")}
               className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
@@ -307,7 +325,6 @@ function ClaimEventsConfigSection() {
         </div>
       </div>
 
-      {/* Add + table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <button
           type="button"
@@ -317,17 +334,11 @@ function ClaimEventsConfigSection() {
           + Add
         </button>
 
-        {isLoading && (
-          <div className="text-xs text-slate-500 mb-3">Loading…</div>
-        )}
+        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load events.{" "}
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="underline text-indigo-600"
-            >
+            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
               Retry
             </button>
           </div>
@@ -352,9 +363,7 @@ function ClaimEventsConfigSection() {
                     <input type="checkbox" />
                   </td>
                   <td className="py-2 px-4">{ev.name}</td>
-                  <td className="py-2 px-4">
-                    {ev.status === "ACTIVE" ? "Active" : "Inactive"}
-                  </td>
+                  <td className="py-2 px-4">{ev.status === "ACTIVE" ? "Active" : "Inactive"}</td>
                   <td className="py-2 px-4">
                     <button
                       type="button"
@@ -375,10 +384,7 @@ function ClaimEventsConfigSection() {
               ))}
               {!filtered.length && (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="py-3 px-4 text-center text-xs text-slate-400"
-                  >
+                  <td colSpan={4} className="py-3 px-4 text-center text-xs text-slate-400">
                     No Records Found
                   </td>
                 </tr>
@@ -388,7 +394,6 @@ function ClaimEventsConfigSection() {
         </div>
       </div>
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -410,18 +415,15 @@ function ClaimEventsConfigSection() {
                 <label className="block mb-1 text-slate-600">Status</label>
                 <select
                   value={status}
-                  onChange={(e) =>
-                    setStatus(e.target.value as "ACTIVE" | "INACTIVE")
-                  }
+                  onChange={(e) => setStatus(e.target.value as "ACTIVE" | "INACTIVE")}
                   className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
                 </select>
               </div>
-              {errorMsg && (
-                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
-              )}
+
+              {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
 
               <div className="mt-4 flex justify-end gap-3">
                 <button
@@ -437,13 +439,7 @@ function ClaimEventsConfigSection() {
                   className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
-                  {editing
-                    ? isUpdating
-                      ? "Saving..."
-                      : "Save"
-                    : isCreating
-                    ? "Adding..."
-                    : "Add"}
+                  {editing ? (isUpdating ? "Saving..." : "Save") : isCreating ? "Adding..." : "Add"}
                 </button>
               </div>
             </form>
@@ -460,10 +456,8 @@ function ClaimEventsConfigSection() {
 
 function ExpenseTypesConfigSection() {
   const { data, isLoading, isError, refetch } = useGetExpenseTypesQuery();
-  const [createType, { isLoading: isCreating }] =
-    useCreateExpenseTypeMutation();
-  const [updateType, { isLoading: isUpdating }] =
-    useUpdateExpenseTypeMutation();
+  const [createType, { isLoading: isCreating }] = useCreateExpenseTypeMutation();
+  const [updateType, { isLoading: isUpdating }] = useUpdateExpenseTypeMutation();
   const [deleteType] = useDeleteExpenseTypeMutation();
 
   const items = data?.items ?? [];
@@ -505,9 +499,7 @@ function ExpenseTypesConfigSection() {
     } catch (err: any) {
       setErrorMsg(
         err?.data?.message ||
-          (editing
-            ? "Failed to update expense type"
-            : "Failed to create expense type")
+          (editing ? "Failed to update expense type" : "Failed to create expense type")
       );
     }
   }
@@ -525,9 +517,7 @@ function ExpenseTypesConfigSection() {
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">
-          Expense Types
-        </h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">Expense Types</h2>
 
         <button
           type="button"
@@ -537,17 +527,11 @@ function ExpenseTypesConfigSection() {
           + Add
         </button>
 
-        {isLoading && (
-          <div className="text-xs text-slate-500 mb-3">Loading…</div>
-        )}
+        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load expense types.{" "}
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="underline text-indigo-600"
-            >
+            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
               Retry
             </button>
           </div>
@@ -591,10 +575,7 @@ function ExpenseTypesConfigSection() {
               ))}
               {!items.length && (
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="py-3 px-4 text-center text-xs text-slate-400"
-                  >
+                  <td colSpan={3} className="py-3 px-4 text-center text-xs text-slate-400">
                     No Records Found
                   </td>
                 </tr>
@@ -604,7 +585,6 @@ function ExpenseTypesConfigSection() {
         </div>
       </div>
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -622,9 +602,8 @@ function ExpenseTypesConfigSection() {
                   className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 />
               </div>
-              {errorMsg && (
-                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
-              )}
+
+              {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
 
               <div className="mt-4 flex justify-end gap-3">
                 <button
@@ -640,13 +619,7 @@ function ExpenseTypesConfigSection() {
                   className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
-                  {editing
-                    ? isUpdating
-                      ? "Saving..."
-                      : "Save"
-                    : isCreating
-                    ? "Adding..."
-                    : "Add"}
+                  {editing ? (isUpdating ? "Saving..." : "Save") : isCreating ? "Adding..." : "Add"}
                 </button>
               </div>
             </form>
@@ -663,9 +636,7 @@ function ExpenseTypesConfigSection() {
 
 function SubmitClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
-  const events = (eventsData?.items ?? []).filter(
-    (e) => e.status === "ACTIVE"
-  );
+  const events = (eventsData?.items ?? []).filter((e) => e.status === "ACTIVE");
 
   const [submitClaim, { isLoading }] = useSubmitClaimMutation();
 
@@ -687,7 +658,7 @@ function SubmitClaimSection() {
 
     try {
       await submitClaim({
-        typeId: eventId, // map UI "event" to backend claim type
+        typeId: eventId,
         currency,
         remarks,
       }).unwrap();
@@ -702,13 +673,10 @@ function SubmitClaimSection() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 className="text-sm font-semibold text-slate-700 mb-4">
-        Create Claim Request
-      </h2>
+      <h2 className="text-sm font-semibold text-slate-700 mb-4">Create Claim Request</h2>
 
       <form onSubmit={handleCreate} className="space-y-4 text-xs">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Event */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
               Event<span className="text-green-500">*</span>
@@ -727,7 +695,6 @@ function SubmitClaimSection() {
             </select>
           </div>
 
-          {/* Currency */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
               Currency<span className="text-green-500">*</span>
@@ -747,7 +714,6 @@ function SubmitClaimSection() {
           </div>
         </div>
 
-        {/* Remarks */}
         <div className="space-y-1">
           <label className="text-xs text-slate-600">Remarks</label>
           <textarea
@@ -760,12 +726,8 @@ function SubmitClaimSection() {
 
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
-        {errorMsg && (
-          <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
-        )}
-        {successMsg && (
-          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
-        )}
+        {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
+        {successMsg && <p className="text-xs text-green-600 mt-1">{successMsg}</p>}
 
         <div className="mt-4 flex justify-end gap-3">
           <button
@@ -829,11 +791,8 @@ function MyClaimsSection() {
 
   return (
     <>
-      {/* Filter box */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">
-          My Claims
-        </h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">My Claims</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-1">
@@ -920,23 +879,12 @@ function MyClaimsSection() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <button className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700">
-          + Submit Claim
-        </button>
-
-        {isLoading && (
-          <div className="text-xs text-slate-500 mb-3">Loading…</div>
-        )}
+        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load claims.{" "}
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="underline text-indigo-600"
-            >
+            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
               Retry
             </button>
           </div>
@@ -961,30 +909,21 @@ function MyClaimsSection() {
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
                   <td className="py-2 px-4">
-                    {typeof c.type === "string"
-                      ? c.type
-                      : (c.type as any)?.name}
+                    {typeof c.type === "string" ? c.type : (c.type as any)?.name}
                   </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
-                  <td className="py-2 px-4">
-                    {c.claimDate?.slice(0, 10) ?? ""}
-                  </td>
+                  <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
                   <td className="py-2 px-4">
-                    {typeof c.amount === "number"
-                      ? c.amount.toFixed(2)
-                      : "-"}
+                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
                   </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
               {!items.length && (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="py-3 px-4 text-center text-xs text-slate-400"
-                  >
+                  <td colSpan={8} className="py-3 px-4 text-center text-xs text-slate-400">
                     No Records Found
                   </td>
                 </tr>
@@ -1015,14 +954,10 @@ function EmployeeClaimsSection() {
     include: "CURRENT",
   });
 
-  const { data, isLoading, isError, refetch } =
-    useGetEmployeeClaimsQuery(filters);
+  const { data, isLoading, isError, refetch } = useGetEmployeeClaimsQuery(filters);
   const items: EmployeeClaim[] = data?.items ?? [];
 
-  function handleChange<K extends keyof EmployeeClaimsFilter>(
-    key: K,
-    value: string
-  ) {
+  function handleChange<K extends keyof EmployeeClaimsFilter>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -1040,11 +975,8 @@ function EmployeeClaimsSection() {
 
   return (
     <>
-      {/* Filter box */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">
-          Employee Claims
-        </h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">Employee Claims</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="space-y-1">
@@ -1097,9 +1029,7 @@ function EmployeeClaimsSection() {
             <label className="text-xs text-slate-500">Include</label>
             <select
               value={filters.include}
-              onChange={(e) =>
-                handleChange("include", e.target.value as "CURRENT" | "ALL")
-              }
+              onChange={(e) => handleChange("include", e.target.value as "CURRENT" | "ALL")}
               className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="CURRENT">Current Employees Only</option>
@@ -1149,23 +1079,12 @@ function EmployeeClaimsSection() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <button className="mb-4 px-4 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700">
-          + Assign Claim
-        </button>
-
-        {isLoading && (
-          <div className="text-xs text-slate-500 mb-3">Loading…</div>
-        )}
+        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load employee claims.{" "}
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="underline text-indigo-600"
-            >
+            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
               Retry
             </button>
           </div>
@@ -1191,35 +1110,24 @@ function EmployeeClaimsSection() {
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
                   <td className="py-2 px-4">
-                    {typeof c.employee === "string"
-                      ? c.employee
-                      : (c.employee as any)?.fullName}
+                    {typeof c.employee === "string" ? c.employee : (c.employee as any)?.fullName}
                   </td>
                   <td className="py-2 px-4">
-                    {typeof c.type === "string"
-                      ? c.type
-                      : (c.type as any)?.name}
+                    {typeof c.type === "string" ? c.type : (c.type as any)?.name}
                   </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
-                  <td className="py-2 px-4">
-                    {c.claimDate?.slice(0, 10) ?? ""}
-                  </td>
+                  <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
                   <td className="py-2 px-4">
-                    {typeof c.amount === "number"
-                      ? c.amount.toFixed(2)
-                      : "-"}
+                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
                   </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
               {!items.length && (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="py-3 px-4 text-center text-xs text-slate-400"
-                  >
+                  <td colSpan={9} className="py-3 px-4 text-center text-xs text-slate-400">
                     No Records Found
                   </td>
                 </tr>
@@ -1238,9 +1146,7 @@ function EmployeeClaimsSection() {
 
 function AssignClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
-  const events = (eventsData?.items ?? []).filter(
-    (e) => e.status === "ACTIVE"
-  );
+  const events = (eventsData?.items ?? []).filter((e) => e.status === "ACTIVE");
 
   const { data: employeesData } = useGetEmployeesSimpleQuery();
   const employees: SimpleEmployee[] = employeesData ?? [];
@@ -1265,12 +1171,7 @@ function AssignClaimSection() {
     }
 
     try {
-      await assignClaim({
-        employeeId,
-        typeId: eventId,
-        currency,
-        remarks,
-      }).unwrap();
+      await assignClaim({ employeeId, typeId: eventId, currency, remarks }).unwrap();
       setEmployeeId("");
       setEventId("");
       setCurrency("");
@@ -1283,13 +1184,10 @@ function AssignClaimSection() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 className="text-sm font-semibold text-slate-700 mb-4">
-        Create Claim Request
-      </h2>
+      <h2 className="text-sm font-semibold text-slate-700 mb-4">Create Claim Request</h2>
 
       <form onSubmit={handleCreate} className="space-y-4 text-xs">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Employee */}
           <div className="space-y-1 md:col-span-1">
             <label className="text-xs text-slate-600">
               Employee Name<span className="text-green-500">*</span>
@@ -1308,7 +1206,6 @@ function AssignClaimSection() {
             </select>
           </div>
 
-          {/* Event */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
               Event<span className="text-green-500">*</span>
@@ -1327,7 +1224,6 @@ function AssignClaimSection() {
             </select>
           </div>
 
-          {/* Currency */}
           <div className="space-y-1">
             <label className="text-xs text-slate-600">
               Currency<span className="text-green-500">*</span>
@@ -1347,7 +1243,6 @@ function AssignClaimSection() {
           </div>
         </div>
 
-        {/* Remarks */}
         <div className="space-y-1">
           <label className="text-xs text-slate-600">Remarks</label>
           <textarea
@@ -1360,12 +1255,8 @@ function AssignClaimSection() {
 
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
-        {errorMsg && (
-          <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
-        )}
-        {successMsg && (
-          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
-        )}
+        {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
+        {successMsg && <p className="text-xs text-green-600 mt-1">{successMsg}</p>}
 
         <div className="mt-4 flex justify-end gap-3">
           <button
