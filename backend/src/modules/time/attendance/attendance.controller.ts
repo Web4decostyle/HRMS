@@ -26,7 +26,64 @@ function tzLabelFromOffsetMinutes(tzOffsetMinutes: number) {
   return `GMT ${sign}${hh}:${mm}`;
 }
 
-function parseDateTimeToUtc(dateStr: string, timeStr: string, tzOffsetMinutes: number): Date {
+function parseAnyTimeToMinutes(t?: string) {
+  const s = String(t || "").trim();
+  if (!s) return null;
+
+  // 09:30
+  let m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (m) {
+    const hh = Number(m[1]);
+    const mm = Number(m[2]);
+    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return hh * 60 + mm;
+    return null;
+  }
+
+  // 03:30 PM
+  m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (m) {
+    let hh = Number(m[1]);
+    const mm = Number(m[2]);
+    const ap = m[3].toUpperCase();
+    if (hh < 1 || hh > 12 || mm < 0 || mm > 59) return null;
+    if (ap === "PM" && hh !== 12) hh += 12;
+    if (ap === "AM" && hh === 12) hh = 0;
+    return hh * 60 + mm;
+  }
+
+  return null;
+}
+
+function minutesToIso(date: string, minutes: number) {
+  const hh = pad2(Math.floor(minutes / 60));
+  const mm = pad2(minutes % 60);
+  return new Date(`${date}T${hh}:${mm}:00`).toISOString();
+}
+
+function computeRegisterDurationHours(inTime?: string, outTime?: string) {
+  const inM = parseAnyTimeToMinutes(inTime);
+  const outM = parseAnyTimeToMinutes(outTime);
+  if (inM == null || outM == null) return 0;
+  const diff = outM - inM;
+  if (diff <= 0) return 0;
+  return Math.round((diff / 60) * 100) / 100;
+}
+
+function getEmployeeIdFromReq(req: any) {
+  const u = req?.user || {};
+  return (
+    String(u.employeeId || "").trim() ||
+    String(u.cardNo || "").trim() ||
+    String(u.payrollNo || "").trim() ||
+    null
+  );
+}
+
+function parseDateTimeToUtc(
+  dateStr: string,
+  timeStr: string,
+  tzOffsetMinutes: number,
+): Date {
   const [yyyy, mm, dd] = dateStr.split("-").map(Number);
 
   const m = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -64,7 +121,11 @@ function safeObjectId(id: string, fieldName = "id") {
 }
 
 function looksLikeIsoDateTime(v: any) {
-  return typeof v === "string" && v.includes("T") && !Number.isNaN(new Date(v).getTime());
+  return (
+    typeof v === "string" &&
+    v.includes("T") &&
+    !Number.isNaN(new Date(v).getTime())
+  );
 }
 
 function parseIsoOrThrow(v: any, field = "date") {
@@ -104,7 +165,15 @@ function monthFromYMD(date: string) {
 function monthFromMonthYear(input: any) {
   const y = Number(input?.y);
   const m = Number(input?.m);
-  if (!Number.isFinite(y) || !Number.isFinite(m) || y < 1900 || y > 3000 || m < 1 || m > 12) return "";
+  if (
+    !Number.isFinite(y) ||
+    !Number.isFinite(m) ||
+    y < 1900 ||
+    y > 3000 ||
+    m < 1 ||
+    m > 12
+  )
+    return "";
   return `${y}-${pad2(m)}`;
 }
 
@@ -122,14 +191,15 @@ export async function punchIn(req: AuthRequest, res: Response) {
   if (!userId) throw ApiError.unauthorized("Unauthorized");
 
   try {
-    const { date, time, note, tzOffsetMinutes, punchAt } = (req.body || {}) as any;
+    const { date, time, note, tzOffsetMinutes, punchAt } = (req.body ||
+      {}) as any;
     const tz = parseTzOffsetMinutes(tzOffsetMinutes);
 
     const punchInAt = punchAt
       ? new Date(punchAt)
       : looksLikeIsoDateTime(time)
-      ? new Date(time)
-      : parseDateTimeToUtc(String(date), String(time), tz);
+        ? new Date(time)
+        : parseDateTimeToUtc(String(date), String(time), tz);
 
     if (Number.isNaN(punchInAt.getTime())) {
       return res.status(400).json({ message: "Invalid punchIn time." });
@@ -174,14 +244,15 @@ export async function punchOut(req: AuthRequest, res: Response) {
   if (!userId) throw ApiError.unauthorized("Unauthorized");
 
   try {
-    const { date, time, note, tzOffsetMinutes, punchAt } = (req.body || {}) as any;
+    const { date, time, note, tzOffsetMinutes, punchAt } = (req.body ||
+      {}) as any;
     const tz = parseTzOffsetMinutes(tzOffsetMinutes);
 
     const punchOutAt = punchAt
       ? new Date(punchAt)
       : looksLikeIsoDateTime(time)
-      ? new Date(time)
-      : parseDateTimeToUtc(String(date), String(time), tz);
+        ? new Date(time)
+        : parseDateTimeToUtc(String(date), String(time), tz);
 
     if (Number.isNaN(punchOutAt.getTime())) {
       return res.status(400).json({ message: "Invalid punchOut time." });
@@ -230,6 +301,7 @@ export async function getMyRecordsByDate(req: AuthRequest, res: Response) {
     const tz = parseTzOffsetMinutes(req.query.tzOffsetMinutes);
     const tzLabel = tzLabelFromOffsetMinutes(tz);
 
+    // ---------- SESSION DATA ----------
     const startUtc = parseDateTimeToUtc(date, "12:00 AM", tz);
     const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
 
@@ -240,7 +312,7 @@ export async function getMyRecordsByDate(req: AuthRequest, res: Response) {
       .sort({ punchInAt: 1 })
       .lean();
 
-    const rows = sessions.map((s) => {
+    const sessionRows = sessions.map((s) => {
       const durationHours = computeDurationHours(s.punchInAt, s.punchOutAt);
       return {
         punchInAt: s.punchInAt.toISOString(),
@@ -252,8 +324,40 @@ export async function getMyRecordsByDate(req: AuthRequest, res: Response) {
       };
     });
 
+    // ---------- REGISTER DATA ----------
+    const employeeId = getEmployeeIdFromReq(req as any);
+    let registerRow: any | null = null;
+
+    if (employeeId) {
+      const reg = await AttendanceRegisterEntry.findOne({
+        employeeId,
+        date,
+      }).lean();
+
+      if (reg && (reg.inTime || reg.outTime || reg.status)) {
+        const dur = computeRegisterDurationHours(reg.inTime, reg.outTime);
+        const inM = parseAnyTimeToMinutes(reg.inTime);
+        const outM = parseAnyTimeToMinutes(reg.outTime);
+
+        registerRow = {
+          punchInAt: inM != null ? minutesToIso(date, inM) : null,
+          punchInNote: reg.status ? `Status: ${reg.status}` : "Imported",
+          punchOutAt: outM != null ? minutesToIso(date, outM) : null,
+          punchOutNote: reg.employeeName || "",
+          durationHours: dur,
+          tzLabel,
+        };
+      }
+    }
+
+    const rows = registerRow
+      ? [...sessionRows, registerRow].filter(Boolean)
+      : sessionRows;
+
     const totalDurationHours =
-      Math.round(rows.reduce((acc, r) => acc + (r.durationHours || 0), 0) * 100) / 100;
+      Math.round(
+        rows.reduce((acc, r) => acc + (Number(r.durationHours) || 0), 0) * 100,
+      ) / 100;
 
     return res.json({
       date,
@@ -264,6 +368,51 @@ export async function getMyRecordsByDate(req: AuthRequest, res: Response) {
   } catch (e: any) {
     throw ApiError.badRequest(e?.message || "Failed to fetch records");
   }
+}
+
+export async function getMyMonthSummary(req: AuthRequest, res: Response) {
+  const userId = getUserId(req as any);
+  if (!userId) throw ApiError.unauthorized("Unauthorized");
+
+  const from = String((req.query as any).from || "").trim();
+  const to = String((req.query as any).to || "").trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    throw ApiError.badRequest("from/to required as YYYY-MM-DD");
+  }
+
+  const tz = parseTzOffsetMinutes(req.query.tzOffsetMinutes);
+  const tzLabel = tzLabelFromOffsetMinutes(tz);
+
+  const employeeId = getEmployeeIdFromReq(req as any);
+
+  if (!employeeId) {
+    return res.json({ from, to, tzLabel, days: [] });
+  }
+
+  const regs = await AttendanceRegisterEntry.find({
+    employeeId,
+    date: { $gte: from, $lte: to },
+  })
+    .sort({ date: 1 })
+    .lean();
+
+  const days = regs.map((r) => {
+    const durH = computeRegisterDurationHours(r.inTime, r.outTime);
+    const totalMinutes = Math.round(durH * 60);
+
+    const inM = parseAnyTimeToMinutes(r.inTime);
+    const outM = parseAnyTimeToMinutes(r.outTime);
+
+    return {
+      date: r.date,
+      totalMinutes,
+      firstInAt: inM != null ? minutesToIso(r.date, inM) : null,
+      lastOutAt: outM != null ? minutesToIso(r.date, outM) : null,
+    };
+  });
+
+  return res.json({ from, to, tzLabel, days });
 }
 
 // GET /api/time/attendance/me/today
@@ -364,7 +513,8 @@ export async function getMyWeekSummary(req: AuthRequest, res: Response) {
       const durMinutes = Math.round(durHours * 60);
 
       if (minutesMap[dayKey] !== undefined) minutesMap[dayKey] += durMinutes;
-      if (!s.punchOutAt && statusMap[dayKey] !== undefined) statusMap[dayKey] = "IN";
+      if (!s.punchOutAt && statusMap[dayKey] !== undefined)
+        statusMap[dayKey] = "IN";
     }
 
     const week = days.map((d) => ({
@@ -393,11 +543,16 @@ export async function adminListSessions(req: AuthRequest, res: Response) {
     if (to) filter.punchInAt.$lte = parseIsoOrThrow(to, "to");
   }
 
-  const items = await AttendanceSession.find(filter).sort({ punchInAt: -1 }).lean();
+  const items = await AttendanceSession.find(filter)
+    .sort({ punchInAt: -1 })
+    .lean();
   res.json(items);
 }
 
-export async function adminGetUserRecordsByDate(req: AuthRequest, res: Response) {
+export async function adminGetUserRecordsByDate(
+  req: AuthRequest,
+  res: Response,
+) {
   const userId = String((req.query as any).userId || "");
   if (!userId) throw ApiError.badRequest("userId is required");
 
@@ -433,7 +588,8 @@ export async function adminGetUserRecordsByDate(req: AuthRequest, res: Response)
   });
 
   const totalDurationHours =
-    Math.round(rows.reduce((acc, r) => acc + (r.durationHours || 0), 0) * 100) / 100;
+    Math.round(rows.reduce((acc, r) => acc + (r.durationHours || 0), 0) * 100) /
+    100;
 
   res.json({
     userId,
@@ -445,7 +601,8 @@ export async function adminGetUserRecordsByDate(req: AuthRequest, res: Response)
 }
 
 export async function adminCreateSession(req: AuthRequest, res: Response) {
-  const { userId, punchInAt, punchOutAt, punchInNote, punchOutNote } = (req.body || {}) as any;
+  const { userId, punchInAt, punchOutAt, punchInNote, punchOutNote } =
+    (req.body || {}) as any;
   if (!userId) throw ApiError.badRequest("userId is required");
   if (!punchInAt) throw ApiError.badRequest("punchInAt is required");
 
@@ -488,14 +645,17 @@ export async function adminUpdateSession(req: AuthRequest, res: Response) {
       ? parseIsoOrThrow(req.body.punchOutAt, "punchOutAt")
       : null;
   }
-  if (req.body?.punchInNote !== undefined) patch.punchInNote = String(req.body.punchInNote || "");
-  if (req.body?.punchOutNote !== undefined) patch.punchOutNote = String(req.body.punchOutNote || "");
+  if (req.body?.punchInNote !== undefined)
+    patch.punchInNote = String(req.body.punchInNote || "");
+  if (req.body?.punchOutNote !== undefined)
+    patch.punchOutNote = String(req.body.punchOutNote || "");
 
   const existing = await AttendanceSession.findById(safeObjectId(id, "id"));
   if (!existing) throw ApiError.notFound("Attendance session not found");
 
   const newInAt = patch.punchInAt ?? existing.punchInAt;
-  const newOutAt = patch.punchOutAt !== undefined ? patch.punchOutAt : existing.punchOutAt;
+  const newOutAt =
+    patch.punchOutAt !== undefined ? patch.punchOutAt : existing.punchOutAt;
 
   if (newOutAt && newOutAt.getTime() <= newInAt.getTime()) {
     throw ApiError.badRequest("punchOutAt must be after punchInAt");
@@ -511,7 +671,9 @@ export async function adminDeleteSession(req: AuthRequest, res: Response) {
   const id = String(req.params.id || "");
   if (!id) throw ApiError.badRequest("Missing session id");
 
-  const deleted = await AttendanceSession.findByIdAndDelete(safeObjectId(id, "id"));
+  const deleted = await AttendanceSession.findByIdAndDelete(
+    safeObjectId(id, "id"),
+  );
   if (!deleted) throw ApiError.notFound("Attendance session not found");
 
   res.json({ message: "Deleted" });
@@ -520,7 +682,10 @@ export async function adminDeleteSession(req: AuthRequest, res: Response) {
 // --------------------- ✅ Attendance Register (Excel Import) ---------------------
 
 // POST /api/time/attendance/bulk-import
-export async function bulkImportAttendanceRegister(req: AuthRequest, res: Response) {
+export async function bulkImportAttendanceRegister(
+  req: AuthRequest,
+  res: Response,
+) {
   const authUserId = getUserId(req as any);
   if (!authUserId) throw ApiError.unauthorized("Unauthorized");
 
@@ -583,7 +748,9 @@ export async function bulkImportAttendanceRegister(req: AuthRequest, res: Respon
   if (ops.length === 0) throw ApiError.badRequest("No valid rows to import");
 
   // unordered lets it continue if some rows have duplicate problems
-  const result = await AttendanceRegisterEntry.bulkWrite(ops, { ordered: false });
+  const result = await AttendanceRegisterEntry.bulkWrite(ops, {
+    ordered: false,
+  });
 
   res.json({
     message: "Bulk import completed",
@@ -625,18 +792,30 @@ export async function getAttendanceRegister(req: AuthRequest, res: Response) {
 }
 
 // PATCH /api/time/attendance/register/:id
-export async function updateAttendanceRegisterEntry(req: AuthRequest, res: Response) {
+export async function updateAttendanceRegisterEntry(
+  req: AuthRequest,
+  res: Response,
+) {
   const id = String(req.params.id || "").trim();
   if (!id) throw ApiError.badRequest("Missing id");
 
   const patch: any = {};
-  if (req.body?.inTime !== undefined) patch.inTime = req.body.inTime ? String(req.body.inTime).trim() : "";
-  if (req.body?.outTime !== undefined) patch.outTime = req.body.outTime ? String(req.body.outTime).trim() : "";
-  if (req.body?.status !== undefined) patch.status = req.body.status ? String(req.body.status).trim() : "";
+  if (req.body?.inTime !== undefined)
+    patch.inTime = req.body.inTime ? String(req.body.inTime).trim() : "";
+  if (req.body?.outTime !== undefined)
+    patch.outTime = req.body.outTime ? String(req.body.outTime).trim() : "";
+  if (req.body?.status !== undefined)
+    patch.status = req.body.status ? String(req.body.status).trim() : "";
   if (req.body?.employeeName !== undefined)
-    patch.employeeName = req.body.employeeName ? String(req.body.employeeName).trim() : "";
+    patch.employeeName = req.body.employeeName
+      ? String(req.body.employeeName).trim()
+      : "";
 
-  const updated = await AttendanceRegisterEntry.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean();
+  const updated = await AttendanceRegisterEntry.findByIdAndUpdate(
+    id,
+    { $set: patch },
+    { new: true },
+  ).lean();
   if (!updated) throw ApiError.notFound("Register entry not found");
 
   res.json(updated);
