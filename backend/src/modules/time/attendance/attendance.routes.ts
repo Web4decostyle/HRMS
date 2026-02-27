@@ -16,6 +16,7 @@ import {
   bulkImportAttendanceRegister,
   getAttendanceRegister,
   updateAttendanceRegisterEntry,
+  getMyAttendanceRegister,
 } from "./attendance.controller";
 
 import { requireAuth } from "../../../middleware/authMiddleware";
@@ -31,6 +32,7 @@ router.post("/punch-out", requireAuth, asyncHandler(punchOut));
 router.get("/me/records", requireAuth, asyncHandler(getMyRecordsByDate));
 router.get("/me/today", requireAuth, asyncHandler(getMyTodayAttendance));
 router.get("/me/month", requireAuth, asyncHandler(getMyMonthSummary));
+router.get("/me/register", requireAuth, asyncHandler(getMyAttendanceRegister));
 
 // keep both for backward compatibility
 router.get("/me/week", requireAuth, asyncHandler(getMyWeekSummary));

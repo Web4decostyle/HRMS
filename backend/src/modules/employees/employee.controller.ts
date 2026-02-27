@@ -1,30 +1,23 @@
 // backend/src/modules/employees/employee.controller.ts
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Employee } from "./employee.model";
-import { ApiError } from "../../utils/ApiError"; 
-import { AuthRequest } from "../../middleware/authMiddleware"; 
+import { ApiError } from "../../utils/ApiError";
+import { AuthRequest } from "../../middleware/authMiddleware";
 import { User } from "../auth/auth.model";
 import { Counter } from "../pim/pimConfig/models/counter.model";
-import mongoose from "mongoose";
 import { SubDivision } from "../divisions/subDivision.model";
 
 export async function listEmployees(req: Request, res: Response) {
-  const {
-    name,
-    employeeId,
-    jobTitle,
-    subUnit,
-    status,
-    include,
-    
-  } = req.query as {
-    name?: string;
-    employeeId?: string;
-    jobTitle?: string;
-    subUnit?: string;
-    status?: "ACTIVE" | "INACTIVE";
-    include?: "current" | "past" | "all";
-  };
+  const { name, employeeId, jobTitle, subUnit, status, include } =
+    req.query as {
+      name?: string;
+      employeeId?: string;
+      jobTitle?: string;
+      subUnit?: string;
+      status?: "ACTIVE" | "INACTIVE";
+      include?: "current" | "past" | "all";
+    };
 
   const filter: any = {};
 
@@ -95,7 +88,8 @@ export async function updateEmployeeOrg(req: any, res: any) {
   let reportsTo: mongoose.Types.ObjectId | null = null;
   if (reportsToRaw) {
     reportsTo = toObjectId(reportsToRaw);
-    const managerOrTl = await Employee.findById(reportsTo).select("level division");
+    const managerOrTl =
+      await Employee.findById(reportsTo).select("level division");
     if (!managerOrTl) throw ApiError.badRequest("reportsTo employee not found");
 
     // If both have divisions, ensure same division (recommended)
@@ -112,7 +106,8 @@ export async function updateEmployeeOrg(req: any, res: any) {
   if (finalLevel === "MANAGER") {
     employee.reportsTo = null;
   } else if (finalLevel === "TL") {
-    if (!reportsTo) throw ApiError.badRequest("TL must have reportsTo (MANAGER)");
+    if (!reportsTo)
+      throw ApiError.badRequest("TL must have reportsTo (MANAGER)");
     const boss = await Employee.findById(reportsTo).select("level");
     if (!boss || boss.level !== "MANAGER") {
       throw ApiError.badRequest("TL must report to a MANAGER");
@@ -120,7 +115,8 @@ export async function updateEmployeeOrg(req: any, res: any) {
     employee.reportsTo = reportsTo;
   } else {
     // GRADE1 or GRADE2
-    if (!reportsTo) throw ApiError.badRequest("Grade employees must have reportsTo (TL)");
+    if (!reportsTo)
+      throw ApiError.badRequest("Grade employees must have reportsTo (TL)");
     const boss = await Employee.findById(reportsTo).select("level");
     if (!boss || boss.level !== "TL") {
       throw ApiError.badRequest("Grade employees must report to a TL");
@@ -161,9 +157,56 @@ async function nextEmployeeId(prefix = "", pad = 4) {
   const c = await Counter.findOneAndUpdate(
     { key: "employeeId" },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true }
+    { new: true, upsert: true },
   );
   return `${prefix}${String(c.seq).padStart(pad, "0")}`;
+}
+
+/**
+ * If username is a numeric EmpId (cardNo/payrollNo from excel),
+ * use it as employeeId so attendance register matches automatically.
+ */
+function preferredEmployeeIdFromUsername(username: string) {
+  const u = String(username || "").trim();
+  if (!u) return "";
+  // allow numeric only (you can widen later if needed)
+  if (/^\d{1,20}$/.test(u)) return u;
+  return "";
+}
+
+// ========================= lightweight meta (attendance register etc.) =========================
+/**
+ * POST /api/employees/meta-by-ids
+ * Body: { employeeIds: string[] }
+ * Returns: [{ employeeId, name, dept, designation }]
+ */
+export async function metaByEmployeeIds(req: AuthRequest, res: Response) {
+  const raw = (req.body as any)?.employeeIds;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw ApiError.badRequest("employeeIds[] is required");
+  }
+
+  const employeeIds = raw
+    .map((x: any) => String(x || "").trim())
+    .filter(Boolean)
+    .slice(0, 1000);
+
+  if (!employeeIds.length) {
+    throw ApiError.badRequest("employeeIds[] is empty");
+  }
+
+  const docs = await Employee.find({ employeeId: { $in: employeeIds } })
+    .select("employeeId firstName lastName department jobTitle")
+    .lean();
+
+  return res.json(
+    docs.map((e: any) => ({
+      employeeId: String(e.employeeId),
+      name: `${String(e.firstName || "")} ${String(e.lastName || "")}`.trim(),
+      dept: String(e.department || ""),
+      designation: String(e.jobTitle || ""),
+    })),
+  );
 }
 
 export async function getMyEmployee(req: AuthRequest, res: Response) {
@@ -176,22 +219,28 @@ export async function getMyEmployee(req: AuthRequest, res: Response) {
   const dbUser = await User.findById(user.id).select("email username").lean();
   if (!dbUser) return res.status(404).json({ message: "User not found" });
 
-  const email = (dbUser.email || "").trim();
-  const username = (dbUser.username || "").trim();
+  const email = String(dbUser.email || "").trim();
+  const username = String(dbUser.username || "").trim();
 
+  // ✅ IMPORTANT: also try employeeId == username (so excel cardNo/payrollNo can match)
   let employee =
     (email && (await Employee.findOne({ email }).lean())) ||
-    (username && (await Employee.findOne({ email: username }).lean()));
+    (username && (await Employee.findOne({ email: username }).lean())) ||
+    (username && (await Employee.findOne({ employeeId: username }).lean()));
 
   if (!employee) {
     const base = username || (email ? email.split("@")[0] : "New Employee");
-    const parts = base.replace(/[._-]+/g, " ").trim().split(/\s+/);
+    const parts = base
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .split(/\s+/);
 
     const firstName = parts[0] || "New";
     const lastName = parts.slice(1).join(" ") || "Employee";
 
-    // ✅ generate required employeeId
-    const employeeId = await nextEmployeeId("", 4); // => 0001, 0002...
+    // ✅ If username is numeric, use it as employeeId (best for attendance register mapping)
+    const preferred = preferredEmployeeIdFromUsername(username);
+    const employeeId = preferred || (await nextEmployeeId("", 4)); // => 0001, 0002...
 
     const created = await Employee.create({
       employeeId,

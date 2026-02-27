@@ -50,9 +50,15 @@ type DbRegisterRow = {
   month: string; // YYYY-MM
 };
 
+type MissingIdsResp = { existing: string[]; missing: string[] };
+
 const DEFAULT_BULK_API = "/api/time/attendance/bulk-import";
 const DEFAULT_DB_GET_API = "/api/time/attendance/register";
 const EMPLOYEE_META_API = "/api/employees/meta-by-ids";
+
+// ✅ add these (backend endpoints you should have)
+const EMPLOYEE_MISSING_IDS_API = "/api/employees/missing-ids";
+const EMPLOYEE_BULK_CREATE_IDS_API = "/api/employees/bulk-create-by-ids";
 
 /* ========================= Helpers ========================= */
 function s(v: unknown) {
@@ -104,7 +110,7 @@ function cleanEmployeeName(raw: string): string {
 function parsePayrollHeader(header: string): { payrollNo?: string; cardNo?: string; name?: string } {
   const t = s(header);
   const m = t.match(
-    /NAME\s*([0-9]+)\s+([0-9]+)\s+(.+?)(?:\s{2,}|Present:|Absent:|Hours_Worked:|Overtime:|$)/i,
+    /NAME\s*([0-9]+)\s+([0-9]+)\s+(.+?)(?:\s{2,}|Present:|Absent:|Hours_Worked:|Overtime:|$)/i
   );
   if (m) return { payrollNo: s(m[1]), cardNo: s(m[2]), name: cleanEmployeeName(m[3]) };
 
@@ -176,6 +182,27 @@ function statusDotClass(status?: string): string {
   return "bg-slate-300";
 }
 
+function monthStrFromMonthYear(my: MonthYear) {
+  return `${my.y}-${pad2(my.m)}`;
+}
+
+function authHeaders(json = false) {
+  const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+  const headers: Record<string, string> = {};
+  if (json) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function uniqueIdsFromRecords(records: AttendanceRecord[]): string[] {
+  const set = new Set<string>();
+  for (const r of records) {
+    const id = s(r.cardNo) || s(r.payrollNo);
+    if (id) set.add(id);
+  }
+  return Array.from(set);
+}
+
 /* ========================= Parse Excel ========================= */
 function buildFromWorkbook(wb: XLSX.WorkBook, fileName: string): ParsedResult {
   const sheetName = wb.SheetNames?.[0];
@@ -239,31 +266,21 @@ function buildFromWorkbook(wb: XLSX.WorkBook, fileName: string): ParsedResult {
   return { monthYear: my, employees: Array.from(empMap.values()), records };
 }
 
-/* ========================= Optional meta ========================= */
+/* ========================= API helpers ========================= */
 async function fetchEmployeeMeta(employeeIds: string[]): Promise<EmployeeMeta[]> {
-  const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
   const res = await fetch(EMPLOYEE_META_API, {
     method: "POST",
-    headers,
+    headers: authHeaders(true),
     body: JSON.stringify({ employeeIds }),
   });
-
   if (!res.ok) throw new Error("Meta endpoint not available");
   return res.json();
 }
 
-/* ========================= Upload ========================= */
 async function postBulk(payload: any) {
-  const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
   const res = await fetch(DEFAULT_BULK_API, {
     method: "POST",
-    headers,
+    headers: authHeaders(true),
     body: JSON.stringify(payload),
   });
 
@@ -278,19 +295,14 @@ async function postBulk(payload: any) {
   return data;
 }
 
-/* ========================= DB fetch ========================= */
 async function fetchRegisterMonth(month: string, q: string) {
-  const token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
   const params = new URLSearchParams();
   params.set("month", month);
   if (q) params.set("q", q);
 
   const res = await fetch(`${DEFAULT_DB_GET_API}?${params.toString()}`, {
     method: "GET",
-    headers,
+    headers: authHeaders(false),
   });
 
   const text = await res.text();
@@ -304,14 +316,46 @@ async function fetchRegisterMonth(month: string, q: string) {
   return data as DbRegisterRow[];
 }
 
+async function fetchMissingIds(employeeIds: string[]): Promise<MissingIdsResp> {
+  const res = await fetch(EMPLOYEE_MISSING_IDS_API, {
+    method: "POST",
+    headers: authHeaders(true),
+    body: JSON.stringify({ employeeIds }),
+  });
+
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text };
+  }
+  if (!res.ok) throw new Error(data?.message || data?.error || `Missing-id check failed (${res.status})`);
+  return data as MissingIdsResp;
+}
+
+async function bulkCreateEmployeesByIds(employeeIds: string[]) {
+  const res = await fetch(EMPLOYEE_BULK_CREATE_IDS_API, {
+    method: "POST",
+    headers: authHeaders(true),
+    body: JSON.stringify({ employeeIds }),
+  });
+
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text };
+  }
+  if (!res.ok) throw new Error(data?.message || data?.error || `Create missing failed (${res.status})`);
+  return data;
+}
+
 /* ========================= Component ========================= */
 type SortKey = "empId" | "name";
 type SortDir = "asc" | "desc";
 type ViewMode = "excel" | "db";
-
-function monthStrFromMonthYear(my: MonthYear) {
-  return `${my.y}-${pad2(my.m)}`;
-}
 
 export default function EmployeeAttendanceRecords(): JSX.Element {
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -334,6 +378,12 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>("");
   const [serverResp, setServerResp] = useState<any>(null);
+
+  // ✅ missing-id flow state
+  const [idsChecking, setIdsChecking] = useState(false);
+  const [missingIds, setMissingIds] = useState<string[]>([]);
+  const [creatingMissing, setCreatingMissing] = useState(false);
+  const [createdResp, setCreatedResp] = useState<any>(null);
 
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("empId");
@@ -407,7 +457,13 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
 
     const q = s(search).toLowerCase();
     if (q) {
-      arr = arr.filter((e) => e.empId.toLowerCase().includes(q) || e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q) || e.designation.toLowerCase().includes(q));
+      arr = arr.filter(
+        (e) =>
+          e.empId.toLowerCase().includes(q) ||
+          e.name.toLowerCase().includes(q) ||
+          e.dept.toLowerCase().includes(q) ||
+          e.designation.toLowerCase().includes(q)
+      );
     }
 
     if (presentOnly) arr = arr.filter((emp) => dateColumns.some((d) => isPresentStatus(emp.byDate[d]?.status)));
@@ -426,6 +482,8 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
   const onPick = async (e: ChangeEvent<HTMLInputElement>) => {
     setError("");
     setServerResp(null);
+    setCreatedResp(null);
+    setMissingIds([]);
     setParsed(null);
     setMetaMap({});
     setViewMode("excel");
@@ -441,7 +499,9 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
       const result = buildFromWorkbook(wb, f.name);
       setParsed(result);
 
-      const ids = Array.from(new Set(result.records.map((r) => s(r.cardNo) || s(r.payrollNo)).filter(Boolean)));
+      const ids = uniqueIdsFromRecords(result.records);
+
+      // 1) fetch meta (best-effort)
       if (ids.length) {
         fetchEmployeeMeta(ids)
           .then((list) => {
@@ -451,6 +511,17 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
           })
           .catch(() => {});
       }
+
+      // 2) check missing employee ids (required for your "new users" flow)
+      if (ids.length) {
+        setIdsChecking(true);
+        try {
+          const miss = await fetchMissingIds(ids);
+          setMissingIds(miss.missing || []);
+        } finally {
+          setIdsChecking(false);
+        }
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to parse Excel.");
     } finally {
@@ -458,13 +529,59 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
     }
   };
 
+  const onCreateMissing = async () => {
+    setError("");
+    setCreatedResp(null);
+    if (!missingIds.length) return;
+
+    try {
+      setCreatingMissing(true);
+      const resp = await bulkCreateEmployeesByIds(missingIds);
+      setCreatedResp(resp);
+
+      // refresh meta so names/dept/designation show (even placeholders)
+      if (parsed?.records?.length) {
+        const ids = uniqueIdsFromRecords(parsed.records);
+        if (ids.length) {
+          try {
+            const list = await fetchEmployeeMeta(ids);
+            const m: Record<string, EmployeeMeta> = {};
+            list.forEach((x) => (m[x.employeeId] = x));
+            setMetaMap(m);
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      // re-check missing after create
+      if (parsed?.records?.length) {
+        const ids = uniqueIdsFromRecords(parsed.records);
+        const miss = await fetchMissingIds(ids);
+        setMissingIds(miss.missing || []);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to create missing employees.");
+    } finally {
+      setCreatingMissing(false);
+    }
+  };
+
   const onUpload = async () => {
     setError("");
     setServerResp(null);
+
     if (!parsed?.records?.length) {
       setError("No records to upload.");
       return;
     }
+
+    // ✅ enforce: create missing employees first (or you can allow upload anyway)
+    if (missingIds.length > 0) {
+      setError(`Please create missing employees first. Missing: ${missingIds.length}`);
+      return;
+    }
+
     try {
       setUploading(true);
       const payload = {
@@ -485,6 +602,8 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
   const onLoadDb = async () => {
     setError("");
     setServerResp(null);
+    setCreatedResp(null);
+    setMissingIds([]);
     setParsed(null);
     setFileName("");
     setViewMode("db");
@@ -535,9 +654,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="text-xl md:text-2xl font-semibold text-slate-900">Attendance Register</h1>
-              <p className="mt-1 text-sm text-slate-500">
-                Admin view: Import Excel attendance and verify register from DB.
-              </p>
+              <p className="mt-1 text-sm text-slate-500">Admin view: Import Excel attendance and verify register from DB.</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -551,16 +668,17 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
 
               <button
                 onClick={onUpload}
-                disabled={uploading || parsing || !parsed?.records?.length}
+                disabled={uploading || parsing || !parsed?.records?.length || missingIds.length > 0}
                 className={[
                   "h-10 rounded-full px-5 text-sm font-semibold",
-                  uploading || parsing || !parsed?.records?.length
+                  uploading || parsing || !parsed?.records?.length || missingIds.length > 0
                     ? "cursor-not-allowed bg-slate-200 text-slate-500"
                     : "bg-emerald-600 text-white hover:bg-emerald-700",
                 ].join(" ")}
                 type="button"
+                title={missingIds.length > 0 ? "Create missing employees first" : "Upload attendance to DB"}
               >
-                {uploading ? "Uploading..." : "Upload to DB"}
+                {uploading ? "Uploading..." : missingIds.length > 0 ? `Missing EmpIds (${missingIds.length})` : "Upload to DB"}
               </button>
 
               <div className="hidden md:block w-px bg-slate-200 mx-2" />
@@ -614,11 +732,60 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
 
           {fileName ? <div className="mt-3 text-xs text-slate-400">Selected file: {fileName}</div> : null}
 
-          {(parsing || dbLoading) && (
+          {(parsing || dbLoading || idsChecking) && (
             <div className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 border border-slate-100">
-              {parsing ? "Parsing Excel…" : "Loading from DB…"}
+              {parsing ? "Parsing Excel…" : idsChecking ? "Checking employee ids…" : "Loading from DB…"}
             </div>
           )}
+
+          {/* ✅ Missing IDs panel */}
+          {viewMode === "excel" && parsed?.records?.length ? (
+            <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className="text-sm text-slate-700">
+                  <span className="font-semibold">Employee Id mapping:</span>{" "}
+                  {missingIds.length === 0 ? (
+                    <span className="text-emerald-700 font-semibold">All employee ids exist ✅</span>
+                  ) : (
+                    <span className="text-rose-700 font-semibold">Missing: {missingIds.length}</span>
+                  )}
+                </div>
+
+                {missingIds.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={onCreateMissing}
+                    disabled={creatingMissing}
+                    className={[
+                      "h-10 rounded-xl px-4 text-sm font-semibold",
+                      creatingMissing ? "cursor-not-allowed bg-slate-200 text-slate-500" : "bg-rose-600 text-white hover:bg-rose-700",
+                    ].join(" ")}
+                  >
+                    {creatingMissing ? "Creating…" : "Create Missing Employees"}
+                  </button>
+                ) : null}
+              </div>
+
+              {missingIds.length > 0 ? (
+                <div className="mt-2 text-xs text-slate-600">
+                  Missing ids:{" "}
+                  <span className="font-semibold">
+                    {missingIds.slice(0, 60).join(", ")}
+                    {missingIds.length > 60 ? " …" : ""}
+                  </span>
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    These ids were found in Excel but don’t exist in Employee master. Create them before uploading to avoid unmapped users.
+                  </div>
+                </div>
+              ) : null}
+
+              {createdResp ? (
+                <pre className="mt-2 max-h-40 overflow-auto text-xs text-slate-700 bg-white border border-slate-100 rounded-lg p-2">
+                  {JSON.stringify(createdResp, null, 2)}
+                </pre>
+              ) : null}
+            </div>
+          ) : null}
 
           {error && (
             <div className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 border border-rose-100">
@@ -653,13 +820,7 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
               />
 
               <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  className="h-4 w-4"
-                  id="presentOnly"
-                  type="checkbox"
-                  checked={presentOnly}
-                  onChange={(e) => setPresentOnly(e.target.checked)}
-                />
+                <input className="h-4 w-4" id="presentOnly" type="checkbox" checked={presentOnly} onChange={(e) => setPresentOnly(e.target.checked)} />
                 Present only
               </label>
 
@@ -701,18 +862,10 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
             <table className="w-full border-separate border-spacing-0 text-sm">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr>
-                  <th className="sticky left-0 z-30 min-w-[90px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
-                    Emp Id
-                  </th>
-                  <th className="sticky left-[90px] z-30 min-w-[220px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
-                    Name
-                  </th>
-                  <th className="sticky left-[310px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
-                    Dept.
-                  </th>
-                  <th className="sticky left-[470px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">
-                    Designation
-                  </th>
+                  <th className="sticky left-0 z-30 min-w-[90px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">Emp Id</th>
+                  <th className="sticky left-[90px] z-30 min-w-[220px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">Name</th>
+                  <th className="sticky left-[310px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">Dept.</th>
+                  <th className="sticky left-[470px] z-30 min-w-[160px] border-b border-slate-100 bg-white px-3 py-3 text-left text-xs font-semibold text-slate-700">Designation</th>
 
                   {dateColumns.map((d) => (
                     <th key={d} className="min-w-[140px] border-b border-slate-100 px-3 py-2 text-center text-[11px] font-semibold text-slate-700">
@@ -724,18 +877,10 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
 
                 {dateColumns.length > 0 ? (
                   <tr>
-                    <th className="sticky left-0 z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
-                      Summary
-                    </th>
-                    <th className="sticky left-[90px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
-                      —
-                    </th>
-                    <th className="sticky left-[310px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
-                      —
-                    </th>
-                    <th className="sticky left-[470px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">
-                      —
-                    </th>
+                    <th className="sticky left-0 z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">Summary</th>
+                    <th className="sticky left-[90px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">—</th>
+                    <th className="sticky left-[310px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">—</th>
+                    <th className="sticky left-[470px] z-30 border-b border-slate-100 bg-white px-3 py-2 text-left text-[11px] font-semibold text-slate-700">—</th>
 
                     {dateColumns.map((d) => {
                       const sum = summaryByDate[d] || { PRESENT: 0, ABSENT: 0, WEEKOFF: 0, HOLIDAY: 0, OTHER: 0 };
@@ -771,18 +916,10 @@ export default function EmployeeAttendanceRecords(): JSX.Element {
                 ) : (
                   employeeRows.map((emp) => (
                     <tr key={emp.empId} className="hover:bg-slate-50">
-                      <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-3 py-3 font-semibold text-slate-900">
-                        {emp.empId}
-                      </td>
-                      <td className="sticky left-[90px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-900">
-                        {emp.name}
-                      </td>
-                      <td className="sticky left-[310px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-700">
-                        {emp.dept}
-                      </td>
-                      <td className="sticky left-[470px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-700">
-                        {emp.designation}
-                      </td>
+                      <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-3 py-3 font-semibold text-slate-900">{emp.empId}</td>
+                      <td className="sticky left-[90px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-900">{emp.name}</td>
+                      <td className="sticky left-[310px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-700">{emp.dept}</td>
+                      <td className="sticky left-[470px] z-10 border-b border-slate-100 bg-white px-3 py-3 text-slate-700">{emp.designation}</td>
 
                       {dateColumns.map((d) => {
                         const cell = emp.byDate[d];

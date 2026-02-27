@@ -1,9 +1,12 @@
+// backend/src/modules/time/attendance/attendance.controller.ts
 import { Response } from "express";
 import mongoose from "mongoose";
 import { AttendanceSession } from "./attendance.model";
 import { ApiError } from "../../../utils/ApiError";
 import { AuthRequest } from "../../../middleware/authMiddleware";
 import { AttendanceRegisterEntry } from "./attendanceRegister.model";
+import { User } from "../../auth/auth.model";
+import { Employee } from "../../employees/employee.model";
 
 /** -------------- helpers -------------- **/
 
@@ -77,6 +80,36 @@ function getEmployeeIdFromReq(req: any) {
     String(u.payrollNo || "").trim() ||
     null
   );
+}
+
+/**
+ * ✅ FIX: Resolve employeeId even when req.user.employeeId is not present.
+ * Strategy:
+ * 1) use req.user.employeeId if exists
+ * 2) else read User(email, username) and find Employee by:
+ *    - Employee.email == user.email
+ *    - Employee.email == user.username
+ *    - Employee.employeeId == user.username  (important when username is empId)
+ */
+async function resolveEmployeeIdForUser(req: AuthRequest): Promise<string | null> {
+  const direct = getEmployeeIdFromReq(req as any);
+  if (direct) return direct;
+
+  const userId = getUserId(req as any);
+  if (!userId) return null;
+
+  const dbUser = await User.findById(userId).select("email username").lean();
+  if (!dbUser) return null;
+
+  const email = String((dbUser as any).email || "").trim();
+  const username = String((dbUser as any).username || "").trim();
+
+  const emp =
+    (email && (await Employee.findOne({ email }).select("employeeId").lean())) ||
+    (username && (await Employee.findOne({ email: username }).select("employeeId").lean())) ||
+    (username && (await Employee.findOne({ employeeId: username }).select("employeeId").lean()));
+
+  return (emp as any)?.employeeId ? String((emp as any).employeeId) : null;
 }
 
 function parseDateTimeToUtc(
@@ -325,7 +358,7 @@ export async function getMyRecordsByDate(req: AuthRequest, res: Response) {
     });
 
     // ---------- REGISTER DATA ----------
-    const employeeId = getEmployeeIdFromReq(req as any);
+    const employeeId = await resolveEmployeeIdForUser(req);
     let registerRow: any | null = null;
 
     if (employeeId) {
@@ -384,7 +417,7 @@ export async function getMyMonthSummary(req: AuthRequest, res: Response) {
   const tz = parseTzOffsetMinutes(req.query.tzOffsetMinutes);
   const tzLabel = tzLabelFromOffsetMinutes(tz);
 
-  const employeeId = getEmployeeIdFromReq(req as any);
+  const employeeId = await resolveEmployeeIdForUser(req);
 
   if (!employeeId) {
     return res.json({ from, to, tzLabel, days: [] });
@@ -413,6 +446,27 @@ export async function getMyMonthSummary(req: AuthRequest, res: Response) {
   });
 
   return res.json({ from, to, tzLabel, days });
+}
+
+// ✅ OPTIONAL (very useful for employee UI):
+// GET /api/time/attendance/me/register?month=YYYY-MM
+export async function getMyAttendanceRegister(req: AuthRequest, res: Response) {
+  const userId = getUserId(req as any);
+  if (!userId) throw ApiError.unauthorized("Unauthorized");
+
+  const month = String((req.query as any).month || "").trim();
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    throw ApiError.badRequest("month is required as YYYY-MM");
+  }
+
+  const employeeId = await resolveEmployeeIdForUser(req);
+  if (!employeeId) return res.json([]);
+
+  const items = await AttendanceRegisterEntry.find({ month, employeeId })
+    .sort({ date: 1 })
+    .lean();
+
+  return res.json(items);
 }
 
 // GET /api/time/attendance/me/today
@@ -747,7 +801,6 @@ export async function bulkImportAttendanceRegister(
 
   if (ops.length === 0) throw ApiError.badRequest("No valid rows to import");
 
-  // unordered lets it continue if some rows have duplicate problems
   const result = await AttendanceRegisterEntry.bulkWrite(ops, {
     ordered: false,
   });
