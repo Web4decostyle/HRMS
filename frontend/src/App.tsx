@@ -127,12 +127,17 @@ import CandidateViewPage from "./pages/recruitment/CandidateViewPage";
 import VacancyViewPage from "./pages/recruitment/VacancyViewPage";
 import InterviewedEmployeesPage from "./pages/recruitment/InterviewedEmployeesPage";
 
+// ✅ NEW PAGES
+import LearningSkillsPage from "./pages/learning/LearningSkillsPage";
+import PayrollSalarySlipPage from "./pages/payroll/PayrollSalarySlipPage";
+import ReportsPage from "./pages/reports/ReportsPage";
+
 function AuthBootstrap() {
   const token = useAppSelector((s) => s.auth.token);
 
   useMeQuery(undefined, {
     skip: !token,
-    refetchOnMountOrArgChange: true, 
+    refetchOnMountOrArgChange: true,
   });
 
   return null;
@@ -141,6 +146,16 @@ function AuthBootstrap() {
 export default function App() {
   return (
     <Routes>
+      {/* bootstraps /me on app start */}
+      <Route
+        path="/__bootstrap"
+        element={
+          <RequireAuth>
+            <AuthBootstrap />
+          </RequireAuth>
+        }
+      />
+
       {/* ===================== PUBLIC ===================== */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -156,6 +171,7 @@ export default function App() {
           </RequireAuth>
         }
       />
+
       <Route
         path="/divisions"
         element={
@@ -188,6 +204,42 @@ export default function App() {
             <Layout>
               <MyInfoPage />
             </Layout>
+          </RequireAuth>
+        }
+      />
+
+      {/* ✅ NEW ROUTES */}
+      <Route
+        path="/learning"
+        element={
+          <RequireAuth>
+            <Layout>
+              <LearningSkillsPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/payroll"
+        element={
+          <RequireAuth>
+            <Layout>
+              <PayrollSalarySlipPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <RequireAuth>
+            <RequireRole allowed={["ADMIN", "HR"]}>
+              <Layout>
+                <ReportsPage />
+              </Layout>
+            </RequireRole>
           </RequireAuth>
         }
       />
