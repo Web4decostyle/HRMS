@@ -88,15 +88,9 @@ const TerminationReasonsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f4f5fb]">
-      {/* Left sidebar */}
-      <Sidebar />
-
+    <div className="flex min-h-screen bg-[#f4f5fb]"> 
       {/* Right side */}
       <div className="flex-1 flex flex-col">
-        {/* red top bar with user menu */}
-        <Topbar active="pim-config-termination-reasons" />
-
         {/* PIM / Configuration heading + tabs  */}
         <main className="flex-1 px-8 py-6 space-y-6">
           <div className="flex flex-col gap-3">

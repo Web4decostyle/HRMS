@@ -9,21 +9,34 @@ function toMediaType(mimetype: string) {
   return mimetype.startsWith("video/") ? "VIDEO" : "IMAGE";
 }
 
+function assertBuzzWriteAccess(req: AuthRequest) {
+  const userId = req.user?.id;
+  const role = req.user?.role;
+
+  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  if (role !== "ADMIN" && role !== "HR") {
+    throw ApiError.forbidden("Only Admin and HR can perform this action");
+  }
+
+  return { userId, role };
+}
+
 // GET /api/buzz?filter=recent|liked|commented
 export async function listBuzz(req: AuthRequest, res: Response) {
   const filter = (req.query.filter as string) || "recent";
 
   const sort =
     filter === "liked"
-      ? { "likesCountVirtual": -1, createdAt: -1 }
+      ? { likesCountVirtual: -1, createdAt: -1 }
       : filter === "commented"
       ? { commentsCount: -1, createdAt: -1 }
       : { createdAt: -1 };
 
-  // We compute likesCount in aggregation for "liked" sorting
   const pipeline: any[] = [
     {
-      $addFields: { likesCountVirtual: { $size: { $ifNull: ["$likes", []] } } },
+      $addFields: {
+        likesCountVirtual: { $size: { $ifNull: ["$likes", []] } },
+      },
     },
     { $sort: sort },
     { $limit: 50 },
@@ -31,7 +44,6 @@ export async function listBuzz(req: AuthRequest, res: Response) {
 
   const posts = await BuzzPost.aggregate(pipeline);
 
-  // populate author + reshareOf author in 2 steps (simple + safe)
   const ids = posts.map((p: any) => p._id);
   const full = await BuzzPost.find({ _id: { $in: ids } })
     .populate("author", "firstName lastName username")
@@ -41,7 +53,6 @@ export async function listBuzz(req: AuthRequest, res: Response) {
     })
     .lean();
 
-  // keep aggregation order
   const map = new Map(full.map((x: any) => [String(x._id), x]));
   const ordered = posts.map((p: any) => map.get(String(p._id))).filter(Boolean);
 
@@ -50,8 +61,7 @@ export async function listBuzz(req: AuthRequest, res: Response) {
 
 // POST /api/buzz
 export async function createBuzz(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const { content, media } = req.body as {
     content?: string;
@@ -64,7 +74,7 @@ export async function createBuzz(req: AuthRequest, res: Response) {
 
   const post = await BuzzPost.create({
     author: new Types.ObjectId(userId),
-    content: content || "",
+    content: content?.trim() || "",
     media: media || [],
   });
 
@@ -88,12 +98,9 @@ export async function toggleLike(req: AuthRequest, res: Response) {
 
   const hasLiked = post.likes.some((x: any) => String(x) === String(uid));
 
-  // ✅ atomic update (no TS assignment issues)
   const updated = await BuzzPost.findByIdAndUpdate(
     postId,
-    hasLiked
-      ? { $pull: { likes: uid } }
-      : { $addToSet: { likes: uid } },
+    hasLiked ? { $pull: { likes: uid } } : { $addToSet: { likes: uid } },
     { new: true }
   )
     .select("likes")
@@ -101,14 +108,15 @@ export async function toggleLike(req: AuthRequest, res: Response) {
 
   res.json({
     liked: !hasLiked,
-    likesCount: updated?.likes?.length ?? (hasLiked ? post.likes.length - 1 : post.likes.length + 1),
+    likesCount:
+      updated?.likes?.length ??
+      (hasLiked ? post.likes.length - 1 : post.likes.length + 1),
   });
 }
 
 // POST /api/buzz/:id/reshare
 export async function resharePost(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const parentId = req.params.id;
   const { content } = req.body as { content?: string };
@@ -118,7 +126,7 @@ export async function resharePost(req: AuthRequest, res: Response) {
 
   const child = await BuzzPost.create({
     author: new Types.ObjectId(userId),
-    content: content || "",
+    content: content?.trim() || "",
     reshareOf: parent._id,
   });
 
@@ -138,6 +146,7 @@ export async function resharePost(req: AuthRequest, res: Response) {
 // GET /api/buzz/:id/comments
 export async function listComments(req: AuthRequest, res: Response) {
   const postId = req.params.id;
+
   const comments = await BuzzComment.find({ post: postId })
     .sort({ createdAt: -1 })
     .limit(50)
@@ -149,11 +158,11 @@ export async function listComments(req: AuthRequest, res: Response) {
 
 // POST /api/buzz/:id/comments
 export async function addComment(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const postId = req.params.id;
   const { text } = req.body as { text?: string };
+
   if (!text?.trim()) throw ApiError.badRequest("Comment text required");
 
   const post = await BuzzPost.findById(postId);
@@ -174,8 +183,10 @@ export async function addComment(req: AuthRequest, res: Response) {
   res.status(201).json(full);
 }
 
-// POST /api/buzz/upload  (multipart)
+// POST /api/buzz/upload
 export async function uploadMedia(req: AuthRequest, res: Response) {
+  assertBuzzWriteAccess(req);
+
   const files = (req as any).files as Express.Multer.File[] | undefined;
   if (!files || files.length === 0) throw ApiError.badRequest("No files");
 
@@ -189,10 +200,8 @@ export async function uploadMedia(req: AuthRequest, res: Response) {
   res.json(out);
 }
 
-
 export async function updateBuzzPost(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const postId = req.params.id;
   const { content } = req.body as { content?: string };
@@ -200,9 +209,10 @@ export async function updateBuzzPost(req: AuthRequest, res: Response) {
   const post = await BuzzPost.findById(postId).exec();
   if (!post) throw ApiError.notFound("Post not found");
 
-  // allow only author (or ADMIN if you want)
-  if (String(post.author) !== String(userId))
-    throw ApiError.forbidden("Not allowed");
+  // Only author can edit own post
+  if (String(post.author) !== String(userId)) {
+    throw ApiError.forbidden("You can edit only your own post");
+  }
 
   post.content = (content ?? "").trim();
   await post.save();
@@ -219,20 +229,19 @@ export async function updateBuzzPost(req: AuthRequest, res: Response) {
 }
 
 export async function deleteBuzzPost(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const postId = req.params.id;
   const post = await BuzzPost.findById(postId).exec();
   if (!post) throw ApiError.notFound("Post not found");
 
-  if (String(post.author) !== String(userId))
-    throw ApiError.forbidden("Not allowed");
+  // Only author can delete own post
+  if (String(post.author) !== String(userId)) {
+    throw ApiError.forbidden("You can delete only your own post");
+  }
 
-  // delete comments for that post
   await BuzzComment.deleteMany({ post: post._id });
 
-  // if this post is a reshare, decrement parent count
   if (post.reshareOf) {
     await BuzzPost.updateOne(
       { _id: post.reshareOf },
@@ -246,18 +255,20 @@ export async function deleteBuzzPost(req: AuthRequest, res: Response) {
 }
 
 export async function updateBuzzComment(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const commentId = req.params.commentId;
   const { text } = req.body as { text?: string };
+
   if (!text?.trim()) throw ApiError.badRequest("Comment text required");
 
   const c = await BuzzComment.findById(commentId).exec();
   if (!c) throw ApiError.notFound("Comment not found");
 
-  if (String(c.author) !== String(userId))
-    throw ApiError.forbidden("Not allowed");
+  // Only author can edit own comment
+  if (String(c.author) !== String(userId)) {
+    throw ApiError.forbidden("You can edit only your own comment");
+  }
 
   c.text = text.trim();
   await c.save();
@@ -270,20 +281,20 @@ export async function updateBuzzComment(req: AuthRequest, res: Response) {
 }
 
 export async function deleteBuzzComment(req: AuthRequest, res: Response) {
-  const userId = req.user?.id;
-  if (!userId) throw ApiError.unauthorized("Not authenticated");
+  const { userId } = assertBuzzWriteAccess(req);
 
   const commentId = req.params.commentId;
 
   const c = await BuzzComment.findById(commentId).exec();
   if (!c) throw ApiError.notFound("Comment not found");
 
-  if (String(c.author) !== String(userId))
-    throw ApiError.forbidden("Not allowed");
+  // Only author can delete own comment
+  if (String(c.author) !== String(userId)) {
+    throw ApiError.forbidden("You can delete only your own comment");
+  }
 
   await BuzzComment.deleteOne({ _id: c._id });
 
-  // decrement post comment count
   await BuzzPost.updateOne({ _id: c.post }, { $inc: { commentsCount: -1 } });
 
   res.json({ ok: true });

@@ -241,12 +241,12 @@ export default function AdminApprovalsPage() {
   const busy = approving || rejecting;
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-3 sm:p-4 md:p-6">
       {/* Page topbar */}
       <div className="mb-4">
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <div className="px-4 md:px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
               <div className="min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="text-xl md:text-2xl font-semibold text-slate-900">
@@ -268,8 +268,8 @@ export default function AdminApprovalsPage() {
                 </div>
               </div>
 
-              <div className="md:ml-auto flex items-center gap-2">
-                <div className="relative w-full md:w-[320px]">
+              <div className="xl:ml-auto flex w-full xl:w-auto flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative w-full sm:flex-1 xl:w-[320px]">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     value={search}
@@ -284,21 +284,23 @@ export default function AdminApprovalsPage() {
                   onClick={() => refetch()}
                   disabled={isFetching}
                   title="Refresh"
+                  className="w-full sm:w-auto"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+                  />
                   {isFetching ? "Refreshing" : "Refresh"}
                 </SoftButton>
               </div>
             </div>
           </div>
 
-          {/* subtle helper row */}
-          <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2">
               <FileDiff className="w-4 h-4 text-slate-400" />
               Select a request on the left to review field-level changes.
             </span>
-            <span className="mx-2 text-slate-300">•</span>
+            <span className="hidden sm:inline mx-2 text-slate-300">•</span>
             <span className="inline-flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-slate-400" />
               Approve applies changes; Reject keeps current data unchanged.
@@ -308,20 +310,20 @@ export default function AdminApprovalsPage() {
       </div>
 
       {/* Main layout */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* LEFT: Pending list */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="lg:col-span-4">
           <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-3">
               <div className="text-sm font-semibold text-slate-900">
                 Pending requests
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-500 shrink-0">
                 {isLoading ? "Loading…" : `${filteredPending.length} item(s)`}
               </div>
             </div>
 
-            <div className="max-h-[72vh] overflow-auto">
+            <div className="max-h-[55vh] lg:max-h-[72vh] overflow-auto">
               {isLoading ? (
                 <div className="p-4 space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -361,14 +363,17 @@ export default function AdminApprovalsPage() {
                             : "border-slate-200 bg-white hover:bg-slate-50"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-slate-900 truncate">
                               {r.modelName} • {r.action}
                             </div>
                             <div className="text-xs text-slate-500 mt-1">
                               Module: <span className="font-medium">{r.module}</span>{" "}
-                              • By: <span className="font-medium">{r.requestedByRole}</span>
+                              • By:{" "}
+                              <span className="font-medium">
+                                {r.requestedByRole}
+                              </span>
                             </div>
                           </div>
 
@@ -399,11 +404,10 @@ export default function AdminApprovalsPage() {
         </div>
 
         {/* RIGHT: Approval details */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="lg:col-span-8">
           <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            {/* sticky-ish header */}
             <div className="px-4 md:px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-white to-slate-50">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-slate-900">
                     Review request
@@ -413,13 +417,13 @@ export default function AdminApprovalsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2 w-full lg:w-auto">
                   <SoftButton
                     tone="green"
                     onClick={onApprove}
                     disabled={busy || !selected || diffRows.length === 0}
                     title="Approve"
-                    className="min-w-[132px]"
+                    className="w-full sm:w-auto min-w-[132px]"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     {approving ? "Approving…" : "Approve"}
@@ -430,7 +434,7 @@ export default function AdminApprovalsPage() {
                     onClick={onReject}
                     disabled={busy || !selected}
                     title="Reject"
-                    className="min-w-[132px]"
+                    className="w-full sm:w-auto min-w-[132px]"
                   >
                     <XCircle className="w-4 h-4" />
                     {rejecting ? "Rejecting…" : "Reject"}
@@ -440,7 +444,7 @@ export default function AdminApprovalsPage() {
             </div>
 
             {!selected ? (
-              <div className="p-10 text-center">
+              <div className="p-8 sm:p-10 text-center">
                 <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
                   <FileDiff className="w-6 h-6 text-slate-500" />
                 </div>
@@ -454,16 +458,16 @@ export default function AdminApprovalsPage() {
             ) : (
               <div className="p-4 md:p-6">
                 {/* Summary tiles */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
                   <div className="rounded-2xl border border-slate-200 p-3">
                     <div className="text-[11px] text-slate-500">Model</div>
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="text-sm font-semibold text-slate-900 break-words">
                       {selected.modelName}
                     </div>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-3">
                     <div className="text-[11px] text-slate-500">Action</div>
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="text-sm font-semibold text-slate-900 break-words">
                       {selected.action}
                     </div>
                   </div>
@@ -475,7 +479,7 @@ export default function AdminApprovalsPage() {
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-3">
                     <div className="text-[11px] text-slate-500">Requested By</div>
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="text-sm font-semibold text-slate-900 break-words">
                       {selected.requestedByRole || "—"}
                     </div>
                   </div>
@@ -487,7 +491,7 @@ export default function AdminApprovalsPage() {
                     <div className="text-[11px] font-semibold text-slate-500">
                       Summary
                     </div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">
+                    <div className="mt-1 text-sm font-semibold text-slate-900 break-words">
                       HR wants to update Employee{" "}
                       <span className="font-extrabold">
                         {employeeTitle || selected.targetId}
@@ -498,7 +502,7 @@ export default function AdminApprovalsPage() {
 
                 {/* Changes */}
                 <div className="mb-4">
-                  <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                     <div className="text-sm font-semibold text-slate-900">
                       Changes requested
                     </div>
@@ -513,56 +517,97 @@ export default function AdminApprovalsPage() {
                       No actual changes detected (payload matches current data).
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-slate-200 overflow-hidden">
-                      <div className="grid grid-cols-12 bg-slate-50 text-[12px] font-semibold text-slate-600">
-                        <div className="col-span-4 px-4 py-3">Field</div>
-                        <div className="col-span-4 px-4 py-3 border-l border-slate-200">
-                          Before
+                    <>
+                      {/* Desktop/tablet table */}
+                      <div className="hidden md:block rounded-2xl border border-slate-200 overflow-hidden">
+                        <div className="grid grid-cols-12 bg-slate-50 text-[12px] font-semibold text-slate-600">
+                          <div className="col-span-4 px-4 py-3">Field</div>
+                          <div className="col-span-4 px-4 py-3 border-l border-slate-200">
+                            Before
+                          </div>
+                          <div className="col-span-4 px-4 py-3 border-l border-slate-200">
+                            After
+                          </div>
                         </div>
-                        <div className="col-span-4 px-4 py-3 border-l border-slate-200">
-                          After
+
+                        <div className="max-h-[44vh] overflow-auto">
+                          {diffRows.map((row, idx) => (
+                            <div
+                              key={row.key}
+                              className={`grid grid-cols-12 text-sm ${
+                                idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
+                              }`}
+                            >
+                              <div className="col-span-4 px-4 py-3">
+                                <div className="font-semibold text-slate-900">
+                                  {LABELS[row.key] || row.key}
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                  {row.key}
+                                </div>
+                              </div>
+
+                              <div className="col-span-4 px-4 py-3 border-l border-slate-200">
+                                <span className="inline-flex items-center rounded-xl bg-green-50 text-green-700 border border-green-100 px-2 py-1 text-xs font-semibold break-words">
+                                  {formatValue(row.from)}
+                                </span>
+                              </div>
+
+                              <div className="col-span-4 px-4 py-3 border-l border-slate-200">
+                                <span className="inline-flex items-center rounded-xl bg-green-50 text-green-700 border border-green-100 px-2 py-1 text-xs font-semibold break-words">
+                                  {formatValue(row.to)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      <div className="max-h-[44vh] overflow-auto">
-                        {diffRows.map((row, idx) => (
+                      {/* Mobile cards */}
+                      <div className="md:hidden space-y-3">
+                        {diffRows.map((row) => (
                           <div
                             key={row.key}
-                            className={`grid grid-cols-12 text-sm ${
-                              idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                            }`}
+                            className="rounded-2xl border border-slate-200 bg-white p-4"
                           >
-                            <div className="col-span-4 px-4 py-3">
-                              <div className="font-semibold text-slate-900">
-                                {LABELS[row.key] || row.key}
-                              </div>
-                              <div className="text-[11px] text-slate-400">
-                                {row.key}
-                              </div>
+                            <div className="font-semibold text-slate-900">
+                              {LABELS[row.key] || row.key}
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              {row.key}
                             </div>
 
-                            <div className="col-span-4 px-4 py-3 border-l border-slate-200">
-                              <span className="inline-flex items-center rounded-xl bg-green-50 text-green-700 border border-green-100 px-2 py-1 text-xs font-semibold">
-                                {formatValue(row.from)}
-                              </span>
-                            </div>
+                            <div className="mt-3 space-y-3">
+                              <div>
+                                <div className="text-[11px] font-semibold text-slate-500 mb-1">
+                                  Before
+                                </div>
+                                <span className="inline-flex rounded-xl bg-green-50 text-green-700 border border-green-100 px-2.5 py-1.5 text-xs font-semibold break-words">
+                                  {formatValue(row.from)}
+                                </span>
+                              </div>
 
-                            <div className="col-span-4 px-4 py-3 border-l border-slate-200">
-                              <span className="inline-flex items-center rounded-xl bg-green-50 text-green-700 border border-green-100 px-2 py-1 text-xs font-semibold">
-                                {formatValue(row.to)}
-                              </span>
+                              <div>
+                                <div className="text-[11px] font-semibold text-slate-500 mb-1">
+                                  After
+                                </div>
+                                <span className="inline-flex rounded-xl bg-green-50 text-green-700 border border-green-100 px-2.5 py-1.5 text-xs font-semibold break-words">
+                                  {formatValue(row.to)}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
 
                 {/* Reject reason */}
                 <div className="mb-4">
                   <div className="text-sm font-semibold text-slate-900 mb-2">
-                    Reject reason <span className="text-xs text-slate-400">(optional)</span>
+                    Reject reason{" "}
+                    <span className="text-xs text-slate-400">(optional)</span>
                   </div>
                   <textarea
                     value={rejectReason}
@@ -573,7 +618,8 @@ export default function AdminApprovalsPage() {
                 </div>
 
                 <div className="text-xs text-slate-500">
-                  Tip: If there are no field changes, Approve is disabled to prevent no-op approvals.
+                  Tip: If there are no field changes, Approve is disabled to
+                  prevent no-op approvals.
                 </div>
               </div>
             )}
@@ -581,7 +627,6 @@ export default function AdminApprovalsPage() {
         </div>
       </div>
 
-      {/* subtle animation */}
       <motion.div
         className="mt-4 text-[11px] text-slate-400"
         initial={{ opacity: 0 }}

@@ -1,4 +1,3 @@
-// frontend/src/pages/my-info/SalaryTab.tsx
 import { useGetSalaryQuery } from "../../features/myInfo/myInfoApi";
 
 const headCell =
@@ -16,14 +15,14 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
 
   return (
     <>
-      {/* ================= ASSIGNED SALARY COMPONENTS ================= */}
-      <div className="px-7 py-4 border-b border-[#edf0f7]">
+      {/* ASSIGNED SALARY COMPONENTS */}
+      <div className="px-4 sm:px-6 lg:px-7 py-4 border-b border-[#edf0f7]">
         <h2 className="text-[13px] font-semibold text-slate-800">
           Assigned Salary Components
         </h2>
       </div>
 
-      <div className="px-7 pt-4 pb-6">
+      <div className="px-4 sm:px-6 lg:px-7 pt-4 pb-6">
         {isLoading ? (
           <p className="text-[11px] text-slate-400 mb-3">Loading...</p>
         ) : error ? (
@@ -34,9 +33,61 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
           <p className="text-[11px] text-slate-400 mb-3">No Records Found</p>
         ) : null}
 
-        {/* Header-only table (rows only if data exists) */}
-        <div className="border-y border-[#e3e5f0]">
-          <table className="w-full text-[11px] text-slate-700">
+        {/* Mobile cards */}
+        <div className="block lg:hidden space-y-3">
+          {hasRows ? (
+            salary.map((row: any) => (
+              <div
+                key={row._id}
+                className="rounded-xl border border-[#e3e5f0] bg-white p-4"
+              >
+                <div className="text-[12px] font-semibold text-slate-800">
+                  {row.componentName || "—"}
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div>
+                    <div className="text-slate-500 font-medium">Amount</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {row.amount ?? "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">Currency</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {row.currency || "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">
+                      Pay Frequency
+                    </div>
+                    <div className="text-slate-700 mt-0.5">
+                      {row.payFrequency || "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">
+                      Direct Deposit Amount
+                    </div>
+                    <div className="text-slate-700 mt-0.5">
+                      {row.directDepositAmount ?? "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="hidden" />
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden lg:block border-y border-[#e3e5f0] overflow-x-auto">
+          <table className="w-full min-w-[760px] text-[11px] text-slate-700">
             <thead className="bg-[#f5f6fb]">
               <tr>
                 <th className={headCell}>Salary Component</th>
@@ -60,7 +111,6 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
                   </tr>
                 ))
               ) : (
-                // keep tbody valid but visually empty when there are no rows
                 <tr className="hidden" />
               )}
             </tbody>
@@ -68,19 +118,24 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
         </div>
       </div>
 
-      {/* ======================= ATTACHMENTS ======================= */}
-      <div className="px-7 py-4 border-t border-[#f5f6fb]">
+      {/* ATTACHMENTS */}
+      <div className="px-4 sm:px-6 lg:px-7 py-4 border-t border-[#f5f6fb]">
         <h2 className="text-[13px] font-semibold text-slate-800">
           Attachments
         </h2>
       </div>
 
-      <div className="px-7 pb-6">
-        
+      <div className="px-4 sm:px-6 lg:px-7 pb-6">
         <p className="text-[11px] text-slate-400 mb-3">No Records Found</p>
 
-        <div className="border-y border-[#e3e5f0]">
-          <table className="w-full text-[11px] text-slate-700">
+        {/* Mobile */}
+        <div className="block lg:hidden rounded-xl border border-[#e3e5f0] bg-white px-4 py-6 text-center text-[11px] text-slate-400">
+          No attachment records available
+        </div>
+
+        {/* Desktop */}
+        <div className="hidden lg:block border-y border-[#e3e5f0] overflow-x-auto">
+          <table className="w-full min-w-[900px] text-[11px] text-slate-700">
             <thead className="bg-[#f5f6fb] text-slate-500">
               <tr>
                 <th className={headCell}>File Name</th>
@@ -93,7 +148,6 @@ export default function SalaryTab({ employeeId }: { employeeId: string }) {
               </tr>
             </thead>
             <tbody>
-              {/* skeleton only – no data rows, same as screenshot */}
               <tr className="hidden" />
             </tbody>
           </table>

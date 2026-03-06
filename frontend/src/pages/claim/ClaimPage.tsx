@@ -1,5 +1,6 @@
 // frontend/src/pages/claim/ClaimPage.tsx
-import React, { FormEvent, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppSelector } from "../../app/hooks";
 import type { Role } from "../../features/auth/authSlice";
 
@@ -68,14 +69,28 @@ function ClaimRequestsTopBar(props: {
     setOpen,
   } = props;
 
-  const wrapperRef = React.useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Close dropdown on outside click
+  const wrapperRef = React.useRef<HTMLDivElement | null>(null);
+  const timeWrapperRef = React.useRef<HTMLDivElement | null>(null);
+
+  const [timeOpen, setTimeOpen] = useState(false);
+
+  // Close dropdowns on outside click
   React.useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+
+      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
+        setOpen(false);
+      }
+
+      if (timeWrapperRef.current && !timeWrapperRef.current.contains(target)) {
+        setTimeOpen(false);
+      }
     }
+
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [setOpen]);
@@ -96,8 +111,6 @@ function ClaimRequestsTopBar(props: {
       label: "My Claims",
       onClick: () => setActiveTab("myclaims"),
     },
-
-    // ✅ admin-only
     {
       key: "employee",
       label: "Employee Claims",
@@ -110,8 +123,6 @@ function ClaimRequestsTopBar(props: {
       adminOnly: true,
       onClick: () => setActiveTab("assign"),
     },
-
-    // ✅ keep old config functionality, but inside dropdown (admin-only)
     {
       key: "config",
       label: "Config: Events",
@@ -132,18 +143,148 @@ function ClaimRequestsTopBar(props: {
     },
   ];
 
-  const visibleItems = menuItems.filter((it) => (it.adminOnly ? canSeeAdminTabs : true));
+  const visibleItems = menuItems.filter((it) =>
+    it.adminOnly ? canSeeAdminTabs : true
+  );
 
   const activeLabel = (() => {
     if (activeTab === "config") {
-      return configView === "events" ? "Config: Events" : "Config: Expense Types";
+      return configView === "events"
+        ? "Config: Events"
+        : "Config: Expense Types";
     }
     const found = visibleItems.find((x) => x.key === activeTab);
     return found?.label ?? "Submit Claim";
   })();
 
+  const shortcutBtn =
+    "px-5 py-2 rounded-full text-sm font-medium transition shadow-sm";
+  const shortcutBtnActive =
+    "bg-white text-green-700 border border-green-200";
+  const shortcutBtnIdle =
+    "bg-green-500 text-white hover:bg-green-600 border border-green-500";
+
+  const timeItems = [
+    {
+      label: "Punch-In",
+      onClick: () => {
+        navigate("/time/attendance/punch-in");
+        setTimeOpen(false);
+      },
+      active: location.pathname === "/time/attendance/punch-in",
+      disabled: false,
+    },
+    {
+      label: "Punch-Out",
+      onClick: () => {
+        navigate("/time/attendance/punch-in");
+        setTimeOpen(false);
+      },
+      active: location.pathname === "/time/attendance/punch-in",
+      disabled: false,
+    },
+    {
+      label: "Redline",
+      onClick: () => {},
+      active: false,
+      disabled: true,
+    },
+    {
+      label: "LIH",
+      onClick: () => {},
+      active: false,
+      disabled: true,
+    },
+    {
+      label: "Early Leaving",
+      onClick: () => {},
+      active: false,
+      disabled: true,
+    },
+    {
+      label: "Out Duty",
+      onClick: () => {},
+      active: false,
+      disabled: true,
+    },
+  ];
+
+  const isMyInfoActive = location.pathname.startsWith("/my-info");
+  const isLeaveActive = location.pathname.startsWith("/leave");
+  const isTimeActive = location.pathname.startsWith("/time");
+
   return (
-    <div className="bg-white px-8 py-3 shadow-sm flex items-center gap-4 relative">
+    <div className="bg-white px-8 py-3 shadow-sm flex flex-wrap items-center gap-4 relative">
+      {/* My-Info */}
+      <button
+        type="button"
+        onClick={() => navigate("/my-info")}
+        className={`${shortcutBtn} ${
+          isMyInfoActive ? shortcutBtnActive : shortcutBtnIdle
+        }`}
+      >
+        My-Info
+      </button>
+
+      {/* Leave */}
+      <button
+        type="button"
+        onClick={() => navigate("/leave")}
+        className={`${shortcutBtn} ${
+          isLeaveActive ? shortcutBtnActive : shortcutBtnIdle
+        }`}
+      >
+        Leave
+      </button>
+
+      {/* Time dropdown */}
+      <div ref={timeWrapperRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setTimeOpen((v) => !v)}
+          className={`${shortcutBtn} flex items-center gap-2 ${
+            isTimeActive || timeOpen ? shortcutBtnActive : shortcutBtnIdle
+          }`}
+        >
+          Time
+          <span className="text-xs">{timeOpen ? "▴" : "▾"}</span>
+        </button>
+
+        {timeOpen && (
+          <div className="absolute mt-2 min-w-[220px] rounded-2xl bg-white shadow-lg border border-slate-100 z-50 overflow-hidden">
+            <div className="px-4 py-3 text-[11px] text-slate-500 border-b bg-[#f8fafc]">
+              Select Time Option
+            </div>
+
+            <div className="py-2">
+              {timeItems.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.onClick}
+                  disabled={item.disabled}
+                  className={`w-full text-left px-4 py-2 text-sm ${
+                    item.disabled
+                      ? "text-slate-300 cursor-not-allowed"
+                      : item.active
+                      ? "font-semibold text-slate-900 bg-slate-50"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                  title={
+                    item.disabled
+                      ? "Route/page not added yet. UI item added only."
+                      : item.label
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Claim Requests dropdown */}
       <div ref={wrapperRef} className="relative">
         <button
           type="button"
@@ -158,15 +299,19 @@ function ClaimRequestsTopBar(props: {
           <div className="absolute mt-2 min-w-[260px] rounded-2xl bg-white shadow-lg border border-slate-100 z-50 overflow-hidden">
             <div className="px-4 py-3 text-[11px] text-slate-500 border-b bg-[#f8fafc]">
               Select Option{" "}
-              <span className="ml-2 text-slate-700 font-medium">({activeLabel})</span>
+              <span className="ml-2 text-slate-700 font-medium">
+                ({activeLabel})
+              </span>
             </div>
 
             <div className="py-2">
               {visibleItems.map((it, idx) => {
                 const isConfigItem =
                   it.key === "config" &&
-                  ((it.label.includes("Events") && configView === "events") ||
-                    (it.label.includes("Expense") && configView === "expenses")) &&
+                  ((it.label.includes("Events") &&
+                    configView === "events") ||
+                    (it.label.includes("Expense") &&
+                      configView === "expenses")) &&
                   activeTab === "config";
 
                 const isActive = activeTab === it.key || isConfigItem;
@@ -180,7 +325,9 @@ function ClaimRequestsTopBar(props: {
                       setOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${
-                      isActive ? "font-semibold text-slate-900" : "text-slate-700"
+                      isActive
+                        ? "font-semibold text-slate-900"
+                        : "text-slate-700"
                     }`}
                   >
                     {it.label}
@@ -198,20 +345,27 @@ function ClaimRequestsTopBar(props: {
 /* ========================= PAGE ========================= */
 export default function ClaimPage() {
   const role = useAppSelector((s) => selectRole(s));
-  const canSeeAdminTabs = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
+  const canSeeAdminTabs =
+    role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
 
-  // Default tab depends on role
-  const [activeTab, setActiveTab] = useState<Tab>(canSeeAdminTabs ? "config" : "submit");
+  const [activeTab, setActiveTab] = useState<Tab>(
+    canSeeAdminTabs ? "config" : "submit"
+  );
   const [configView, setConfigView] = useState<ConfigView>("events");
   const [requestsOpen, setRequestsOpen] = useState(false);
 
-  // If user role changes (login switch), make sure activeTab is valid
-  useMemo(() => {
-    if (!canSeeAdminTabs && (activeTab === "config" || activeTab === "employee" || activeTab === "assign")) {
+  // fix: useEffect instead of useMemo for side effects
+  useEffect(() => {
+    if (
+      !canSeeAdminTabs &&
+      (activeTab === "config" ||
+        activeTab === "employee" ||
+        activeTab === "assign")
+    ) {
       setActiveTab("submit");
       setRequestsOpen(false);
     }
-  }, [canSeeAdminTabs]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canSeeAdminTabs, activeTab]);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f5fb]">
@@ -225,30 +379,33 @@ export default function ClaimPage() {
         setOpen={setRequestsOpen}
       />
 
-      {/* Page content per tab */}
       <div className="px-8 py-8 flex-1 space-y-8">
-        {/* ✅ Config sections - admin only */}
         {canSeeAdminTabs &&
           activeTab === "config" &&
-          (configView === "events" ? <ClaimEventsConfigSection /> : <ExpenseTypesConfigSection />)}
+          (configView === "events" ? (
+            <ClaimEventsConfigSection />
+          ) : (
+            <ExpenseTypesConfigSection />
+          ))}
 
-        {/* ✅ ESS + Admin: submit + myclaims */}
         {activeTab === "submit" && <SubmitClaimSection />}
         {activeTab === "myclaims" && <MyClaimsSection />}
 
-        {/* ✅ Admin-only */}
-        {canSeeAdminTabs && activeTab === "employee" && <EmployeeClaimsSection />}
+        {canSeeAdminTabs && activeTab === "employee" && (
+          <EmployeeClaimsSection />
+        )}
         {canSeeAdminTabs && activeTab === "assign" && <AssignClaimSection />}
 
-        {/* ✅ If ESS somehow lands on hidden tabs */}
-        {!canSeeAdminTabs && (activeTab === "config" || activeTab === "employee" || activeTab === "assign") && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-sm text-slate-600">
-            You do not have access to this section.
-          </div>
-        )}
+        {!canSeeAdminTabs &&
+          (activeTab === "config" ||
+            activeTab === "employee" ||
+            activeTab === "assign") && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-sm text-slate-600">
+              You do not have access to this section.
+            </div>
+          )}
       </div>
 
-      {/* Footer */}
       <div className="h-10 flex items-center justify-center text-[11px] text-slate-400">
         DecoStyle HRMS · {new Date().getFullYear()} · All Rights Reserved.
       </div>
@@ -262,12 +419,16 @@ export default function ClaimPage() {
 
 function ClaimEventsConfigSection() {
   const { data, isLoading, isError, refetch } = useGetClaimEventsQuery();
-  const [createEvent, { isLoading: isCreating }] = useCreateClaimEventMutation();
-  const [updateEvent, { isLoading: isUpdating }] = useUpdateClaimEventMutation();
+  const [createEvent, { isLoading: isCreating }] =
+    useCreateClaimEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] =
+    useUpdateClaimEventMutation();
   const [deleteEvent] = useDeleteClaimEventMutation();
 
   const [searchName, setSearchName] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "ACTIVE" | "INACTIVE">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "ACTIVE" | "INACTIVE">(
+    ""
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ClaimEvent | null>(null);
@@ -280,7 +441,9 @@ function ClaimEventsConfigSection() {
   const filtered = useMemo(
     () =>
       items.filter((ev) => {
-        const matchName = ev.name.toLowerCase().includes(searchName.toLowerCase());
+        const matchName = ev.name
+          .toLowerCase()
+          .includes(searchName.toLowerCase());
         const matchStatus = statusFilter ? ev.status === statusFilter : true;
         return matchName && matchStatus;
       }),
@@ -319,7 +482,10 @@ function ClaimEventsConfigSection() {
       }
       setModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || (editing ? "Failed to update event" : "Failed to create event"));
+      setErrorMsg(
+        err?.data?.message ||
+          (editing ? "Failed to update event" : "Failed to create event")
+      );
     }
   }
 
@@ -358,7 +524,9 @@ function ClaimEventsConfigSection() {
             <label className="text-xs text-slate-500">Status</label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "" | "ACTIVE" | "INACTIVE")
+              }
               className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="">-- Select --</option>
@@ -396,11 +564,17 @@ function ClaimEventsConfigSection() {
           + Add
         </button>
 
-        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
+        {isLoading && (
+          <div className="text-xs text-slate-500 mb-3">Loading…</div>
+        )}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load events.{" "}
-            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="underline text-indigo-600"
+            >
               Retry
             </button>
           </div>
@@ -425,9 +599,15 @@ function ClaimEventsConfigSection() {
                     <input type="checkbox" />
                   </td>
                   <td className="py-2 px-4">{ev.name}</td>
-                  <td className="py-2 px-4">{ev.status === "ACTIVE" ? "Active" : "Inactive"}</td>
                   <td className="py-2 px-4">
-                    <button type="button" onClick={() => openEdit(ev)} className="text-[11px] text-indigo-600 mr-3">
+                    {ev.status === "ACTIVE" ? "Active" : "Inactive"}
+                  </td>
+                  <td className="py-2 px-4">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(ev)}
+                      className="text-[11px] text-indigo-600 mr-3"
+                    >
                       Edit
                     </button>
                     <button
@@ -442,7 +622,10 @@ function ClaimEventsConfigSection() {
               ))}
               {!filtered.length && (
                 <tr>
-                  <td colSpan={4} className="py-3 px-4 text-center text-xs text-slate-400">
+                  <td
+                    colSpan={4}
+                    className="py-3 px-4 text-center text-xs text-slate-400"
+                  >
                     No Records Found
                   </td>
                 </tr>
@@ -455,7 +638,9 @@ function ClaimEventsConfigSection() {
       {modalOpen && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-semibold text-slate-800 mb-4">{editing ? "Edit Event" : "Add Event"}</h3>
+            <h3 className="text-base font-semibold text-slate-800 mb-4">
+              {editing ? "Edit Event" : "Add Event"}
+            </h3>
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
                 <label className="block mb-1 text-slate-600">
@@ -471,7 +656,9 @@ function ClaimEventsConfigSection() {
                 <label className="block mb-1 text-slate-600">Status</label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as "ACTIVE" | "INACTIVE")}
+                  onChange={(e) =>
+                    setStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                  }
                   className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
                 >
                   <option value="ACTIVE">Active</option>
@@ -479,7 +666,9 @@ function ClaimEventsConfigSection() {
                 </select>
               </div>
 
-              {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
+              {errorMsg && (
+                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
+              )}
 
               <div className="mt-4 flex justify-end gap-3">
                 <button
@@ -495,7 +684,13 @@ function ClaimEventsConfigSection() {
                   className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
-                  {editing ? (isUpdating ? "Saving..." : "Save") : isCreating ? "Adding..." : "Add"}
+                  {editing
+                    ? isUpdating
+                      ? "Saving..."
+                      : "Save"
+                    : isCreating
+                    ? "Adding..."
+                    : "Add"}
                 </button>
               </div>
             </form>
@@ -512,8 +707,10 @@ function ClaimEventsConfigSection() {
 
 function ExpenseTypesConfigSection() {
   const { data, isLoading, isError, refetch } = useGetExpenseTypesQuery();
-  const [createType, { isLoading: isCreating }] = useCreateExpenseTypeMutation();
-  const [updateType, { isLoading: isUpdating }] = useUpdateExpenseTypeMutation();
+  const [createType, { isLoading: isCreating }] =
+    useCreateExpenseTypeMutation();
+  const [updateType, { isLoading: isUpdating }] =
+    useUpdateExpenseTypeMutation();
   const [deleteType] = useDeleteExpenseTypeMutation();
 
   const items = data?.items ?? [];
@@ -553,7 +750,12 @@ function ExpenseTypesConfigSection() {
       }
       setModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err?.data?.message || (editing ? "Failed to update expense type" : "Failed to create expense type"));
+      setErrorMsg(
+        err?.data?.message ||
+          (editing
+            ? "Failed to update expense type"
+            : "Failed to create expense type")
+      );
     }
   }
 
@@ -570,7 +772,9 @@ function ExpenseTypesConfigSection() {
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Expense Types</h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">
+          Expense Types
+        </h2>
 
         <button
           type="button"
@@ -580,11 +784,17 @@ function ExpenseTypesConfigSection() {
           + Add
         </button>
 
-        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
+        {isLoading && (
+          <div className="text-xs text-slate-500 mb-3">Loading…</div>
+        )}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load expense types.{" "}
-            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="underline text-indigo-600"
+            >
               Retry
             </button>
           </div>
@@ -609,7 +819,11 @@ function ExpenseTypesConfigSection() {
                   </td>
                   <td className="py-2 px-4">{it.name}</td>
                   <td className="py-2 px-4">
-                    <button type="button" onClick={() => openEdit(it)} className="text-[11px] text-indigo-600 mr-3">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(it)}
+                      className="text-[11px] text-indigo-600 mr-3"
+                    >
                       Edit
                     </button>
                     <button
@@ -624,7 +838,10 @@ function ExpenseTypesConfigSection() {
               ))}
               {!items.length && (
                 <tr>
-                  <td colSpan={3} className="py-3 px-4 text-center text-xs text-slate-400">
+                  <td
+                    colSpan={3}
+                    className="py-3 px-4 text-center text-xs text-slate-400"
+                  >
                     No Records Found
                   </td>
                 </tr>
@@ -652,7 +869,9 @@ function ExpenseTypesConfigSection() {
                 />
               </div>
 
-              {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
+              {errorMsg && (
+                <p className="text-xs text-green-500 mt-1">{errorMsg}</p>
+              )}
 
               <div className="mt-4 flex justify-end gap-3">
                 <button
@@ -668,7 +887,13 @@ function ExpenseTypesConfigSection() {
                   className="px-4 py-2 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 disabled:opacity-60"
                   disabled={isCreating || isUpdating}
                 >
-                  {editing ? (isUpdating ? "Saving..." : "Save") : isCreating ? "Adding..." : "Add"}
+                  {editing
+                    ? isUpdating
+                      ? "Saving..."
+                      : "Save"
+                    : isCreating
+                    ? "Adding..."
+                    : "Add"}
                 </button>
               </div>
             </form>
@@ -685,7 +910,9 @@ function ExpenseTypesConfigSection() {
 
 function SubmitClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
-  const events = (eventsData?.items ?? []).filter((e) => e.status === "ACTIVE");
+  const events = (eventsData?.items ?? []).filter(
+    (e) => e.status === "ACTIVE"
+  );
 
   const [submitClaim, { isLoading }] = useSubmitClaimMutation();
 
@@ -718,7 +945,9 @@ function SubmitClaimSection() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 className="text-sm font-semibold text-slate-700 mb-4">Create Claim Request</h2>
+      <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        Create Claim Request
+      </h2>
 
       <form onSubmit={handleCreate} className="space-y-4 text-xs">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -772,7 +1001,9 @@ function SubmitClaimSection() {
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
         {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
-        {successMsg && <p className="text-xs text-green-600 mt-1">{successMsg}</p>}
+        {successMsg && (
+          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
+        )}
 
         <div className="mt-4 flex justify-end gap-3">
           <button
@@ -925,11 +1156,17 @@ function MyClaimsSection() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
+        {isLoading && (
+          <div className="text-xs text-slate-500 mb-3">Loading…</div>
+        )}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load claims.{" "}
-            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="underline text-indigo-600"
+            >
               Retry
             </button>
           </div>
@@ -953,18 +1190,27 @@ function MyClaimsSection() {
               {items.map((c) => (
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
-                  <td className="py-2 px-4">{typeof c.type === "string" ? c.type : (c.type as any)?.name}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.type === "string"
+                      ? c.type
+                      : (c.type as any)?.name}
+                  </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">{typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
+                  </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
               {!items.length && (
                 <tr>
-                  <td colSpan={8} className="py-3 px-4 text-center text-xs text-slate-400">
+                  <td
+                    colSpan={8}
+                    className="py-3 px-4 text-center text-xs text-slate-400"
+                  >
                     No Records Found
                   </td>
                 </tr>
@@ -995,10 +1241,14 @@ function EmployeeClaimsSection() {
     include: "CURRENT",
   });
 
-  const { data, isLoading, isError, refetch } = useGetEmployeeClaimsQuery(filters);
+  const { data, isLoading, isError, refetch } =
+    useGetEmployeeClaimsQuery(filters);
   const items: EmployeeClaim[] = data?.items ?? [];
 
-  function handleChange<K extends keyof EmployeeClaimsFilter>(key: K, value: string) {
+  function handleChange<K extends keyof EmployeeClaimsFilter>(
+    key: K,
+    value: string
+  ) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -1017,7 +1267,9 @@ function EmployeeClaimsSection() {
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Employee Claims</h2>
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">
+          Employee Claims
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="space-y-1">
@@ -1070,7 +1322,9 @@ function EmployeeClaimsSection() {
             <label className="text-xs text-slate-500">Include</label>
             <select
               value={filters.include}
-              onChange={(e) => handleChange("include", e.target.value as "CURRENT" | "ALL")}
+              onChange={(e) =>
+                handleChange("include", e.target.value as "CURRENT" | "ALL")
+              }
               className="w-full bg-white rounded-md border border-slate-300 text-xs px-3 py-2 outline-none focus:border-green-400 focus:ring-1 focus:ring-green-300"
             >
               <option value="CURRENT">Current Employees Only</option>
@@ -1121,11 +1375,17 @@ function EmployeeClaimsSection() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        {isLoading && <div className="text-xs text-slate-500 mb-3">Loading…</div>}
+        {isLoading && (
+          <div className="text-xs text-slate-500 mb-3">Loading…</div>
+        )}
         {isError && (
           <div className="text-xs text-green-500 mb-3">
             Failed to load employee claims.{" "}
-            <button type="button" onClick={() => refetch()} className="underline text-indigo-600">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="underline text-indigo-600"
+            >
               Retry
             </button>
           </div>
@@ -1151,20 +1411,31 @@ function EmployeeClaimsSection() {
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
                   <td className="py-2 px-4">
-                    {typeof c.employee === "string" ? c.employee : (c.employee as any)?.fullName}
+                    {typeof c.employee === "string"
+                      ? c.employee
+                      : (c.employee as any)?.fullName}
                   </td>
-                  <td className="py-2 px-4">{typeof c.type === "string" ? c.type : (c.type as any)?.name}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.type === "string"
+                      ? c.type
+                      : (c.type as any)?.name}
+                  </td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">{typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}</td>
+                  <td className="py-2 px-4">
+                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
+                  </td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
               {!items.length && (
                 <tr>
-                  <td colSpan={9} className="py-3 px-4 text-center text-xs text-slate-400">
+                  <td
+                    colSpan={9}
+                    className="py-3 px-4 text-center text-xs text-slate-400"
+                  >
                     No Records Found
                   </td>
                 </tr>
@@ -1183,7 +1454,9 @@ function EmployeeClaimsSection() {
 
 function AssignClaimSection() {
   const { data: eventsData } = useGetClaimEventsQuery();
-  const events = (eventsData?.items ?? []).filter((e) => e.status === "ACTIVE");
+  const events = (eventsData?.items ?? []).filter(
+    (e) => e.status === "ACTIVE"
+  );
 
   const { data: employeesData } = useGetEmployeesSimpleQuery();
   const employees: SimpleEmployee[] = employeesData ?? [];
@@ -1208,7 +1481,12 @@ function AssignClaimSection() {
     }
 
     try {
-      await assignClaim({ employeeId, typeId: eventId, currency, remarks }).unwrap();
+      await assignClaim({
+        employeeId,
+        typeId: eventId,
+        currency,
+        remarks,
+      }).unwrap();
       setEmployeeId("");
       setEventId("");
       setCurrency("");
@@ -1221,7 +1499,9 @@ function AssignClaimSection() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 className="text-sm font-semibold text-slate-700 mb-4">Create Claim Request</h2>
+      <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        Create Claim Request
+      </h2>
 
       <form onSubmit={handleCreate} className="space-y-4 text-xs">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1293,7 +1573,9 @@ function AssignClaimSection() {
         <p className="text-[10px] text-slate-400 mt-2">* Required</p>
 
         {errorMsg && <p className="text-xs text-green-500 mt-1">{errorMsg}</p>}
-        {successMsg && <p className="text-xs text-green-600 mt-1">{successMsg}</p>}
+        {successMsg && (
+          <p className="text-xs text-green-600 mt-1">{successMsg}</p>
+        )}
 
         <div className="mt-4 flex justify-end gap-3">
           <button

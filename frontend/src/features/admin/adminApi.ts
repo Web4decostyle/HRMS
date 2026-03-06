@@ -424,8 +424,18 @@ export const adminApi = createApi({
     /* ----- Qualifications: Skills ----- */
     getSkills: builder.query<Skill[], void>({
       query: () => "admin/qualifications/skills",
-      providesTags: ["Skill"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((s) => ({
+                type: "Skill" as const,
+                id: s._id,
+              })),
+              { type: "Skill" as const, id: "LIST" },
+            ]
+          : [{ type: "Skill" as const, id: "LIST" }],
     }),
+
     createSkill: builder.mutation<
       Skill,
       { name: string; description?: string }
@@ -435,7 +445,33 @@ export const adminApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Skill"],
+      invalidatesTags: [{ type: "Skill", id: "LIST" }],
+    }),
+
+    updateSkill: builder.mutation<
+      Skill,
+      { id: string; name: string; description?: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `admin/qualifications/skills/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Skill", id },
+        { type: "Skill", id: "LIST" },
+      ],
+    }),
+
+    deleteSkill: builder.mutation<{ success: boolean; id: string }, string>({
+      query: (id) => ({
+        url: `admin/qualifications/skills/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Skill", id },
+        { type: "Skill", id: "LIST" },
+      ],
     }),
 
     /* ----- Qualifications: Education ----- */
@@ -589,6 +625,8 @@ export const {
 
   useGetSkillsQuery,
   useCreateSkillMutation,
+  useUpdateSkillMutation,
+  useDeleteSkillMutation,
 
   useGetEducationLevelsQuery,
   useCreateEducationLevelMutation,

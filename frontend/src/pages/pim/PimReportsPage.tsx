@@ -42,9 +42,6 @@ export default function PimReportsPage() {
   return (
     <div className="flex min-h-screen bg-[#f4f5fb]">
       <div className="flex-1 flex flex-col">
-        {/* Top red gradient bar with user menu */}
-        <Topbar />
-
         <main className="flex-1 px-8 py-6 space-y-6">
           {/* PIM heading + top tabs (Reports active) */}
           <div className="flex flex-col gap-3">

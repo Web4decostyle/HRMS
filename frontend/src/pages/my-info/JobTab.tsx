@@ -12,7 +12,7 @@ import {
 
 const labelCls = "block text-[11px] font-semibold text-slate-500 mb-1";
 const inputCls =
-  "w-full h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
+  "w-full h-10 sm:h-9 rounded border border-[#d5d7e5] bg-white px-3 text-[12px] text-slate-800 focus:outline-none focus:border-[#f7941d] focus:ring-1 focus:ring-[#f8b46a]";
 
 export default function JobTab({ employeeId }: { employeeId: string }) {
   const { data: jobData, isLoading } = useGetJobQuery(employeeId);
@@ -31,7 +31,7 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
   });
 
   useEffect(() => {
-    if (!jobData) return; // nothing yet
+    if (!jobData) return;
 
     setForm((prev) => ({
       ...prev,
@@ -46,7 +46,6 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
       contractEndDate: jobData.contractEndDate?.slice(0, 10) || "",
     }));
   }, [jobData]);
-
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -81,8 +80,6 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
     }).unwrap();
   }
 
-  /* ================= ATTACHMENTS / CONTRACT FILE ================= */
-
   const {
     data: attachments = [],
     isLoading: attLoading,
@@ -94,7 +91,6 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
   const [deleteAttachment, { isLoading: isDeleting }] =
     useDeleteEmployeeAttachmentMutation();
 
-  // bottom Attachments "+ Add"
   const attachmentsInputRef = useRef<HTMLInputElement | null>(null);
 
   async function handleAttachmentsFileChange(
@@ -123,7 +119,6 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
     }
   }
 
-  // contract “Browse / upload” (employment contract)
   const contractInputRef = useRef<HTMLInputElement | null>(null);
   const [contractFile, setContractFile] = useState<File | null>(null);
 
@@ -150,28 +145,30 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
     }
   }
 
-  /* ================= RENDER ================= */
-
   if (isLoading) {
     return (
-      <div className="p-8 text-sm text-slate-500">Loading Job Details...</div>
+      <div className="p-6 sm:p-8 text-sm text-slate-500">
+        Loading Job Details...
+      </div>
     );
   }
 
   return (
     <>
       {/* HEADER */}
-      <div className="px-7 py-4 border-b border-[#edf0f7]">
-        <h2 className="text-[13px] font-semibold text-slate-800">Job Details</h2>
+      <div className="px-4 sm:px-6 lg:px-7 py-4 border-b border-[#edf0f7]">
+        <h2 className="text-[13px] font-semibold text-slate-800">
+          Job Details
+        </h2>
       </div>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="px-7 pt-6 pb-4 text-[12px] flex flex-col gap-5"
+        className="px-4 sm:px-6 lg:px-7 pt-5 sm:pt-6 pb-4 text-[12px] flex flex-col gap-5"
       >
-        {/* Row 1: Joined Date / Job Title / Job Specification */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Row 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <label className={labelCls}>Joined Date</label>
             <input
@@ -203,13 +200,13 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
             <input
               disabled
               value="Not Defined"
-              className="w-full h-9 rounded border border-[#e3e5f0] bg-[#f5f6fb] px-3 text-[12px] text-slate-500"
+              className="w-full h-10 sm:h-9 rounded border border-[#e3e5f0] bg-[#f5f6fb] px-3 text-[12px] text-slate-500"
             />
           </div>
         </div>
 
-        {/* Row 2: Job Category / Sub Unit / Location */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Row 2 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <label className={labelCls}>Job Category</label>
             <select
@@ -256,8 +253,8 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
           </div>
         </div>
 
-        {/* Row 3: Employment Status */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Row 3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <label className={labelCls}>Employment Status</label>
             <select
@@ -273,12 +270,12 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
               <option value="Intern">Intern</option>
             </select>
           </div>
-          <div />
-          <div />
+          <div className="hidden md:block" />
+          <div className="hidden xl:block" />
         </div>
 
-        {/* Include Employment Contract Details (toggle row) */}
-        <div className="mt-2 flex items-center gap-3">
+        {/* Toggle */}
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <span className="text-[11px] text-slate-600">
             Include Employment Contract Details
           </span>
@@ -286,23 +283,23 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
           <button
             type="button"
             onClick={handleToggleContract}
-            className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+            className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${
               form.includeContractDetails ? "bg-[#ff9800]" : "bg-[#d7d9e3]"
             }`}
           >
             <span
-              className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${
-                form.includeContractDetails ? "translate-x-4" : "translate-x-1"
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                form.includeContractDetails
+                  ? "translate-x-5"
+                  : "translate-x-1"
               }`}
             />
           </button>
         </div>
 
-        {/* Contract details block (only when toggle ON) */}
         {form.includeContractDetails && (
           <>
-            {/* Contract Start / End Dates */}
-            <div className="grid grid-cols-3 gap-6 mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-3">
               <div>
                 <label className={labelCls}>Contract Start Date</label>
                 <input
@@ -323,22 +320,22 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
                   className={inputCls}
                 />
               </div>
-              <div />
+              <div className="hidden xl:block" />
             </div>
 
-            {/* Contract file upload row (Browse / No file selected / icon) */}
             <div className="mt-3">
               <label className={labelCls}>Contract Details</label>
-              <div className="flex items-center gap-3">
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <button
                   type="button"
                   onClick={() => contractInputRef.current?.click()}
-                  className="px-4 h-9 rounded border border-[#d5d7e5] bg-[#f5f6fb] text-[12px] text-slate-700 hover:bg-[#e7e9f3]"
+                  className="w-full sm:w-auto px-4 h-10 sm:h-9 rounded border border-[#d5d7e5] bg-[#f5f6fb] text-[12px] text-slate-700 hover:bg-[#e7e9f3]"
                 >
                   Browse
                 </button>
 
-                <span className="flex-1 text-[11px] text-slate-500 truncate">
+                <span className="flex-1 text-[11px] text-slate-500 truncate min-w-0">
                   {contractFile ? contractFile.name : "No file selected"}
                 </span>
 
@@ -346,7 +343,7 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
                   type="button"
                   onClick={handleContractUpload}
                   disabled={!contractFile || isUploading}
-                  className="h-9 w-9 flex items-center justify-center rounded border border-[#d5d7e5] bg-white text-slate-500 hover:bg-[#f5f6fb] disabled:opacity-50"
+                  className="h-10 w-full sm:w-10 sm:h-9 flex items-center justify-center rounded border border-[#d5d7e5] bg-white text-slate-500 hover:bg-[#f5f6fb] disabled:opacity-50"
                 >
                   <UploadCloud className="h-4 w-4" />
                 </button>
@@ -358,6 +355,7 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
                   onChange={handleContractFileChange}
                 />
               </div>
+
               <p className="mt-1 text-[10px] text-slate-400">
                 Accepts up to 1MB
               </p>
@@ -366,19 +364,19 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
         )}
 
         {/* SAVE BUTTON */}
-        <div className="mt-4 flex justify-end border-t border-[#edf0f7] pt-4">
+        <div className="mt-4 flex justify-stretch sm:justify-end border-t border-[#edf0f7] pt-4">
           <button
             type="submit"
             disabled={saving}
-            className="px-7 h-8 rounded-full bg-[#8bc34a] text-white text-[12px] font-semibold hover:bg-[#7cb342] disabled:opacity-60"
+            className="w-full sm:w-auto px-7 h-10 sm:h-8 rounded-full bg-[#8bc34a] text-white text-[12px] font-semibold hover:bg-[#7cb342] disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </form>
 
-      {/* ================= ATTACHMENTS  ================= */}
-      <div className="px-7 pb-6">
+      {/* ATTACHMENTS */}
+      <div className="px-4 sm:px-6 lg:px-7 pb-6">
         <h3 className="text-[12px] font-semibold text-slate-800 mb-2">
           Attachments
         </h3>
@@ -387,7 +385,7 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
           <p className="text-[11px] text-slate-400 mb-2">No Records Found</p>
         )}
 
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-stretch sm:justify-end mb-3">
           <input
             ref={attachmentsInputRef}
             type="file"
@@ -398,14 +396,87 @@ export default function JobTab({ employeeId }: { employeeId: string }) {
             type="button"
             disabled={isUploading}
             onClick={() => attachmentsInputRef.current?.click()}
-            className="px-6 h-8 rounded-full bg-[#f3f4f7] text-[11px] font-semibold text-slate-600 border border-[#dde0eb] hover:bg-[#e7e9f3] disabled:opacity-60"
+            className="w-full sm:w-auto px-6 h-10 sm:h-8 rounded-full bg-[#f3f4f7] text-[11px] font-semibold text-slate-600 border border-[#dde0eb] hover:bg-[#e7e9f3] disabled:opacity-60"
           >
             {isUploading ? "Uploading..." : "+ Add"}
           </button>
         </div>
 
-        <div className="border border-[#e3e5f0] rounded-lg overflow-hidden">
-          <table className="w-full text-[11px]">
+        {/* Mobile card view */}
+        <div className="block lg:hidden space-y-3">
+          {attLoading ? (
+            <div className="rounded-xl border border-[#e3e5f0] bg-white px-4 py-6 text-center text-[11px]">
+              Loading...
+            </div>
+          ) : attError ? (
+            <div className="rounded-xl border border-[#e3e5f0] bg-white px-4 py-6 text-center text-[11px] text-green-500">
+              Failed to load attachments.
+            </div>
+          ) : attachments.length === 0 ? (
+            <div className="hidden" />
+          ) : (
+            attachments.map((a: any) => (
+              <div
+                key={a._id}
+                className="rounded-xl border border-[#e3e5f0] bg-white p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold text-slate-800 truncate">
+                      {a.filename || "—"}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">
+                      {a.description || "No description"}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => handleDeleteAttachment(a._id)}
+                    className="shrink-0 text-[11px] text-green-500 hover:underline disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div>
+                    <div className="text-slate-500 font-medium">Size</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {a.size ? (a.size / 1024).toFixed(1) + " KB" : "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">Type</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {a.mimeType || "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">Date Added</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {a.dateAdded ? a.dateAdded.slice(0, 10) : "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 font-medium">Added By</div>
+                    <div className="text-slate-700 mt-0.5">
+                      {(a.addedBy && a.addedBy.name) || "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden lg:block border border-[#e3e5f0] rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[1050px] text-[11px]">
             <thead className="bg-[#f5f6fb] text-slate-500">
               <tr>
                 <th className="px-3 py-2 text-left font-semibold w-6">

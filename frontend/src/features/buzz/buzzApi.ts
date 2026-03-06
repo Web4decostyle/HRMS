@@ -8,13 +8,17 @@ export interface BuzzMedia {
   size?: number;
 }
 
+export interface BuzzAuthor {
+  _id?: string;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+}
+
 export interface BuzzPost {
   _id: string;
-  author: {
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-  };
+  author: BuzzAuthor;
   content: string;
   media: BuzzMedia[];
   reshareOf?: BuzzPost | null;
@@ -27,11 +31,7 @@ export interface BuzzPost {
 export interface BuzzComment {
   _id: string;
   text: string;
-  author: {
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-  };
+  author: BuzzAuthor;
   createdAt: string;
 }
 

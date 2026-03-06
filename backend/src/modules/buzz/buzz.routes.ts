@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/authMiddleware";
+import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../utils/asyncHandler";
 import {
   addComment,
@@ -20,22 +21,44 @@ const router = Router();
 
 router.use(requireAuth);
 
+// Everyone authenticated can view
 router.get("/", asyncHandler(listBuzz));
-router.post("/", asyncHandler(createBuzz));
+router.get("/:id/comments", asyncHandler(listComments));
 
+// Only ADMIN / HR can create post
+router.post("/", requireRole("ADMIN", "HR"), asyncHandler(createBuzz));
+
+// Everyone authenticated can like
 router.post("/:id/like", asyncHandler(toggleLike));
 
-router.post("/:id/reshare", asyncHandler(resharePost));
+// Only ADMIN / HR can reshare
+router.post("/:id/reshare", requireRole("ADMIN", "HR"), asyncHandler(resharePost));
 
-router.get("/:id/comments", asyncHandler(listComments));
-router.post("/:id/comments", asyncHandler(addComment));
+// Only ADMIN / HR can comment
+router.post("/:id/comments", requireRole("ADMIN", "HR"), asyncHandler(addComment));
 
-router.patch("/:id", asyncHandler(updateBuzzPost));
-router.delete("/:id", asyncHandler(deleteBuzzPost));
+// Only ADMIN / HR can edit/delete their own posts
+router.patch("/:id", requireRole("ADMIN", "HR"), asyncHandler(updateBuzzPost));
+router.delete("/:id", requireRole("ADMIN", "HR"), asyncHandler(deleteBuzzPost));
 
-router.patch("/:id/comments/:commentId", asyncHandler(updateBuzzComment));
-router.delete("/:id/comments/:commentId", asyncHandler(deleteBuzzComment));
+// Only ADMIN / HR can edit/delete their own comments
+router.patch(
+  "/:id/comments/:commentId",
+  requireRole("ADMIN", "HR"),
+  asyncHandler(updateBuzzComment)
+);
+router.delete(
+  "/:id/comments/:commentId",
+  requireRole("ADMIN", "HR"),
+  asyncHandler(deleteBuzzComment)
+);
 
-router.post("/upload", buzzUpload.array("files", 6), asyncHandler(uploadMedia));
+// Only ADMIN / HR can upload media
+router.post(
+  "/upload",
+  requireRole("ADMIN", "HR"),
+  buzzUpload.array("files", 6),
+  asyncHandler(uploadMedia)
+);
 
 export default router;
