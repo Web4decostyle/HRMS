@@ -20,20 +20,12 @@ async function nextSeq(key: string) {
   return doc.seq;
 }
 
-/**
- * TEMP code based on interview date:
- * TMP-YYYYMMDD-0001
- */
 export async function generateTempEmployeeCode(interviewDate: Date) {
   const dayKey = `TMP_${fmtYYYYMMDD(interviewDate)}`;
   const seq = await nextSeq(dayKey);
   return `TMP-${fmtYYYYMMDD(interviewDate)}-${pad(seq, 4)}`;
 }
 
-/**
- * FINAL code based on interview date:
- * EMP-YYYYMMDD-0001
- */
 export async function generateEmployeeCode(interviewDate: Date) {
   const dayKey = `EMP_${fmtYYYYMMDD(interviewDate)}`;
   const seq = await nextSeq(dayKey);

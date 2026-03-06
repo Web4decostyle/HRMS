@@ -1,5 +1,5 @@
 // frontend/src/pages/claim/ClaimPage.tsx
-import { FormEvent, useMemo, useState } from "react";
+import React, { FormEvent, useMemo, useState } from "react";
 import { useAppSelector } from "../../app/hooks";
 import type { Role } from "../../features/auth/authSlice";
 
@@ -35,138 +35,202 @@ import {
   SimpleEmployee,
 } from "../../features/employees/employeesApi"; // must return [{ _id, fullName }]
 
+/* ========================= TYPES ========================= */
 type Tab = "config" | "submit" | "myclaims" | "employee" | "assign";
 type ConfigView = "events" | "expenses";
 
 const CURRENCIES = ["INR", "USD", "EUR"];
 
+/* ========================= AUTH ========================= */
 function selectRole(state: any): Role {
   return (state?.auth?.user?.role as Role) ?? "ESS";
 }
 
+/* ========================= TOPBAR ========================= */
+function ClaimRequestsTopBar(props: {
+  activeTab: Tab;
+  setActiveTab: (t: Tab) => void;
+  canSeeAdminTabs: boolean;
+
+  configView: ConfigView;
+  setConfigView: (v: ConfigView) => void;
+
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const {
+    activeTab,
+    setActiveTab,
+    canSeeAdminTabs,
+    configView,
+    setConfigView,
+    open,
+    setOpen,
+  } = props;
+
+  const wrapperRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [setOpen]);
+
+  const menuItems: {
+    key: Tab;
+    label: string;
+    adminOnly?: boolean;
+    onClick?: () => void;
+  }[] = [
+    {
+      key: "submit",
+      label: "Submit Claim",
+      onClick: () => setActiveTab("submit"),
+    },
+    {
+      key: "myclaims",
+      label: "My Claims",
+      onClick: () => setActiveTab("myclaims"),
+    },
+
+    // ✅ admin-only
+    {
+      key: "employee",
+      label: "Employee Claims",
+      adminOnly: true,
+      onClick: () => setActiveTab("employee"),
+    },
+    {
+      key: "assign",
+      label: "Assign Claim",
+      adminOnly: true,
+      onClick: () => setActiveTab("assign"),
+    },
+
+    // ✅ keep old config functionality, but inside dropdown (admin-only)
+    {
+      key: "config",
+      label: "Config: Events",
+      adminOnly: true,
+      onClick: () => {
+        setActiveTab("config");
+        setConfigView("events");
+      },
+    },
+    {
+      key: "config",
+      label: "Config: Expense Types",
+      adminOnly: true,
+      onClick: () => {
+        setActiveTab("config");
+        setConfigView("expenses");
+      },
+    },
+  ];
+
+  const visibleItems = menuItems.filter((it) => (it.adminOnly ? canSeeAdminTabs : true));
+
+  const activeLabel = (() => {
+    if (activeTab === "config") {
+      return configView === "events" ? "Config: Events" : "Config: Expense Types";
+    }
+    const found = visibleItems.find((x) => x.key === activeTab);
+    return found?.label ?? "Submit Claim";
+  })();
+
+  return (
+    <div className="bg-white px-8 py-3 shadow-sm flex items-center gap-4 relative">
+      <div ref={wrapperRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 bg-green-500 text-white shadow"
+        >
+          Claim Requests
+          <span className="text-xs">{open ? "▴" : "▾"}</span>
+        </button>
+
+        {open && (
+          <div className="absolute mt-2 min-w-[260px] rounded-2xl bg-white shadow-lg border border-slate-100 z-50 overflow-hidden">
+            <div className="px-4 py-3 text-[11px] text-slate-500 border-b bg-[#f8fafc]">
+              Select Option{" "}
+              <span className="ml-2 text-slate-700 font-medium">({activeLabel})</span>
+            </div>
+
+            <div className="py-2">
+              {visibleItems.map((it, idx) => {
+                const isConfigItem =
+                  it.key === "config" &&
+                  ((it.label.includes("Events") && configView === "events") ||
+                    (it.label.includes("Expense") && configView === "expenses")) &&
+                  activeTab === "config";
+
+                const isActive = activeTab === it.key || isConfigItem;
+
+                return (
+                  <button
+                    key={`${it.label}-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      it.onClick?.();
+                      setOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${
+                      isActive ? "font-semibold text-slate-900" : "text-slate-700"
+                    }`}
+                  >
+                    {it.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ========================= PAGE ========================= */
 export default function ClaimPage() {
   const role = useAppSelector((s) => selectRole(s));
   const canSeeAdminTabs = role === "ADMIN" || role === "HR" || role === "SUPERVISOR";
 
-  // ✅ Default tab depends on role
+  // Default tab depends on role
   const [activeTab, setActiveTab] = useState<Tab>(canSeeAdminTabs ? "config" : "submit");
   const [configView, setConfigView] = useState<ConfigView>("events");
-  const [configOpen, setConfigOpen] = useState(false);
+  const [requestsOpen, setRequestsOpen] = useState(false);
 
-  // ✅ Build tabs based on role
-  const topTabs: { key: Tab; label: string }[] = useMemo(() => {
-    if (!canSeeAdminTabs) {
-      return [
-        { key: "submit", label: "Submit Claim" },
-        { key: "myclaims", label: "My Claims" },
-      ];
-    }
-    return [
-      { key: "config", label: "Configuration" },
-      { key: "submit", label: "Submit Claim" },
-      { key: "myclaims", label: "My Claims" },
-      { key: "employee", label: "Employee Claims" },
-      { key: "assign", label: "Assign Claim" },
-    ];
-  }, [canSeeAdminTabs]);
-
-  // ✅ If user role changes (login switch), make sure activeTab is valid
-  // (prevents ESS seeing admin tabs after switching accounts)
+  // If user role changes (login switch), make sure activeTab is valid
   useMemo(() => {
     if (!canSeeAdminTabs && (activeTab === "config" || activeTab === "employee" || activeTab === "assign")) {
       setActiveTab("submit");
-      setConfigOpen(false);
+      setRequestsOpen(false);
     }
   }, [canSeeAdminTabs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f5fb]">
-      {/* Tabs bar with Configuration dropdown (admin-only) */}
-      <div className="bg-white px-8 py-3 shadow-sm flex items-center gap-4 relative">
-        {topTabs.map((t) => {
-          const isActive = activeTab === t.key;
-
-          // ✅ Configuration dropdown ONLY for admin-like roles
-          if (t.key === "config") {
-            return (
-              <div key={t.key} className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfigOpen((o) => !o);
-                    setActiveTab("config");
-                  }}
-                  className={`px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
-                    isActive
-                      ? "bg-green-500 text-white shadow"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  Configuration
-                  <span className="text-xs">{configOpen ? "▴" : "▾"}</span>
-                </button>
-
-                {configOpen && (
-                  <div className="absolute mt-1 w-40 rounded-lg bg-white shadow-lg border border-slate-100 z-20">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfigView("events");
-                        setConfigOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${
-                        configView === "events" ? "font-semibold text-slate-800" : ""
-                      }`}
-                    >
-                      Events
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfigView("expenses");
-                        setConfigOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${
-                        configView === "expenses" ? "font-semibold text-slate-800" : ""
-                      }`}
-                    >
-                      Expense Types
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => {
-                setActiveTab(t.key);
-                setConfigOpen(false);
-              }}
-              className={`px-5 py-2 rounded-full text-sm font-medium ${
-                isActive
-                  ? "bg-green-500 text-white shadow"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <ClaimRequestsTopBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        canSeeAdminTabs={canSeeAdminTabs}
+        configView={configView}
+        setConfigView={setConfigView}
+        open={requestsOpen}
+        setOpen={setRequestsOpen}
+      />
 
       {/* Page content per tab */}
       <div className="px-8 py-8 flex-1 space-y-8">
         {/* ✅ Config sections - admin only */}
-        {canSeeAdminTabs && activeTab === "config" &&
-          (configView === "events" ? (
-            <ClaimEventsConfigSection />
-          ) : (
-            <ExpenseTypesConfigSection />
-          ))}
+        {canSeeAdminTabs &&
+          activeTab === "config" &&
+          (configView === "events" ? <ClaimEventsConfigSection /> : <ExpenseTypesConfigSection />)}
 
         {/* ✅ ESS + Admin: submit + myclaims */}
         {activeTab === "submit" && <SubmitClaimSection />}
@@ -255,9 +319,7 @@ function ClaimEventsConfigSection() {
       }
       setModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(
-        err?.data?.message || (editing ? "Failed to update event" : "Failed to create event")
-      );
+      setErrorMsg(err?.data?.message || (editing ? "Failed to update event" : "Failed to create event"));
     }
   }
 
@@ -365,11 +427,7 @@ function ClaimEventsConfigSection() {
                   <td className="py-2 px-4">{ev.name}</td>
                   <td className="py-2 px-4">{ev.status === "ACTIVE" ? "Active" : "Inactive"}</td>
                   <td className="py-2 px-4">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(ev)}
-                      className="text-[11px] text-indigo-600 mr-3"
-                    >
+                    <button type="button" onClick={() => openEdit(ev)} className="text-[11px] text-indigo-600 mr-3">
                       Edit
                     </button>
                     <button
@@ -397,9 +455,7 @@ function ClaimEventsConfigSection() {
       {modalOpen && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-semibold text-slate-800 mb-4">
-              {editing ? "Edit Event" : "Add Event"}
-            </h3>
+            <h3 className="text-base font-semibold text-slate-800 mb-4">{editing ? "Edit Event" : "Add Event"}</h3>
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
                 <label className="block mb-1 text-slate-600">
@@ -497,10 +553,7 @@ function ExpenseTypesConfigSection() {
       }
       setModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(
-        err?.data?.message ||
-          (editing ? "Failed to update expense type" : "Failed to create expense type")
-      );
+      setErrorMsg(err?.data?.message || (editing ? "Failed to update expense type" : "Failed to create expense type"));
     }
   }
 
@@ -556,11 +609,7 @@ function ExpenseTypesConfigSection() {
                   </td>
                   <td className="py-2 px-4">{it.name}</td>
                   <td className="py-2 px-4">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(it)}
-                      className="text-[11px] text-indigo-600 mr-3"
-                    >
+                    <button type="button" onClick={() => openEdit(it)} className="text-[11px] text-indigo-600 mr-3">
                       Edit
                     </button>
                     <button
@@ -657,11 +706,7 @@ function SubmitClaimSection() {
     }
 
     try {
-      await submitClaim({
-        typeId: eventId,
-        currency,
-        remarks,
-      }).unwrap();
+      await submitClaim({ typeId: eventId, currency, remarks }).unwrap();
       setRemarks("");
       setEventId("");
       setCurrency("");
@@ -908,16 +953,12 @@ function MyClaimsSection() {
               {items.map((c) => (
                 <tr key={c._id} className="border-b last:border-0">
                   <td className="py-2 px-4">{c.referenceId}</td>
-                  <td className="py-2 px-4">
-                    {typeof c.type === "string" ? c.type : (c.type as any)?.name}
-                  </td>
+                  <td className="py-2 px-4">{typeof c.type === "string" ? c.type : (c.type as any)?.name}</td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">
-                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
-                  </td>
+                  <td className="py-2 px-4">{typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}</td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
@@ -1112,16 +1153,12 @@ function EmployeeClaimsSection() {
                   <td className="py-2 px-4">
                     {typeof c.employee === "string" ? c.employee : (c.employee as any)?.fullName}
                   </td>
-                  <td className="py-2 px-4">
-                    {typeof c.type === "string" ? c.type : (c.type as any)?.name}
-                  </td>
+                  <td className="py-2 px-4">{typeof c.type === "string" ? c.type : (c.type as any)?.name}</td>
                   <td className="py-2 px-4">{c.description}</td>
                   <td className="py-2 px-4">{c.currency}</td>
                   <td className="py-2 px-4">{c.claimDate?.slice(0, 10) ?? ""}</td>
                   <td className="py-2 px-4">{c.status}</td>
-                  <td className="py-2 px-4">
-                    {typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}
-                  </td>
+                  <td className="py-2 px-4">{typeof c.amount === "number" ? c.amount.toFixed(2) : "-"}</td>
                   <td className="py-2 px-4">—</td>
                 </tr>
               ))}
