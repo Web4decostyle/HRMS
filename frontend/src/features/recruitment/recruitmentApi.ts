@@ -12,19 +12,31 @@ export interface Job {
 export interface Candidate {
   _id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   phone?: string;
-  job: Job | string;
+  contactNumber?: string;
+  mobileNumber?: string;
+  aadharNumber?: string;
+  job?: Job | string;
+  vacancy?: any;
+  dateOfApplication?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  tempEmployeeCode?: string;
+  employeeCode?: string;
+  interviewDate?: string;
+  notes?: string;
+  keywords?: string[] | string;
   status:
     | "APPLIED"
     | "SHORTLISTED"
     | "INTERVIEW"
-    | "OFFEred"
-    | "HIred"
+    | "SELECTED"
+    | "HIRED"
     | "REJECTED";
   resumeUrl?: string;
-  notes?: string;
 }
 
 export type VacancyStatus = "OPEN" | "CLOSED";
@@ -49,6 +61,15 @@ export interface CreateVacancyInput {
   status?: VacancyStatus;
 }
 
+export interface GetCandidatesParams {
+  jobId?: string;
+  status?: string;
+  searchBy?: "name" | "aadhar" | "mobile";
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export const recruitmentApi = createApi({
   reducerPath: "recruitmentApi",
   baseQuery: authedBaseQuery,
@@ -59,6 +80,7 @@ export const recruitmentApi = createApi({
       query: () => "/recruitment/jobs",
       providesTags: ["Job"],
     }),
+
     createJob: builder.mutation<
       Job,
       {
@@ -78,18 +100,27 @@ export const recruitmentApi = createApi({
 
     getCandidateById: builder.query<any, string>({
       query: (id) => `/recruitment/candidates/${id}`,
+      providesTags: (_r, _e, id) => [{ type: "Candidate", id }],
     }),
 
     // Candidates
-    getCandidates: builder.query<Candidate[], { jobId?: string } | void>({
+    getCandidates: builder.query<Candidate[], GetCandidatesParams | void>({
       query: (params) => {
-        const search = params?.jobId ? `?jobId=${params.jobId}` : "";
-        return `/recruitment/candidates${search}`;
+        const sp = new URLSearchParams();
+
+        if (params?.jobId) sp.set("jobId", params.jobId);
+        if (params?.status) sp.set("status", params.status);
+        if (params?.searchBy) sp.set("searchBy", params.searchBy);
+        if (params?.search) sp.set("search", params.search);
+        if (params?.dateFrom) sp.set("dateFrom", params.dateFrom);
+        if (params?.dateTo) sp.set("dateTo", params.dateTo);
+
+        const qs = sp.toString();
+        return `/recruitment/candidates${qs ? `?${qs}` : ""}`;
       },
       providesTags: ["Candidate"],
     }),
 
-    // ✅ If using file upload, use this :
     createCandidate: builder.mutation<Candidate, FormData>({
       query: (formData) => ({
         url: "/recruitment/candidates",
@@ -99,7 +130,6 @@ export const recruitmentApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
 
-    // ✅ Interview date -> generates TEMP code
     setInterviewDate: builder.mutation<
       any,
       { id: string; interviewDate: string }
@@ -124,7 +154,6 @@ export const recruitmentApi = createApi({
       invalidatesTags: ["Candidate"],
     }),
 
-    // ✅ Interviewed candidates list (filterable)
     getInterviewedCandidates: builder.query<
       any[],
       { tempCode?: string; status?: string } | void
@@ -144,6 +173,7 @@ export const recruitmentApi = createApi({
       query: () => "/recruitment/vacancies",
       providesTags: ["Vacancy"],
     }),
+
     createVacancy: builder.mutation<Vacancy, CreateVacancyInput>({
       query: (body) => ({
         url: "/recruitment/vacancies",

@@ -1,4 +1,3 @@
-// frontend/src/pages/recruitment/RecruitmentPage.tsx
 import { FormEvent, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useGetCandidatesQuery } from "../../features/recruitment/recruitmentApi";
@@ -48,17 +47,10 @@ function StatusBadge({ status }: { status?: string }) {
   };
 
   return (
-    <span className={`${base} ${map[status || ""] || "bg-slate-100"}`}>
+    <span className={`${base} ${map[status || ""] || "bg-slate-100 text-slate-700 border-slate-200"}`}>
       {status || "-"}
     </span>
   );
-}
-
-function toIsoDate(v: any) {
-  if (!v) return "";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 10);
 }
 
 /* ================= Page ================= */
@@ -66,26 +58,38 @@ function toIsoDate(v: any) {
 export default function RecruitmentPage() {
   const navigate = useNavigate();
 
-  // ✅ FIX: Fetch job titles from Admin module (this is what your Admin page shows)
   const { data: jobTitles = [], isLoading: loadingJobs } =
     useGetJobTitlesQuery();
 
-  const { data: candidates = [] } = useGetCandidatesQuery();
-
-  // Filters UI state
+  // UI state
   const [jobTitleId, setJobTitleId] = useState("");
   const [status, setStatus] = useState("");
-  const [candidateName, setCandidateName] = useState("");
+  const [searchBy, setSearchBy] = useState<"name" | "aadhar" | "mobile">("name");
+  const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Applied filters (only set on Search click)
+  // applied state
   const [appliedFilters, setAppliedFilters] = useState({
     jobTitleId: "",
     status: "",
-    candidateName: "",
+    searchBy: "name" as "name" | "aadhar" | "mobile",
+    search: "",
     dateFrom: "",
     dateTo: "",
+  });
+
+  const {
+    data: candidates = [],
+    isLoading,
+    refetch,
+  } = useGetCandidatesQuery({
+    jobId: appliedFilters.jobTitleId || undefined,
+    status: appliedFilters.status || undefined,
+    searchBy: appliedFilters.searchBy || undefined,
+    search: appliedFilters.search.trim() || undefined,
+    dateFrom: appliedFilters.dateFrom || undefined,
+    dateTo: appliedFilters.dateTo || undefined,
   });
 
   function handleSearch(e: FormEvent) {
@@ -93,7 +97,8 @@ export default function RecruitmentPage() {
     setAppliedFilters({
       jobTitleId,
       status,
-      candidateName,
+      searchBy,
+      search,
       dateFrom,
       dateTo,
     });
@@ -102,73 +107,22 @@ export default function RecruitmentPage() {
   function handleReset() {
     setJobTitleId("");
     setStatus("");
-    setCandidateName("");
+    setSearchBy("name");
+    setSearch("");
     setDateFrom("");
     setDateTo("");
+
     setAppliedFilters({
       jobTitleId: "",
       status: "",
-      candidateName: "",
+      searchBy: "name",
+      search: "",
       dateFrom: "",
       dateTo: "",
     });
   }
 
-  const filteredCandidates = useMemo(() => {
-    if (!candidates) return [];
-
-    return candidates.filter((c: any) => {
-      // ✅ job matching:
-      // Your candidates might store job as:
-      // - string (id)
-      // - populated object
-      // - OR not at all (if you attach via vacancy)
-      if (appliedFilters.jobTitleId) {
-        const candidateJobId =
-          typeof c.job === "string"
-            ? c.job
-            : (c.job?._id ??
-              c.jobTitleId ?? // fallback if your backend uses this
-              "");
-
-        if (candidateJobId !== appliedFilters.jobTitleId) return false;
-      }
-
-      if (appliedFilters.status && c.status !== appliedFilters.status) {
-        return false;
-      }
-
-      if (appliedFilters.candidateName) {
-        const fullName = `${c.firstName ?? ""} ${c.lastName ?? ""}`
-          .toLowerCase()
-          .trim();
-        if (
-          !fullName.includes(appliedFilters.candidateName.toLowerCase().trim())
-        ) {
-          return false;
-        }
-      }
-
-      // date filter
-      if (appliedFilters.dateFrom || appliedFilters.dateTo) {
-        const rawDate = c.applicationDate || c.dateOfApplication || c.createdAt;
-        if (rawDate) {
-          const d = new Date(rawDate).getTime();
-
-          if (appliedFilters.dateFrom) {
-            const from = new Date(appliedFilters.dateFrom).getTime();
-            if (d < from) return false;
-          }
-          if (appliedFilters.dateTo) {
-            const to = new Date(appliedFilters.dateTo).getTime();
-            if (d > to) return false;
-          }
-        }
-      }
-
-      return true;
-    });
-  }, [candidates, appliedFilters]);
+  const filteredCandidates = useMemo(() => candidates ?? [], [candidates]);
 
   return (
     <div className="space-y-6">
@@ -237,36 +191,40 @@ export default function RecruitmentPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Candidate Name
+                Search Type
               </label>
-              <input
-                value={candidateName}
-                onChange={(e) => setCandidateName(e.target.value)}
+              <select
+                value={searchBy}
+                onChange={(e) =>
+                  setSearchBy(e.target.value as "name" | "aadhar" | "mobile")
+                }
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
-                placeholder="Search name..."
-              />
+              >
+                <option value="name">Candidate Name</option>
+                <option value="aadhar">Aadhar Card Number</option>
+                <option value="mobile">Mobile Number</option>
+              </select>
             </div>
 
-            <div className="flex items-end gap-2">
-              <button
-                type="submit"
-                className="flex items-center gap-2 rounded-full bg-lime-500 px-5 py-2 text-sm font-semibold text-white hover:bg-lime-600"
-              >
-                <FiSearch />
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Search
-              </button>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                <FiRefreshCw />
-                Reset
-              </button>
+              </label>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
+                placeholder={
+                  searchBy === "aadhar"
+                    ? "Enter Aadhar number..."
+                    : searchBy === "mobile"
+                    ? "Enter mobile number..."
+                    : "Search candidate name..."
+                }
+              />
             </div>
           </div>
 
-          {/* Optional date filters (kept, but visually smaller) */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">
@@ -279,6 +237,7 @@ export default function RecruitmentPage() {
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
               />
             </div>
+
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Date To
@@ -290,8 +249,34 @@ export default function RecruitmentPage() {
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-lime-300"
               />
             </div>
-            <div className="hidden lg:block" />
-            <div className="hidden lg:block" />
+
+            <div className="flex items-end gap-2 md:col-span-2">
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-full bg-lime-500 px-5 py-2 text-sm font-semibold text-white hover:bg-lime-600"
+              >
+                <FiSearch />
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                <FiRefreshCw />
+                Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                <FiRefreshCw />
+                Refresh
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -304,6 +289,8 @@ export default function RecruitmentPage() {
               <tr>
                 <th className="px-6 py-3 text-left">Vacancy</th>
                 <th className="px-6 py-3 text-left">Candidate</th>
+                <th className="px-6 py-3 text-left">Mobile</th>
+                <th className="px-6 py-3 text-left">Aadhar</th>
                 <th className="px-6 py-3 text-left">Date Applied</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-left">Action</th>
@@ -311,7 +298,16 @@ export default function RecruitmentPage() {
             </thead>
 
             <tbody>
-              {filteredCandidates.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-10 text-center text-slate-400"
+                  >
+                    Loading candidates...
+                  </td>
+                </tr>
+              ) : filteredCandidates.length > 0 ? (
                 filteredCandidates.map((c: any) => {
                   const dateRaw =
                     c.applicationDate || c.dateOfApplication || c.createdAt;
@@ -328,7 +324,15 @@ export default function RecruitmentPage() {
                         {c.vacancy?.name || "-"}
                       </td>
                       <td className="px-6 py-4 font-medium text-slate-800">
-                        {c.firstName} {c.lastName}
+                        {[c.firstName, c.middleName, c.lastName]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {c.mobileNumber || c.contactNumber || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {c.aadharNumber || "-"}
                       </td>
                       <td className="px-6 py-4 text-slate-600">{formatted}</td>
                       <td className="px-6 py-4">
@@ -350,7 +354,7 @@ export default function RecruitmentPage() {
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={7}
                     className="px-6 py-10 text-center text-slate-400"
                   >
                     No candidates found.

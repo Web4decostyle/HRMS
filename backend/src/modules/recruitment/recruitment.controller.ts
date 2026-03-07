@@ -59,7 +59,7 @@ export async function getJob(req: Request, res: Response) {
 export async function createCandidate(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const {
@@ -68,7 +68,9 @@ export async function createCandidate(
       lastName,
       vacancyId,
       email,
+      mobileNumber,
       contactNumber,
+      aadharNumber,
       keywords,
       dateOfApplication,
       notes,
@@ -79,9 +81,11 @@ export async function createCandidate(
       lastName?: string;
       vacancyId?: string;
       email?: string;
+      mobileNumber?: string;
       contactNumber?: string;
-      keywords?: string; // comma separated
-      dateOfApplication?: string; // YYYY-MM-DD
+      aadharNumber?: string;
+      keywords?: string;
+      dateOfApplication?: string;
       notes?: string;
       consentToKeepData?: string | boolean;
     };
@@ -95,6 +99,9 @@ export async function createCandidate(
     if (!email || !email.trim()) {
       return res.status(400).json({ message: "Email is required" });
     }
+    if (!mobileNumber || !mobileNumber.trim()) {
+      return res.status(400).json({ message: "Mobile number is required" });
+    }
 
     let vacancy: mongoose.Types.ObjectId | undefined;
     if (vacancyId) {
@@ -102,7 +109,9 @@ export async function createCandidate(
         return res.status(400).json({ message: "Invalid vacancyId" });
       }
       const vac = await Vacancy.findById(vacancyId).select("_id");
-      if (!vac) return res.status(404).json({ message: "Vacancy not found" });
+      if (!vac) {
+        return res.status(404).json({ message: "Vacancy not found" });
+      }
       vacancy = vac._id as mongoose.Types.ObjectId;
     }
 
@@ -125,14 +134,15 @@ export async function createCandidate(
         : new Date();
 
     let resume;
-    if (req.file) {
+    if ((req as any).file) {
+      const file = (req as any).file;
       const basePath = "/uploads/resumes";
       resume = {
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        mimeType: req.file.mimetype,
-        size: req.file.size,
-        url: `${basePath}/${req.file.filename}`,
+        filename: file.filename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        url: `${basePath}/${file.filename}`,
       };
     }
 
@@ -141,20 +151,19 @@ export async function createCandidate(
       middleName: middleName?.trim(),
       lastName: lastName.trim(),
       vacancy,
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
+      mobileNumber: mobileNumber.trim(),
       contactNumber: contactNumber?.trim(),
+      aadharNumber: aadharNumber?.trim(),
       keywords: keywordsArr,
       dateOfApplication: date,
       notes: notes?.trim(),
       consentToKeepData: consent,
       resume,
       status: "APPLIED",
-      // ✅ interviewDate/tempEmployeeCode/employeeCode will be added later
     });
 
-    const populated = await candidate.populate([
-      { path: "vacancy", select: "name" },
-    ]);
+    const populated = await candidate.populate([{ path: "vacancy", select: "name" }]);
 
     res.status(201).json(populated);
   } catch (err) {
@@ -164,26 +173,121 @@ export async function createCandidate(
 
 // GET /api/recruitment/candidates
 export async function listCandidates(
-  _req: Request,
+  req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
-    const items = await Candidate.find()
-      .populate("vacancy", "name")
+    const {
+      jobId,
+      status,
+      searchBy,
+      search,
+      dateFrom,
+      dateTo,
+    } = req.query as {
+      jobId?: string;
+      status?: string;
+      searchBy?: string;
+      search?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    };
+
+    const query: any = {};
+
+    if (status && status.trim()) {
+      query.status = status.trim().toUpperCase();
+    }
+
+    if (jobId && mongoose.isValidObjectId(jobId)) {
+      const vacancyIds = await Vacancy.find({ job: jobId }).distinct("_id");
+      query.vacancy = { $in: vacancyIds };
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+
+      if (searchBy === "aadhar") {
+        query.aadharNumber = { $regex: q, $options: "i" };
+      } else if (searchBy === "mobile") {
+        query.$or = [
+          { mobileNumber: { $regex: q, $options: "i" } },
+          { contactNumber: { $regex: q, $options: "i" } },
+        ];
+      } else {
+        query.$or = [
+          { firstName: { $regex: q, $options: "i" } },
+          { middleName: { $regex: q, $options: "i" } },
+          { lastName: { $regex: q, $options: "i" } },
+          {
+            $expr: {
+              $regexMatch: {
+                input: {
+                  $trim: {
+                    input: {
+                      $concat: [
+                        { $ifNull: ["$firstName", ""] },
+                        " ",
+                        { $ifNull: ["$middleName", ""] },
+                        " ",
+                        { $ifNull: ["$lastName", ""] },
+                      ],
+                    },
+                  },
+                },
+                regex: q,
+                options: "i",
+              },
+            },
+          },
+        ];
+      }
+    }
+
+    if (dateFrom || dateTo) {
+      query.dateOfApplication = {};
+
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        if (!Number.isNaN(from.getTime())) {
+          query.dateOfApplication.$gte = from;
+        }
+      }
+
+      if (dateTo) {
+        const to = new Date(dateTo);
+        if (!Number.isNaN(to.getTime())) {
+          to.setHours(23, 59, 59, 999);
+          query.dateOfApplication.$lte = to;
+        }
+      }
+
+      if (Object.keys(query.dateOfApplication).length === 0) {
+        delete query.dateOfApplication;
+      }
+    }
+
+    const items = await Candidate.find(query)
+      .populate({
+        path: "vacancy",
+        select: "name job",
+        populate: { path: "job", select: "title name code" },
+      })
       .sort({ createdAt: -1 })
       .lean();
+
     res.json(items);
   } catch (err) {
     next(err);
   }
 }
 
-// ✅ GET /api/recruitment/candidates/interviewed?tempCode=TMP-...&status=INTERVIEW|SELECTED|HIRED
+// GET /api/recruitment/candidates/interviewed
 export async function listInterviewedCandidates(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const tempCode = String(req.query.tempCode || "").trim();
@@ -194,7 +298,6 @@ export async function listInterviewedCandidates(
     const allowedStatus = new Set(["INTERVIEW", "SELECTED", "HIRED"]);
 
     const query: any = {
-      // Interviewed = has interviewDate OR status in INTERVIEW/SELECTED/HIRED
       $or: [
         { interviewDate: { $exists: true, $ne: null } },
         { status: { $in: ["INTERVIEW", "SELECTED", "HIRED"] } },
@@ -220,11 +323,11 @@ export async function listInterviewedCandidates(
   }
 }
 
-// ✅ GET /api/recruitment/candidates/:id
+// GET /api/recruitment/candidates/:id
 export async function getCandidateById(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
@@ -248,17 +351,13 @@ export async function getCandidateById(
 }
 
 /**
- * ✅ PATCH /api/recruitment/candidates/:id/interview
+ * PATCH /api/recruitment/candidates/:id/interview
  * body: { interviewDate: "YYYY-MM-DD" }
- *
- * - sets interviewDate
- * - generates tempEmployeeCode if missing
- * - if candidate already SELECTED/HIRED and employeeCode missing -> generate it
  */
 export async function setInterviewDate(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
@@ -296,7 +395,6 @@ export async function setInterviewDate(
 
     await candidate.save();
 
-    // ✅ notify hiring manager (if mapped)
     if (candidate.vacancy) {
       const vac = await Vacancy.findById(candidate.vacancy)
         .populate("job", "title code")
@@ -304,6 +402,7 @@ export async function setInterviewDate(
 
       const hmEmail =
         (vac as any)?.hiringManagerEmail?.toLowerCase?.()?.trim?.() || "";
+
       if (hmEmail) {
         const hmUser = await User.findOne({
           $or: [{ email: hmEmail }, { username: hmEmail }],
@@ -353,7 +452,7 @@ export async function setInterviewDate(
 export async function updateCandidateStatus(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
@@ -371,7 +470,6 @@ export async function updateCandidateStatus(
       return res.status(404).json({ message: "Candidate not found" });
     }
 
-    // ✅ If converting to SELECTED/HIRED, interviewDate is mandatory
     const converting = status === "SELECTED" || status === "HIRED";
     if (converting && !candidate.interviewDate) {
       return res.status(400).json({
@@ -381,17 +479,15 @@ export async function updateCandidateStatus(
 
     candidate.status = status as any;
 
-    // ✅ Ensure temp code exists once interview date exists
     if (candidate.interviewDate && !candidate.tempEmployeeCode) {
       candidate.tempEmployeeCode = await generateTempEmployeeCode(
-        candidate.interviewDate,
+        candidate.interviewDate
       );
     }
 
-    // ✅ Convert to employee code on SELECTED/HIRED
     if (converting && candidate.interviewDate && !candidate.employeeCode) {
       candidate.employeeCode = await generateEmployeeCode(
-        candidate.interviewDate,
+        candidate.interviewDate
       );
     }
 

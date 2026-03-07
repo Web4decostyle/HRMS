@@ -42,7 +42,9 @@ export default function CandidatesPage() {
   const [lastName, setLastName] = useState("");
   const [vacancyId, setVacancyId] = useState("");
   const [email, setEmail] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [contactNumber, setContactNumber] = useState("");
+  const [aadharNumber, setAadharNumber] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [keywords, setKeywords] = useState("");
   const [dateOfApplication, setDateOfApplication] = useState(
@@ -66,7 +68,9 @@ export default function CandidatesPage() {
       formData.append("lastName", lastName);
       if (vacancyId) formData.append("vacancyId", vacancyId);
       formData.append("email", email);
+      if (mobileNumber) formData.append("mobileNumber", mobileNumber);
       if (contactNumber) formData.append("contactNumber", contactNumber);
+      if (aadharNumber) formData.append("aadharNumber", aadharNumber);
       if (keywords) formData.append("keywords", keywords);
       formData.append("dateOfApplication", dateOfApplication);
       formData.append("consentToKeepData", String(consent));
@@ -81,7 +85,9 @@ export default function CandidatesPage() {
       setLastName("");
       setVacancyId("");
       setEmail("");
+      setMobileNumber("");
       setContactNumber("");
+      setAadharNumber("");
       setResumeFile(null);
       setKeywords("");
       setNotes("");
@@ -93,7 +99,6 @@ export default function CandidatesPage() {
 
   return (
     <div className="space-y-6">
-
       {/* Header */}
       <div className="rounded-2xl bg-gradient-to-r from-lime-50 via-white to-white border border-slate-200 p-6 shadow-sm">
         <div className="flex items-center justify-between">
@@ -120,9 +125,7 @@ export default function CandidatesPage() {
 
       {/* Form Card */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-6xl">
-
         <form onSubmit={handleSubmit} className="space-y-8">
-
           {/* Personal Info */}
           <div className="bg-slate-50 rounded-xl p-6 space-y-5">
             <h3 className="text-sm font-semibold text-slate-700">
@@ -163,7 +166,23 @@ export default function CandidatesPage() {
               />
               <input
                 className="input"
-                placeholder="Contact Number"
+                placeholder="Mobile Number *"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <input
+                className="input"
+                placeholder="Aadhar Card Number"
+                value={aadharNumber}
+                onChange={(e) => setAadharNumber(e.target.value)}
+              />
+              <input
+                className="input"
+                placeholder="Alternate Contact Number"
                 value={contactNumber}
                 onChange={(e) => setContactNumber(e.target.value)}
               />
@@ -221,9 +240,7 @@ export default function CandidatesPage() {
                 type="file"
                 accept=".doc,.docx,.pdf,.rtf,.txt"
                 className="hidden"
-                onChange={(e) =>
-                  setResumeFile(e.target.files?.[0] ?? null)
-                }
+                onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
               />
             </label>
           </div>
@@ -279,7 +296,6 @@ export default function CandidatesPage() {
               {isLoading ? "Saving..." : "Save Candidate"}
             </button>
           </div>
-
         </form>
       </section>
 
@@ -299,7 +315,6 @@ export default function CandidatesPage() {
           box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.2);
         }
       `}</style>
-
     </div>
   );
 }

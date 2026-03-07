@@ -13,19 +13,17 @@ export type CandidateDoc = mongoose.Document & {
   middleName?: string;
   lastName: string;
   email: string;
+  mobileNumber?: string;
   contactNumber?: string;
+  aadharNumber?: string;
   vacancy?: mongoose.Types.ObjectId | string;
   keywords?: string[] | string;
   notes?: string;
   consentToKeepData?: boolean;
-
   dateOfApplication?: Date;
-
-  // ✅ new fields
   interviewDate?: Date;
-  tempEmployeeCode?: string; // from interviewDate
-  employeeCode?: string;     // final code after selection/hire
-
+  tempEmployeeCode?: string;
+  employeeCode?: string;
   status: CandidateStatus;
 };
 
@@ -36,11 +34,13 @@ const CandidateSchema = new Schema<CandidateDoc>(
     lastName: { type: String, required: true, trim: true },
 
     email: { type: String, required: true, trim: true, lowercase: true },
+
+    mobileNumber: { type: String, trim: true, index: true },
     contactNumber: { type: String, trim: true },
+    aadharNumber: { type: String, trim: true, index: true },
 
     vacancy: { type: Schema.Types.ObjectId, ref: "Vacancy" },
 
-    // keep flexible since your frontend sends comma string sometimes
     keywords: { type: Schema.Types.Mixed },
 
     notes: { type: String },
@@ -48,7 +48,6 @@ const CandidateSchema = new Schema<CandidateDoc>(
 
     dateOfApplication: { type: Date, default: Date.now },
 
-    // ✅ Interview + codes
     interviewDate: { type: Date },
     tempEmployeeCode: { type: String, index: true },
     employeeCode: { type: String, unique: true, sparse: true, index: true },
@@ -64,4 +63,5 @@ const CandidateSchema = new Schema<CandidateDoc>(
 );
 
 export const Candidate =
-  mongoose.models.Candidate || mongoose.model<CandidateDoc>("Candidate", CandidateSchema);
+  mongoose.models.Candidate ||
+  mongoose.model<CandidateDoc>("Candidate", CandidateSchema);

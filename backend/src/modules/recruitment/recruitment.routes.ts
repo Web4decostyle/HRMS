@@ -15,7 +15,6 @@ import {
   listInterviewedCandidates,
 } from "./recruitment.controller";
 
-
 import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -39,7 +38,7 @@ const resumeStorage = multer.diskStorage({
 
 const uploadResume = multer({
   storage: resumeStorage,
-  limits: { fileSize: 1 * 1024 * 1024 }, // 1MB
+  limits: { fileSize: 1 * 1024 * 1024 },
 });
 
 /* ---------- Jobs ---------- */
@@ -68,7 +67,6 @@ router.get(
 router.use("/vacancies", vacancyRoutes);
 
 /* ---------- Candidates ---------- */
-
 router.post(
   "/candidates",
   requireAuth,
@@ -84,8 +82,6 @@ router.get(
   asyncHandler(listCandidates)
 );
 
-
-// ✅ Interviewed Candidates listing (TEMP code / status filtering)
 router.get(
   "/candidates/interviewed",
   requireAuth,
@@ -93,7 +89,6 @@ router.get(
   asyncHandler(listInterviewedCandidates)
 );
 
-// ✅ Candidate view API used by frontend CandidateViewPage
 router.get(
   "/candidates/:id",
   requireAuth,
@@ -101,7 +96,6 @@ router.get(
   asyncHandler(getCandidateById)
 );
 
-// ✅ Set interview date -> generates TEMP code
 router.patch(
   "/candidates/:id/interview",
   requireAuth,
@@ -109,7 +103,6 @@ router.patch(
   asyncHandler(setInterviewDate)
 );
 
-// ✅ Status update -> on SELECTED/HIRED generates employeeCode (requires interviewDate)
 router.patch(
   "/candidates/:id/status",
   requireAuth,

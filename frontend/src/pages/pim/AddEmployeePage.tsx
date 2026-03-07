@@ -1,14 +1,13 @@
-// frontend/src/pages/pim/AddEmployeePage.tsx
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  useBulkImportEmployeesMutation,
   useCreateEmployeeMutation,
   useGetEmployeesQuery,
 } from "../../features/employees/employeesApi";
 import { useRegisterMutation } from "../../features/auth/authApi";
-
-// ✅ NEW
 import { useGetDivisionsQuery } from "../../features/divisions/divisionsApi";
+import * as XLSX from "xlsx";
 
 type LoginStatus = "ENABLED" | "DISABLED";
 
@@ -17,10 +16,7 @@ interface FormState {
   middleName: string;
   lastName: string;
   employeeId: string;
-
-  // ✅ NEW
   divisionId: string;
-
   createLogin: boolean;
   username: string;
   email: string;
@@ -34,10 +30,7 @@ const initialForm: FormState = {
   middleName: "",
   lastName: "",
   employeeId: "",
-
-  // ✅ NEW
   divisionId: "",
-
   createLogin: true,
   username: "",
   email: "",
@@ -46,31 +39,179 @@ const initialForm: FormState = {
   loginStatus: "ENABLED",
 };
 
+type BulkImportPreviewRow = {
+  employeeId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  jobTitle?: string;
+  department?: string;
+  location?: string;
+  status?: "ACTIVE" | "INACTIVE";
+  division?: string;
+  subDivision?: string;
+};
+
+function normalizeKey(value: any) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[_-]/g, "");
+}
+
+function cleanCell(value: any) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") return String(value);
+  return String(value).trim();
+}
+
+function splitName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return { firstName: "", middleName: "", lastName: "" };
+  }
+  if (parts.length === 1) {
+    return { firstName: parts[0], middleName: "", lastName: "" };
+  }
+  if (parts.length === 2) {
+    return { firstName: parts[0], middleName: "", lastName: parts[1] };
+  }
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+function parseEmployeeExcelRows(rows: any[]): BulkImportPreviewRow[] {
+  return rows
+    .map((raw) => {
+      const mapped: Record<string, any> = {};
+
+      Object.keys(raw || {}).forEach((key) => {
+        mapped[normalizeKey(key)] = raw[key];
+      });
+
+      const employeeId =
+        cleanCell(
+          mapped.employeeid ||
+            mapped.empid ||
+            mapped.empcode ||
+            mapped.code ||
+            mapped.id,
+        ) || "";
+
+      let firstName = cleanCell(mapped.firstname || mapped.givenname);
+      let middleName = cleanCell(mapped.middlename);
+      let lastName = cleanCell(
+        mapped.lastname || mapped.surname || mapped.familyname,
+      );
+
+      const fullName = cleanCell(
+        mapped.fullname || mapped.name || mapped.employeename,
+      );
+      if ((!firstName || !lastName) && fullName) {
+        const split = splitName(fullName);
+        firstName = firstName || split.firstName;
+        middleName = middleName || split.middleName;
+        lastName = lastName || split.lastName;
+      }
+
+      const email = cleanCell(
+        mapped.email || mapped.workemail || mapped.officialemail,
+      );
+
+      const phone = cleanCell(
+        mapped.phone ||
+          mapped.mobile ||
+          mapped.mobilenumber ||
+          mapped.phonenumber ||
+          mapped.contactnumber,
+      );
+
+      const jobTitle = cleanCell(
+        mapped.jobtitle || mapped.designation || mapped.title,
+      );
+
+      const department = cleanCell(
+        mapped.department || mapped.subunit || mapped.subunitname,
+      );
+
+      const location = cleanCell(
+        mapped.location || mapped.office || mapped.branch,
+      );
+
+      const rawStatus = cleanCell(mapped.status).toUpperCase();
+      const status: "ACTIVE" | "INACTIVE" =
+        rawStatus === "INACTIVE" || rawStatus === "DISABLED"
+          ? "INACTIVE"
+          : "ACTIVE";
+
+      const division = cleanCell(
+        mapped.division || mapped.divisionid || mapped.divisionname,
+      );
+
+      const subDivision = cleanCell(
+        mapped.subdivision ||
+          mapped.subdivisionid ||
+          mapped.subdivisionname ||
+          mapped.subunitid,
+      );
+
+      return {
+        employeeId,
+        firstName,
+        middleName,
+        lastName,
+        email,
+        phone,
+        jobTitle,
+        department,
+        location,
+        status,
+        division,
+        subDivision,
+      };
+    })
+    .filter(
+      (row) => row.employeeId || row.firstName || row.lastName || row.email,
+    );
+}
+
 export default function AddEmployeePage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormState>(initialForm);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // UI only for now
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // NEW: config dropdown open/close (same as EmployeesPage)
   const [configOpen, setConfigOpen] = useState(false);
 
-  // For auto-generating next employeeId like 0002
   const { data: employees = [] } = useGetEmployeesQuery(undefined);
-
-  // ✅ NEW: divisions for dropdown
-  const { data: divisions = [], isLoading: divLoading } = useGetDivisionsQuery();
+  const { data: divisions = [], isLoading: divLoading } =
+    useGetDivisionsQuery();
 
   const [createEmployee, { isLoading: isCreatingEmployee }] =
     useCreateEmployeeMutation();
   const [registerUser, { isLoading: isCreatingUser }] = useRegisterMutation();
+  const [bulkImportEmployees, { isLoading: isBulkImporting }] =
+    useBulkImportEmployeesMutation();
 
   const isSaving = isCreatingEmployee || isCreatingUser;
 
-  // Auto-fill next employeeId if empty and employees loaded
+  const [bulkRows, setBulkRows] = useState<BulkImportPreviewRow[]>([]);
+  const [bulkFileName, setBulkFileName] = useState("");
+  const [bulkImportError, setBulkImportError] = useState<string | null>(null);
+  const [bulkImportSuccess, setBulkImportSuccess] = useState<string | null>(
+    null,
+  );
+  const bulkFileInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     if (!form.employeeId && employees.length > 0) {
       let maxNum = 0;
@@ -117,12 +258,78 @@ export default function AddEmployeePage() {
     reader.readAsDataURL(file);
   }
 
+  async function handleBulkFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBulkImportError(null);
+    setBulkImportSuccess(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        setBulkImportError("No sheet found in the uploaded file.");
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rawRows = XLSX.utils.sheet_to_json(sheet, {
+        defval: "",
+        raw: false,
+      }) as any[];
+
+      const parsed = parseEmployeeExcelRows(rawRows);
+
+      if (!parsed.length) {
+        setBulkImportError("No valid employee rows found in the Excel file.");
+        return;
+      }
+
+      setBulkRows(parsed);
+      setBulkFileName(file.name);
+    } catch (err) {
+      console.error(err);
+      setBulkImportError("Failed to read Excel file.");
+    }
+  }
+
+  async function handleBulkImport() {
+    setBulkImportError(null);
+    setBulkImportSuccess(null);
+
+    if (!bulkRows.length) {
+      setBulkImportError("Please upload an Excel file first.");
+      return;
+    }
+
+    try {
+      const res = await bulkImportEmployees({ employees: bulkRows }).unwrap();
+
+      setBulkImportSuccess(
+        `Import completed. Created: ${res.created}, Updated: ${res.updated}, Skipped: ${res.skipped}`,
+      );
+
+      setBulkRows([]);
+      setBulkFileName("");
+      if (bulkFileInputRef.current) {
+        bulkFileInputRef.current.value = "";
+      }
+    } catch (err: any) {
+      console.error(err);
+      setBulkImportError(
+        err?.data?.message || err?.error || "Bulk import failed.",
+      );
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    // Basic validation
     if (!form.firstName.trim() || !form.lastName.trim()) {
       setError("First Name and Last Name are required.");
       return;
@@ -153,8 +360,6 @@ export default function AddEmployeePage() {
 
     try {
       let userEmail: string | undefined = undefined;
-
-      // 1) Optionally create login user
       if (form.createLogin) {
         const registerRes = await registerUser({
           username: form.username.trim(),
@@ -162,14 +367,11 @@ export default function AddEmployeePage() {
           password: form.password,
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
-          role: "ESS", // normal employee self-service role
-          isActive: form.loginStatus === "ENABLED",
         }).unwrap();
 
         userEmail = registerRes.user.email;
       }
 
-      // 2) Create employee record
       const status = form.loginStatus === "DISABLED" ? "INACTIVE" : "ACTIVE";
 
       await createEmployee({
@@ -178,8 +380,6 @@ export default function AddEmployeePage() {
         lastName: form.lastName.trim(),
         email: userEmail || form.email.trim() || "no-email@example.com",
         status,
-
-        // ✅ NEW: division assignment
         division: form.divisionId || null,
       }).unwrap();
 
@@ -202,12 +402,10 @@ export default function AddEmployeePage() {
 
   return (
     <div className="space-y-5">
-      {/* PIM Tabs */}
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">PIM</h1>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Configuration + dropdown (same as EmployeesPage) */}
           <div className="relative" onMouseLeave={() => setConfigOpen(false)}>
             <button
               type="button"
@@ -278,7 +476,6 @@ export default function AddEmployeePage() {
             )}
           </div>
 
-          {/* Employee List */}
           <button
             type="button"
             className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
@@ -287,7 +484,6 @@ export default function AddEmployeePage() {
             Employee List
           </button>
 
-          {/* Add Employee (active) */}
           <button
             type="button"
             className={`${tabBase} bg-green-500 text-white shadow-sm`}
@@ -295,7 +491,6 @@ export default function AddEmployeePage() {
             Add Employee
           </button>
 
-          {/* Reports */}
           <button
             type="button"
             className={`${tabBase} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
@@ -306,7 +501,116 @@ export default function AddEmployeePage() {
         </div>
       </div>
 
-      {/* Card */}
+      {/* Bulk Import */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-700">
+              Bulk Import Old Employees
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Upload Excel file (.xlsx / .xls). Existing employees with same
+              Employee ID will be updated.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => bulkFileInputRef.current?.click()}
+              className="px-4 py-2 rounded-full border border-slate-300 text-xs md:text-sm text-slate-700 hover:bg-slate-50"
+            >
+              Upload Excel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBulkImport}
+              disabled={isBulkImporting || bulkRows.length === 0}
+              className="px-5 py-2 rounded-full bg-lime-500 text-xs md:text-sm text-white font-semibold shadow-sm hover:bg-lime-600 disabled:opacity-60"
+            >
+              {isBulkImporting ? "Importing..." : "Import Employees"}
+            </button>
+          </div>
+        </div>
+
+        <input
+          ref={bulkFileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          className="hidden"
+          onChange={handleBulkFileChange}
+        />
+
+        <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600">
+          <div className="font-semibold text-slate-700 mb-2">
+            Supported columns
+          </div>
+          <div className="leading-6">
+            employeeId, firstName, middleName, lastName, fullName, email, phone,
+            mobileNumber, jobTitle, department, location, status, division,
+            divisionId, subDivision, subDivisionId
+          </div>
+        </div>
+
+        {bulkImportError && (
+          <div className="mt-4 text-xs text-rose-700 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg">
+            {bulkImportError}
+          </div>
+        )}
+
+        {bulkImportSuccess && (
+          <div className="mt-4 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg">
+            {bulkImportSuccess}
+          </div>
+        )}
+
+        {bulkFileName && (
+          <div className="mt-4 text-xs text-slate-600">
+            <span className="font-semibold">Selected file:</span> {bulkFileName}
+          </div>
+        )}
+
+        {bulkRows.length > 0 && (
+          <div className="mt-4 overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="min-w-full text-xs">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="px-3 py-2 text-left">Employee ID</th>
+                  <th className="px-3 py-2 text-left">First Name</th>
+                  <th className="px-3 py-2 text-left">Last Name</th>
+                  <th className="px-3 py-2 text-left">Email</th>
+                  <th className="px-3 py-2 text-left">Phone</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bulkRows.slice(0, 10).map((row, idx) => (
+                  <tr
+                    key={`${row.employeeId}-${idx}`}
+                    className="border-t border-slate-100"
+                  >
+                    <td className="px-3 py-2">{row.employeeId || "-"}</td>
+                    <td className="px-3 py-2">{row.firstName || "-"}</td>
+                    <td className="px-3 py-2">{row.lastName || "-"}</td>
+                    <td className="px-3 py-2">{row.email || "-"}</td>
+                    <td className="px-3 py-2">{row.phone || "-"}</td>
+                    <td className="px-3 py-2">{row.status || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {bulkRows.length > 10 && (
+              <div className="px-3 py-2 text-xs text-slate-500 border-t border-slate-100 bg-white">
+                Showing first 10 rows out of {bulkRows.length} parsed employees.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Manual Add Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-4">
           Add Employee
@@ -326,7 +630,6 @@ export default function AddEmployeePage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Photo */}
             <div className="flex flex-col items-center lg:items-start gap-3">
               <div
                 className="relative h-40 w-40 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 cursor-pointer"
@@ -368,9 +671,7 @@ export default function AddEmployeePage() {
               />
             </div>
 
-            {/* Right: main form */}
             <div className="lg:col-span-2 space-y-5">
-              {/* Employee full name */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-semibold text-slate-500">
                   Employee Full Name<span className="text-green-500">*</span>
@@ -403,7 +704,6 @@ export default function AddEmployeePage() {
                 </div>
               </div>
 
-              {/* Employee Id */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-semibold text-slate-500">
                   Employee Id
@@ -417,7 +717,6 @@ export default function AddEmployeePage() {
                 />
               </div>
 
-              {/* ✅ NEW: Division */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-semibold text-slate-500">
                   Division
@@ -443,7 +742,6 @@ export default function AddEmployeePage() {
                 </select>
               </div>
 
-              {/* Create Login Details + Status */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -465,7 +763,6 @@ export default function AddEmployeePage() {
                     </label>
                   </div>
 
-                  {/* Status radio */}
                   <div className="flex items-center gap-4 text-[11px] text-slate-600">
                     <span className="font-semibold text-slate-500">Status</span>
                     <label className="inline-flex items-center gap-1 cursor-pointer">
@@ -493,10 +790,8 @@ export default function AddEmployeePage() {
                   </div>
                 </div>
 
-                {/* Login fields */}
                 {form.createLogin && (
                   <div className="space-y-4">
-                    {/* Username + Email */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-500 mb-1">
@@ -524,7 +819,6 @@ export default function AddEmployeePage() {
                       </div>
                     </div>
 
-                    {/* Password + Confirm */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-500 mb-1">
@@ -563,7 +857,6 @@ export default function AddEmployeePage() {
             </div>
           </div>
 
-          {/* Footer buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"

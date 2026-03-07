@@ -801,7 +801,9 @@ export default function App() {
         path="/admin/*"
         element={
           <RequireAuth>
-            <AdminLayout />
+            <RequireRole allowed={["ADMIN"]}>
+              <AdminLayout />
+            </RequireRole>
           </RequireAuth>
         }
       >

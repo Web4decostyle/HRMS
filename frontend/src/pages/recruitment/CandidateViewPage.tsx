@@ -10,6 +10,7 @@ import {
   FiCheckCircle,
   FiClipboard,
   FiBriefcase,
+  FiCreditCard,
 } from "react-icons/fi";
 import {
   useGetCandidateByIdQuery,
@@ -22,7 +23,11 @@ function safeDate(v?: any) {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function isoDateOnly(v?: any) {
@@ -34,13 +39,24 @@ function isoDateOnly(v?: any) {
 
 function renderValue(v: any): React.ReactNode {
   if (v === undefined || v === null || v === "") return "—";
-  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+  if (
+    typeof v === "string" ||
+    typeof v === "number" ||
+    typeof v === "boolean"
+  )
+    return String(v);
   if (Array.isArray(v)) {
     const out = v
       .map((x) => {
         if (x == null) return "";
-        if (typeof x === "string" || typeof x === "number" || typeof x === "boolean") return String(x);
-        if (typeof x === "object") return x.name ?? x.title ?? x.label ?? x._id ?? "";
+        if (
+          typeof x === "string" ||
+          typeof x === "number" ||
+          typeof x === "boolean"
+        )
+          return String(x);
+        if (typeof x === "object")
+          return x.name ?? x.title ?? x.label ?? x._id ?? "";
         return "";
       })
       .filter(Boolean)
@@ -74,8 +90,12 @@ function CardRow({
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-semibold tracking-wide text-slate-500">{label}</div>
-        <div className="mt-0.5 truncate text-[13px] font-medium text-slate-800">{renderValue(value)}</div>
+        <div className="text-[11px] font-semibold tracking-wide text-slate-500">
+          {label}
+        </div>
+        <div className="mt-0.5 truncate text-[13px] font-medium text-slate-800">
+          {renderValue(value)}
+        </div>
       </div>
     </div>
   );
@@ -85,8 +105,10 @@ export default function CandidateViewPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const { data: apiCandidate, isLoading: loadingById } = useGetCandidateByIdQuery(id as string, { skip: !id });
-  const { data: listCandidates, isLoading: loadingList } = useGetCandidatesQuery();
+  const { data: apiCandidate, isLoading: loadingById } =
+    useGetCandidateByIdQuery(id as string, { skip: !id });
+  const { data: listCandidates, isLoading: loadingList } =
+    useGetCandidatesQuery();
 
   const candidate = useMemo(() => {
     if (apiCandidate) return apiCandidate as any;
@@ -96,17 +118,24 @@ export default function CandidateViewPage() {
 
   const isLoading = loadingById || (!apiCandidate && loadingList);
 
-  const [setInterviewDate, { isLoading: savingInterview }] = useSetInterviewDateMutation();
-  const [updateStatus, { isLoading: updatingStatus }] = useUpdateCandidateStatusMutation();
+  const [setInterviewDate, { isLoading: savingInterview }] =
+    useSetInterviewDateMutation();
+  const [updateStatus, { isLoading: updatingStatus }] =
+    useUpdateCandidateStatusMutation();
 
   const [interviewDraft, setInterviewDraft] = useState<string>("");
 
-  // keep input in sync once candidate loads
   React.useEffect(() => {
-    if (candidate?.interviewDate) setInterviewDraft(isoDateOnly(candidate.interviewDate));
+    if (candidate?.interviewDate) {
+      setInterviewDraft(isoDateOnly(candidate.interviewDate));
+    }
   }, [candidate?.interviewDate]);
 
-  const fullName = candidate ? `${candidate.firstName ?? ""} ${candidate.lastName ?? ""}`.trim() : "—";
+  const fullName = candidate
+    ? `${candidate.firstName ?? ""} ${candidate.middleName ?? ""} ${candidate.lastName ?? ""}`
+        .replace(/\s+/g, " ")
+        .trim()
+    : "—";
 
   const jobTitle =
     typeof candidate?.job === "string"
@@ -117,7 +146,9 @@ export default function CandidateViewPage() {
     candidate?.vacancyTitle ??
     (typeof candidate?.vacancy === "string"
       ? candidate?.vacancy
-      : candidate?.vacancy?.title ?? candidate?.vacancy?.name ?? candidate?.vacancy);
+      : candidate?.vacancy?.title ??
+        candidate?.vacancy?.name ??
+        candidate?.vacancy);
 
   const canConvert = Boolean(candidate?.interviewDate);
 
@@ -159,8 +190,12 @@ export default function CandidateViewPage() {
             </button>
 
             <div>
-              <div className="text-[11px] font-semibold tracking-wide text-slate-500">Candidate</div>
-              <div className="text-lg font-semibold text-slate-800">{fullName || "—"}</div>
+              <div className="text-[11px] font-semibold tracking-wide text-slate-500">
+                Candidate
+              </div>
+              <div className="text-lg font-semibold text-slate-800">
+                {fullName || "—"}
+              </div>
             </div>
           </div>
 
@@ -174,8 +209,18 @@ export default function CandidateViewPage() {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {candidate?.tempEmployeeCode ? <Badge><FiHash className="mr-2" />Temp: {candidate.tempEmployeeCode}</Badge> : null}
-          {candidate?.employeeCode ? <Badge><FiCheckCircle className="mr-2" />Employee: {candidate.employeeCode}</Badge> : null}
+          {candidate?.tempEmployeeCode ? (
+            <Badge>
+              <FiHash className="mr-2" />
+              Temp: {candidate.tempEmployeeCode}
+            </Badge>
+          ) : null}
+          {candidate?.employeeCode ? (
+            <Badge>
+              <FiCheckCircle className="mr-2" />
+              Employee: {candidate.employeeCode}
+            </Badge>
+          ) : null}
         </div>
       </div>
 
@@ -183,7 +228,9 @@ export default function CandidateViewPage() {
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="px-6 py-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Details</h2>
-          <div className="text-[11px] text-slate-500">Updated: {safeDate(candidate?.updatedAt)}</div>
+          <div className="text-[11px] text-slate-500">
+            Updated: {safeDate(candidate?.updatedAt)}
+          </div>
         </div>
 
         <div className="border-t border-slate-100" />
@@ -191,28 +238,46 @@ export default function CandidateViewPage() {
         {isLoading ? (
           <div className="px-6 py-10 text-sm text-slate-500">Loading...</div>
         ) : !candidate ? (
-          <div className="px-6 py-10 text-sm text-slate-500">Candidate not found.</div>
+          <div className="px-6 py-10 text-sm text-slate-500">
+            Candidate not found.
+          </div>
         ) : (
           <div className="px-6 py-6 space-y-6">
-            {/* Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <CardRow icon={<FiUser />} label="First Name" value={candidate.firstName} />
+              <CardRow icon={<FiUser />} label="Middle Name" value={candidate.middleName} />
               <CardRow icon={<FiUser />} label="Last Name" value={candidate.lastName} />
               <CardRow icon={<FiMail />} label="Email" value={candidate.email} />
-              <CardRow icon={<FiPhone />} label="Phone" value={candidate.phone ?? candidate.contactNumber} />
+              <CardRow
+                icon={<FiPhone />}
+                label="Mobile Number"
+                value={candidate.mobileNumber ?? candidate.contactNumber ?? candidate.phone}
+              />
+              <CardRow
+                icon={<FiPhone />}
+                label="Alternate Contact"
+                value={candidate.contactNumber}
+              />
+              <CardRow
+                icon={<FiCreditCard />}
+                label="Aadhar Number"
+                value={candidate.aadharNumber}
+              />
               <CardRow icon={<FiBriefcase />} label="Job Title" value={jobTitle} />
               <CardRow icon={<FiBriefcase />} label="Vacancy" value={vacancyLabel} />
               <CardRow icon={<FiClipboard />} label="Keywords" value={candidate.keywords} />
               <CardRow icon={<FiClipboard />} label="Notes" value={candidate.notes} />
             </div>
 
-            {/* Interview + Code actions */}
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <div className="text-[12px] font-semibold text-slate-800">Interview & Employee Code</div>
+                  <div className="text-[12px] font-semibold text-slate-800">
+                    Interview & Employee Code
+                  </div>
                   <div className="text-[11px] text-slate-500">
-                    Set interview date → generates TEMP code. When SELECTED/HIRED → generates FINAL employee code.
+                    Set interview date → generates TEMP code. When SELECTED/HIRED
+                    → generates FINAL employee code.
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -273,20 +338,30 @@ export default function CandidateViewPage() {
                     disabled={savingInterview}
                     className="rounded-full bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
                   >
-                    {savingInterview ? "Saving..." : "Save Interview Date & Generate TEMP Code"}
+                    {savingInterview
+                      ? "Saving..."
+                      : "Save Interview Date & Generate TEMP Code"}
                   </button>
 
                   {candidate?.tempEmployeeCode ? (
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs">
-                      <div className="text-[11px] font-semibold text-slate-500">Temporary Code</div>
-                      <div className="font-mono text-slate-800">{candidate.tempEmployeeCode}</div>
+                      <div className="text-[11px] font-semibold text-slate-500">
+                        Temporary Code
+                      </div>
+                      <div className="font-mono text-slate-800">
+                        {candidate.tempEmployeeCode}
+                      </div>
                     </div>
                   ) : null}
 
                   {candidate?.employeeCode ? (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs">
-                      <div className="text-[11px] font-semibold text-emerald-700">Employee Code</div>
-                      <div className="font-mono text-emerald-900">{candidate.employeeCode}</div>
+                      <div className="text-[11px] font-semibold text-emerald-700">
+                        Employee Code
+                      </div>
+                      <div className="font-mono text-emerald-900">
+                        {candidate.employeeCode}
+                      </div>
                     </div>
                   ) : null}
                 </div>

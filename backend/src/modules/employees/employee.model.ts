@@ -5,6 +5,7 @@ export type EmployeeLevel = "MANAGER" | "TL" | "GRADE1" | "GRADE2";
 export interface IEmployee extends Document {
   employeeId: string;
   firstName: string;
+  middleName?: string; // ✅ NEW
   lastName: string;
   email: string;
 
@@ -16,27 +17,70 @@ export interface IEmployee extends Document {
   // ✅ Division-based org
   division?: mongoose.Types.ObjectId | null;
 
-  // ✅ NEW: sub-division under a division
+  // ✅ Sub-division
   subDivision?: mongoose.Types.ObjectId | null;
 
-  // ✅ NEW: hierarchy inside division
-  level?: EmployeeLevel; // default GRADE1
-  reportsTo?: mongoose.Types.ObjectId | null; // points to TL/Manager
+  // ✅ hierarchy
+  level?: EmployeeLevel;
+  reportsTo?: mongoose.Types.ObjectId | null;
 
   status: "ACTIVE" | "INACTIVE";
 }
 
 const EmployeeSchema = new Schema<IEmployee>(
   {
-    employeeId: { type: String, required: true, unique: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true },
+    employeeId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
 
-    phone: { type: String },
-    location: { type: String },
-    jobTitle: { type: String },
-    department: { type: String },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    // ✅ NEW FIELD
+    middleName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      trim: true,
+    },
+
+    jobTitle: {
+      type: String,
+      trim: true,
+    },
+
+    department: {
+      type: String,
+      trim: true,
+    },
 
     division: {
       type: Schema.Types.ObjectId,
@@ -52,13 +96,13 @@ const EmployeeSchema = new Schema<IEmployee>(
       index: true,
     },
 
-    // ✅ NEW
     level: {
       type: String,
       enum: ["MANAGER", "TL", "GRADE1", "GRADE2"],
       default: "GRADE1",
       index: true,
     },
+
     reportsTo: {
       type: Schema.Types.ObjectId,
       ref: "Employee",
@@ -66,7 +110,12 @@ const EmployeeSchema = new Schema<IEmployee>(
       index: true,
     },
 
-    status: { type: String, enum: ["ACTIVE", "INACTIVE"], default: "ACTIVE" },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
+      index: true,
+    },
   },
   { timestamps: true }
 );

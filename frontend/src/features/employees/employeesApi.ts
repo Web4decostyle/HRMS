@@ -1,4 +1,3 @@
-// frontend/src/features/employees/employeesApi.ts
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { authorizedBaseQuery } from "../../app/apiBase";
 
@@ -10,17 +9,15 @@ export interface Employee {
   firstName: string;
   lastName: string;
 
-  // Optional extra fields for My Info:
   middleName?: string;
   nickname?: string;
   otherId?: string;
-  dateOfBirth?: string; // ISO string
+  dateOfBirth?: string;
   gender?: "MALE" | "FEMALE" | "OTHER";
   maritalStatus?: string;
   smoker?: boolean;
   nationality?: string;
 
-  // Contact:
   addressStreet1?: string;
   addressStreet2?: string;
   city?: string;
@@ -33,29 +30,27 @@ export interface Employee {
   workEmail?: string;
   otherEmail?: string;
 
-  email: string; // primary
+  email: string;
   jobTitle?: string;
-  department?: string; // used as Sub Unit
+  department?: string;
 
-   // ✅ NEW: Sub-Division assignment
   subDivision?: string | null;
-
-  // ✅ NEW: Division assignment
   division?: string | null;
+
+  phone?: string;
+  location?: string;
 
   status: EmployeeStatus;
 
   attachments?: Attachment[];
 }
 
-/** Tiny shape for dropdowns, etc. */
 export interface SimpleEmployee {
   _id: string;
   fullName: string;
   status?: EmployeeStatus;
 }
 
-/** Attachment type returned by backend */
 export interface Attachment {
   _id: string;
   filename: string;
@@ -76,20 +71,46 @@ export interface EmployeeFilters {
   include?: "current" | "past" | "all";
 }
 
-/** ✅ When HR submits change, backend returns 202 response */
 export type ApprovalSubmittedResponse = {
   ok: true;
   message: string;
   changeRequestId: string;
 };
 
-/** ✅ Update can return Employee (Admin) OR ApprovalSubmittedResponse (HR) */
 export type UpdateEmployeeResponse = Employee | ApprovalSubmittedResponse;
 
 export function isApprovalSubmittedResponse(
-  x: any,
+  x: any
 ): x is ApprovalSubmittedResponse {
   return !!x && typeof x === "object" && typeof x.changeRequestId === "string";
+}
+
+export interface BulkImportEmployeeRow {
+  employeeId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  jobTitle?: string;
+  department?: string;
+  location?: string;
+  status?: EmployeeStatus;
+  division?: string;
+  subDivision?: string;
+}
+
+export interface BulkImportEmployeesResponse {
+  ok: true;
+  total: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: Array<{
+    row: number;
+    employeeId?: string;
+    message: string;
+  }>;
 }
 
 export const employeesApi = createApi({
@@ -97,7 +118,6 @@ export const employeesApi = createApi({
   baseQuery: authorizedBaseQuery,
   tagTypes: ["Employee", "Attachment"],
   endpoints: (builder) => ({
-    // Full list with filters (Employee List, etc.)
     getEmployees: builder.query<Employee[], EmployeeFilters | void>({
       query: (filters) => {
         const params = new URLSearchParams();
@@ -126,7 +146,6 @@ export const employeesApi = createApi({
           : [{ type: "Employee" as const, id: "LIST" }],
     }),
 
-    // Lightweight list for dropdowns
     getEmployeesSimple: builder.query<SimpleEmployee[], void>({
       query: () => ({
         url: "employees",
@@ -157,23 +176,29 @@ export const employeesApi = createApi({
       invalidatesTags: [{ type: "Employee", id: "LIST" }],
     }),
 
+    bulkImportEmployees: builder.mutation<
+      BulkImportEmployeesResponse,
+      { employees: BulkImportEmployeeRow[] }
+    >({
+      query: (body) => ({
+        url: "employees/bulk-import",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [{ type: "Employee", id: "LIST" }],
+    }),
+
     getEmployeeById: builder.query<Employee, string>({
       query: (id) => `/employees/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Employee", id }],
     }),
 
-    // My Info – current user's employee record
     getMyEmployee: builder.query<Employee, void>({
       query: () => "employees/me",
       providesTags: (result) =>
         result ? [{ type: "Employee", id: result._id }] : [],
     }),
 
-    /**
-     * ✅ IMPORTANT CHANGE:
-     * HR updates return 202 { ok, message, changeRequestId }
-     * Admin updates return Employee
-     */
     updateEmployee: builder.mutation<
       UpdateEmployeeResponse,
       { id: string; data: Partial<Employee> }
@@ -193,8 +218,6 @@ export const employeesApi = createApi({
         ];
       },
     }),
-
-    /* ------------------ Attachments endpoints ------------------ */
 
     getEmployeeAttachments: builder.query<Attachment[], string>({
       query: (employeeId) => `employees/${employeeId}/attachments`,
@@ -243,6 +266,7 @@ export const {
   useGetEmployeesQuery,
   useGetEmployeesSimpleQuery,
   useCreateEmployeeMutation,
+  useBulkImportEmployeesMutation,
   useGetEmployeeByIdQuery,
   useGetMyEmployeeQuery,
   useUpdateEmployeeMutation,

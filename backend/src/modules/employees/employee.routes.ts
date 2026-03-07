@@ -1,4 +1,3 @@
-// backend/src/modules/employees/employee.routes.ts
 import { Router } from "express";
 import {
   listEmployees,
@@ -6,7 +5,8 @@ import {
   getEmployee,
   getMyEmployee,
   updateEmployee,
-  metaByEmployeeIds,
+  updateEmployeeOrg,
+  bulkImportEmployees,
 } from "./employee.controller";
 
 import {
@@ -21,52 +21,41 @@ import { requireAuth } from "../../middleware/authMiddleware";
 import { requireRole } from "../../middleware/requireRole";
 import { adminOrRequestChange } from "../../middleware/adminOrRequest";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { updateEmployeeOrg } from "./employee.controller";
 
 const router = Router();
 router.use(requireAuth);
 
-// ✅ ESS + ESS_VIEWER only get /me
 router.get("/me", asyncHandler(getMyEmployee));
 
-// ✅ Admin/HR/Supervisor can view employees list & profiles
-router.get(
-  "/",
-  requireRole("ADMIN", "HR", "SUPERVISOR"),
-  asyncHandler(listEmployees),
+router.get("/", requireRole("ADMIN", "HR", "SUPERVISOR"), asyncHandler(listEmployees));
+
+router.post(
+  "/bulk-import",
+  requireRole("ADMIN"),
+  asyncHandler(bulkImportEmployees)
 );
 
-router.post("/meta-by-ids", asyncHandler(metaByEmployeeIds));
-
-// ✅ Employee Attachments (must be ABOVE "/:id" route)
 router.get(
   "/:employeeId/attachments",
   requireRole("ADMIN", "HR", "SUPERVISOR"),
-  asyncHandler(listEmployeeAttachments),
+  asyncHandler(listEmployeeAttachments)
 );
 
 router.post(
   "/:employeeId/attachments",
   requireRole("ADMIN", "HR", "SUPERVISOR"),
   employeeAttachmentUpload.single("file"),
-  asyncHandler(uploadEmployeeAttachment),
+  asyncHandler(uploadEmployeeAttachment)
 );
 
 router.delete(
   "/:employeeId/attachments/:attachmentId",
   requireRole("ADMIN", "HR", "SUPERVISOR"),
-  asyncHandler(deleteEmployeeAttachment),
+  asyncHandler(deleteEmployeeAttachment)
 );
 
-router.get(
-  "/:id",
-  requireRole("ADMIN", "HR", "SUPERVISOR"),
-  asyncHandler(getEmployee),
-);
+router.get("/:id", requireRole("ADMIN", "HR", "SUPERVISOR"), asyncHandler(getEmployee));
 
-// ✅ Create employee:
-// Admin → real create
-// HR → request approval
 router.post(
   "/",
   adminOrRequestChange({
@@ -75,14 +64,14 @@ router.post(
     action: "CREATE",
     buildPayload: (req) => req.body,
   }),
-  requireRole("ADMIN"), // only admin reaches controller
-  asyncHandler(createEmployee),
+  requireRole("ADMIN"),
+  asyncHandler(createEmployee)
 );
 
 router.patch(
   "/:id/org",
   requireRole("ADMIN", "HR"),
-  asyncHandler(updateEmployeeOrg),
+  asyncHandler(updateEmployeeOrg)
 );
 
 router.put(
@@ -94,8 +83,8 @@ router.put(
     getTargetId: (req) => req.params.id,
     buildPayload: (req) => req.body,
   }),
-  requireRole("ADMIN"), // only admin reaches controller
-  asyncHandler(updateEmployee),
+  requireRole("ADMIN"),
+  asyncHandler(updateEmployee)
 );
 
 export default router;
